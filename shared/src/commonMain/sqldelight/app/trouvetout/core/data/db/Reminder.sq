@@ -1,0 +1,28 @@
+-- Projection : rappels (E2, E6). Les notifications elles-mêmes sont programmées par les apps (lot 9).
+CREATE TABLE reminder (
+  id TEXT NOT NULL PRIMARY KEY,
+  item_id TEXT NOT NULL,
+  fire_at INTEGER NOT NULL,
+  kind TEXT NOT NULL,
+  done INTEGER AS kotlin.Boolean NOT NULL DEFAULT 0
+);
+
+CREATE INDEX reminder_item ON reminder(item_id);
+
+insert:
+INSERT OR REPLACE INTO reminder(id, item_id, fire_at, kind, done) VALUES (?, ?, ?, ?, 0);
+
+setDone:
+UPDATE reminder SET done = ? WHERE id = ?;
+
+selectById:
+SELECT id, item_id, fire_at, kind, done FROM reminder WHERE id = ?;
+
+selectPending:
+SELECT id, item_id, fire_at, kind, done FROM reminder WHERE done = 0 ORDER BY fire_at;
+
+selectByItem:
+SELECT id, item_id, fire_at, kind, done FROM reminder WHERE item_id = ? ORDER BY fire_at;
+
+deleteAll:
+DELETE FROM reminder;

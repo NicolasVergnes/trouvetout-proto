@@ -20,15 +20,23 @@ final class SharedBridgeTests: XCTestCase {
         XCTAssertEqual(values.isExcludedFromBackup, true)
     }
 
-    func testFactoryBuildsFromConfig() {
+    func testFactoryOpensTheDatabaseAndAssignsADeviceId() {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tt-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let config = SharedConfig(
-            dataDirectory: FileManager.default.temporaryDirectory.path,
+            dataDirectory: directory.path,
             deviceInfo: IosDeviceInfo(),
+            driverFactory: IosDriverFactory(directory: directory.path, fileName: "test.db"),
+            imageCodec: UIImageCodec(),
             logger: NoopLogger.shared
         )
         let factory = SharedFactory(config: config)
         XCTAssertEqual(factory.appInfo.NAME, "TrouveTout")
+        XCTAssertEqual(factory.deviceId.count, 26)
+        XCTAssertEqual(factory.deviceId, factory.deviceId)
         factory.close()
+        try? FileManager.default.removeItem(at: directory)
     }
 
     // MARK: - Flow bridge

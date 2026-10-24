@@ -7,6 +7,7 @@ style:
     maxLineLength: 120
   ReturnCount:
     max: 3
+    excludeGuardClauses: true
   UnusedPrivateMember:
     ignoreAnnotated: ['Preview']
   MagicNumber:

@@ -1,0 +1,37 @@
+-- Projection : photos attachées à un objet, un lieu ou un contenant (A10). Fichiers dans <dataDir>/photos/.
+CREATE TABLE photo (
+  id TEXT NOT NULL PRIMARY KEY,
+  owner_type TEXT NOT NULL,
+  owner_id TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  thumb_name TEXT NOT NULL,
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  sha256 TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  detached_at INTEGER
+);
+
+CREATE INDEX photo_owner ON photo(owner_type, owner_id);
+
+insert:
+INSERT OR REPLACE INTO photo(id, owner_type, owner_id, file_name, thumb_name, width, height, sha256, created_at, detached_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL);
+
+setDetachedAt:
+UPDATE photo SET detached_at = ? WHERE id = ?;
+
+selectById:
+SELECT id, owner_type, owner_id, file_name, thumb_name, width, height, sha256, created_at, detached_at
+FROM photo WHERE id = ?;
+
+selectByOwner:
+SELECT id, owner_type, owner_id, file_name, thumb_name, width, height, sha256, created_at, detached_at
+FROM photo WHERE detached_at IS NULL AND owner_type = ? AND owner_id = ? ORDER BY created_at;
+
+selectAll:
+SELECT id, owner_type, owner_id, file_name, thumb_name, width, height, sha256, created_at, detached_at
+FROM photo ORDER BY created_at;
+
+deleteAll:
+DELETE FROM photo;

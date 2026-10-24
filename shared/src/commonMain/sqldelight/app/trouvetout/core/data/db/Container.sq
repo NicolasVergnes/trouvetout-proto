@@ -1,0 +1,40 @@
+-- Projection : contenants déplaçables (A3). Écrite uniquement par data/projection.
+CREATE TABLE container (
+  id TEXT NOT NULL PRIMARY KEY,
+  label TEXT NOT NULL,
+  number INTEGER,
+  place_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  deleted_at INTEGER
+);
+
+CREATE INDEX container_place ON container(place_id);
+
+insert:
+INSERT OR REPLACE INTO container(id, label, number, place_id, created_at, deleted_at)
+VALUES (?, ?, ?, ?, ?, NULL);
+
+setPlace:
+UPDATE container SET place_id = ? WHERE id = ?;
+
+movePlace:
+UPDATE container SET place_id = ? WHERE place_id = ?;
+
+setDeletedAt:
+UPDATE container SET deleted_at = ? WHERE id = ?;
+
+selectById:
+SELECT id, label, number, place_id, created_at, deleted_at FROM container WHERE id = ?;
+
+selectActive:
+SELECT id, label, number, place_id, created_at, deleted_at FROM container WHERE deleted_at IS NULL ORDER BY label;
+
+selectByPlace:
+SELECT id, label, number, place_id, created_at, deleted_at
+FROM container WHERE deleted_at IS NULL AND place_id = ? ORDER BY number, label;
+
+countActive:
+SELECT COUNT(*) FROM container WHERE deleted_at IS NULL;
+
+deleteAll:
+DELETE FROM container;

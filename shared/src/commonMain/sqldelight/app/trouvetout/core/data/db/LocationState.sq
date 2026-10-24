@@ -1,0 +1,37 @@
+-- Projection : état courant de chaque objet (dérivé du journal). Un objet a toujours exactement une ligne.
+CREATE TABLE location_state (
+  item_id TEXT NOT NULL PRIMARY KEY,
+  place_id TEXT,
+  container_id TEXT,
+  state TEXT NOT NULL,
+  lent_to TEXT,
+  since INTEGER NOT NULL
+);
+
+CREATE INDEX location_place ON location_state(place_id);
+CREATE INDEX location_container ON location_state(container_id);
+
+upsert:
+INSERT OR REPLACE INTO location_state(item_id, place_id, container_id, state, lent_to, since)
+VALUES (?, ?, ?, ?, ?, ?);
+
+selectByItem:
+SELECT item_id, place_id, container_id, state, lent_to, since FROM location_state WHERE item_id = ?;
+
+selectAll:
+SELECT item_id, place_id, container_id, state, lent_to, since FROM location_state ORDER BY item_id;
+
+itemsInPlace:
+SELECT item_id FROM location_state WHERE place_id = ?;
+
+itemsInContainer:
+SELECT item_id FROM location_state WHERE container_id = ?;
+
+countInPlace:
+SELECT COUNT(*) FROM location_state WHERE place_id = ?;
+
+movePlace:
+UPDATE location_state SET place_id = ? WHERE place_id = ?;
+
+deleteAll:
+DELETE FROM location_state;

@@ -1,0 +1,49 @@
+-- Projection : fiches objets (A1). Écrite uniquement par data/projection.
+CREATE TABLE item (
+  id TEXT NOT NULL PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  tags TEXT NOT NULL DEFAULT '[]',
+  quantity REAL,
+  unit TEXT,
+  sensitive INTEGER AS kotlin.Boolean NOT NULL DEFAULT 0,
+  pinned INTEGER AS kotlin.Boolean NOT NULL DEFAULT 0,
+  archived INTEGER AS kotlin.Boolean NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  deleted_at INTEGER
+);
+
+insert:
+INSERT OR REPLACE INTO item(id, name, description, tags, quantity, unit, sensitive, pinned, archived, created_at, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NULL);
+
+update:
+UPDATE item SET name = ?, description = ?, tags = ?, quantity = ?, unit = ?, sensitive = ?, pinned = ? WHERE id = ?;
+
+setArchived:
+UPDATE item SET archived = ? WHERE id = ?;
+
+setDeletedAt:
+UPDATE item SET deleted_at = ? WHERE id = ?;
+
+selectById:
+SELECT id, name, description, tags, quantity, unit, sensitive, pinned, archived, created_at, deleted_at
+FROM item WHERE id = ?;
+
+selectAll:
+SELECT id, name, description, tags, quantity, unit, sensitive, pinned, archived, created_at, deleted_at
+FROM item ORDER BY name;
+
+selectActive:
+SELECT id, name, description, tags, quantity, unit, sensitive, pinned, archived, created_at, deleted_at
+FROM item WHERE deleted_at IS NULL ORDER BY name;
+
+selectDeleted:
+SELECT id, name, description, tags, quantity, unit, sensitive, pinned, archived, created_at, deleted_at
+FROM item WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC;
+
+countActive:
+SELECT COUNT(*) FROM item WHERE deleted_at IS NULL;
+
+deleteAll:
+DELETE FROM item;

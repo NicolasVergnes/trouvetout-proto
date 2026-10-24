@@ -28,6 +28,8 @@ final class AppContainer: ObservableObject {
         let config = SharedConfig(
             dataDirectory: prepared.url.path,
             deviceInfo: IosDeviceInfo(),
+            driverFactory: IosDriverFactory(directory: prepared.url.path, fileName: "trouvetout.db"),
+            imageCodec: UIImageCodec(),
             logger: NoopLogger.shared
         )
         shared = SharedFactory(config: config)
