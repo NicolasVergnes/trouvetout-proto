@@ -1,5 +1,7 @@
 # XcodeGen spec (ADR-012): the Xcode project is generated, never hand-edited.
 #   brew install xcodegen && cd iosApp && xcodegen generate
+# Swift packages, when any, are declared here with `exactVersion:` (this file is scanned by the project hooks
+# and by tools/check-deps.sh, the generated Package.resolved is not versioned).
 name: iosApp
 options:
   bundleIdPrefix: app.trouvetout.proto
@@ -8,7 +10,7 @@ options:
   createIntermediateGroups: true
 settings:
   base:
-    SWIFT_VERSION: "5.9"
+    SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_TREAT_WARNINGS_AS_ERRORS: "YES"
@@ -34,8 +36,9 @@ targets:
       - name: Compile Kotlin Framework
         basedOnDependencyAnalysis: false
         script: |
+          export JAVA_HOME="${JAVA_HOME:-$(/usr/libexec/java_home -v 17)}"
           cd "$SRCROOT/.."
-          ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+          sh ./gradlew :shared:embedAndSignAppleFrameworkForXcode
   iosAppTests:
     type: bundle.unit-test
     platform: iOS

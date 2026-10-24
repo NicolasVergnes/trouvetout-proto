@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 
-/** Handle returned to Swift to stop observing a [Flow]. */
-public fun interface Cancellable {
+/** Handle returned to Swift to stop observing a [Flow] (named to avoid clashing with Combine's `Cancellable`). */
+public fun interface FlowSubscription {
     public fun cancel()
 }
 
@@ -25,13 +25,13 @@ public class FlowWatcher<T : Any>(
     public fun watch(
         onEach: (T) -> Unit,
         onComplete: (Throwable?) -> Unit,
-    ): Cancellable {
+    ): FlowSubscription {
         val job = scope.launch {
             flow
                 .onCompletion { cause -> if (cause !is CancellationException) onComplete(cause) }
                 .catch { /* already reported through onComplete */ }
                 .collect { value -> onEach(value) }
         }
-        return Cancellable { job.cancel() }
+        return FlowSubscription { job.cancel() }
     }
 }

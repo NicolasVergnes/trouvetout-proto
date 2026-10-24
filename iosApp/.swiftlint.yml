@@ -8,6 +8,7 @@ opt_in_rules:
   - empty_count
   - closure_spacing
   - explicit_init
+  - force_unwrapping
 line_length:
   warning: 120
   error: 160
@@ -17,7 +18,7 @@ identifier_name:
 custom_rules:
   no_logging:
     name: "No logging in the app"
-    regex: '^\s*(print|debugPrint|NSLog|os_log)\('
+    regex: '(^|[^A-Za-z0-9_.])(print|debugPrint|NSLog|os_log)\(|Logger\(subsystem'
     message: "The app never logs from Swift: business data must stay out of logs (CLAUDE.md rule 3)."
     severity: error
     excluded: ".*Tests/.*"

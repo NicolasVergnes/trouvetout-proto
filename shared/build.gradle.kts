@@ -37,6 +37,11 @@ kotlin {
         allWarningsAsErrors.set(true)
     }
 
+    // Kotlin/Native simulator tests: the CI exports the UDID of an available iPhone; locally the name suffices.
+    tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest>().configureEach {
+        device.set(providers.environmentVariable("IOS_SIMULATOR_DEVICE").orElse("iPhone 16"))
+    }
+
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)

@@ -1,29 +1,31 @@
 import Foundation
 import Shared
 
-/// Error surfaced to Swift when a Kotlin flow fails.
+/// Error surfaced to Swift when a Kotlin flow fails; keeps the Kotlin cause for diagnostics.
+/// Kotlin exception messages carry identifiers only (never business data), so showing them is safe.
 struct SharedError: LocalizedError {
-    let message: String
+    let cause: KotlinThrowable
+
     var errorDescription: String? {
-        message
+        cause.message ?? "Kotlin flow failed"
     }
 }
 
-extension FlowWatcher {
-    /// Consumes a Kotlin `Flow` as an `AsyncThrowingStream`; cancelling the task stops the collection.
-    func values() -> AsyncThrowingStream<T, Error> {
-        AsyncThrowingStream { continuation in
-            let handle = watch(
-                onEach: { value in continuation.yield(value) },
-                onComplete: { failure in
-                    if let failure {
-                        continuation.finish(throwing: SharedError(message: failure.message ?? "Kotlin flow failed"))
-                    } else {
-                        continuation.finish()
-                    }
+/// Consumes a Kotlin `Flow` bridged by `FlowWatcher` as an `AsyncThrowingStream`.
+/// A free generic function: an extension of the Objective-C generic class could not use `T` at runtime.
+/// Leaving the loop (break, error or task cancellation) stops the Kotlin collection.
+func stream<T: AnyObject>(_ watcher: FlowWatcher<T>) -> AsyncThrowingStream<T, Error> {
+    AsyncThrowingStream { continuation in
+        let subscription = watcher.watch(
+            onEach: { value in continuation.yield(value) },
+            onComplete: { failure in
+                if let failure {
+                    continuation.finish(throwing: SharedError(cause: failure))
+                } else {
+                    continuation.finish()
                 }
-            )
-            continuation.onTermination = { _ in handle.cancel() }
-        }
+            }
+        )
+        continuation.onTermination = { _ in subscription.cancel() }
     }
 }
