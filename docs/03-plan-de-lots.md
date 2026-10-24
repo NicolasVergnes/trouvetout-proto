@@ -13,6 +13,7 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 
 ## Lot 1 — Socle de données (A1–A4, A6, A10, N9) ☐
 - Entités, journal d'événements, projection `location_state`, SQLDelight, migrations, `meta`.
+- Avant d'ajouter SQLDelight / kotlinx.serialization : activer la vérification des dépendances Gradle (`./gradlew --write-verification-metadata sha256`, fichier `gradle/verification-metadata.xml` versionné) — recommandation de la revue sécurité du lot 0.
 - Stockage des photos (compression, miniatures, exclusion des sauvegardes système).
 - `docs/format-export.md` : schéma SQL et JSON publiés.
 - Tests : `replay(events) == state` sur 50 scénarios ; propriétés (un item a toujours un état) ; performance N7 (10 000 objets / 100 000 événements) en test JVM.

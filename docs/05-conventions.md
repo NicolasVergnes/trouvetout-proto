@@ -22,6 +22,7 @@
 - SwiftLint + SwiftFormat avec la config du dépôt ; 0 warning en CI.
 - Deployment target iOS 16 ; `@available` pour les API plus récentes (App Intents iOS 16 ok ; Foundation Models iOS 26 derrière une interface optionnelle).
 - Pas d'`UIKit` sauf nécessité (impression, partage, protection d'écran).
+- Le projet Xcode est généré par XcodeGen (`iosApp/project.yml`, ADR-012) : les paquets SPM y sont déclarés avec `exactVersion:` ; ce fichier, les `.xcconfig` et les `.entitlements` sont scannés par les hooks et `tools/check-deps.sh` comme des fichiers de build. `ENABLE_USER_SCRIPT_SANDBOXING=NO` est requis par le script Gradle de pré-build (portée build uniquement).
 
 ## Tests
 - `shared/commonTest` : domaine, journal, projection, parseur, recherche (avec un `TextEmbedder` factice déterministe + un test d'intégration avec le vrai modèle sur JVM).
