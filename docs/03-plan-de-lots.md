@@ -11,7 +11,7 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 - Scripts `tools/check-deps.sh` (dépendances interdites, permissions) et `tools/check-network.sh` (squelette).
 - Critères : les deux apps démarrent sur un écran vide ; CI verte ; hooks Claude Code actifs.
 
-## Lot 1 — Socle de données (A1–A4, A6, A10, N9) ☐
+## Lot 1 — Socle de données (A1–A4, A6, A10, N9) ◐
 - Entités, journal d'événements, projection `location_state`, SQLDelight, migrations, `meta`.
 - Avant d'ajouter SQLDelight / kotlinx.serialization : activer la vérification des dépendances Gradle (`./gradlew --write-verification-metadata sha256`, fichier `gradle/verification-metadata.xml` versionné) — recommandation de la revue sécurité du lot 0.
 - Stockage des photos (compression, miniatures, exclusion des sauvegardes système).
