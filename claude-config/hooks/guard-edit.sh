@@ -13,6 +13,8 @@ for k in '$2'.split('.'):
 print(d if isinstance(d,str) else '')"; fi
 }
 FILE="$(json_get '.tool_input.file_path // empty' 'tool_input.file_path')"
+# Les outils passent des chemins Windows (D:\...) : normaliser les séparateurs avant les motifs */.../*.
+FILE="${FILE//\\//}"
 # Contenu ajouté : Write.content, Edit.new_string et chaque edits[].new_string (éditions groupées).
 NEW="$(json_get '.tool_input.content // empty' 'tool_input.content')
 $(json_get '.tool_input.new_string // empty' 'tool_input.new_string')

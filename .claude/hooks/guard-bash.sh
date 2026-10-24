@@ -31,8 +31,8 @@ if printf '%s' "$CMD" | grep -Eq 'chmod\s+(-R\s+)?777'; then
   deny "chmod 777"
 fi
 # Secrets : jamais affichés ni copiés (signature, clés, .env, secrets/, gradle.properties utilisateur)
-if printf '%s' "$CMD" | grep -Eq '(\.jks|\.keystore|\.p12|\.p8|\.pem|\.cer|\.mobileprovision|keystore\.properties|local\.properties|\.gradle/gradle\.properties|(^|[/[:space:]])\.env([./[:space:]]|$)|secrets/)' \
-   && printf '%s' "$CMD" | grep -Eq '(^|[;&|]\s*)(cat|less|more|head|tail|base64|xxd|cp|scp|curl|git\s+add)\s'; then
+if printf '%s' "$CMD" | grep -Eqi '(\.jks|\.keystore|\.p12|\.p8|\.pem|\.cer|\.mobileprovision|keystore\.properties|local\.properties|\.gradle[/\\]gradle\.properties|(^|[/\\[:space:]"'"'"'=])\.env([./\\[:space:]"'"'"']|$)|secrets[/\\])' \
+   && printf '%s' "$CMD" | grep -Eqi '(^|[;&|]\s*)(cat|less|more|head|tail|base64|xxd|cp|scp|curl|git\s+add)\s'; then
   deny "manipulation d'un fichier de signature ou de secret"
 fi
 # Téléchargements : seulement via les outils du projet
