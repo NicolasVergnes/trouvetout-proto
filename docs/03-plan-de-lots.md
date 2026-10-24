@@ -58,6 +58,7 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 - SQLCipher + clés Keystore/Keychain (H2) avec migration depuis la base en clair du lot 1 ; verrouillage biométrique et masquage (H3) ; objets sensibles (H4) ; permissions au premier usage avec explication (H9).
 - Accessibilité complète (VoiceOver/TalkBack, Dynamic Type, contrastes), mode simplifié deux boutons (I7), thème système (I8).
 - Audit batterie : aucun travail en arrière-plan (N6).
+- Réévaluer `ITSAppUsesNonExemptEncryption` (iOS) et `PrivacyInfo.xcprivacy` quand SQLCipher et les APIs à raison déclarée (UserDefaults, horodatages de fichiers) arrivent ; consigner la réponse au questionnaire d'export dans l'ADR du lot.
 - Critères : liste de contrôle `02-securite-rgpd.md §4` entièrement verte ; audit d'accessibilité (Accessibility Scanner / Xcode Accessibility Inspector) sans erreur bloquante.
 
 ## Lot 9 — Rappels et impression (E2, E6, C16) ☐

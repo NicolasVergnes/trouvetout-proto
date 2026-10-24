@@ -13,6 +13,12 @@ final class SharedBridgeTests: XCTestCase {
         XCTAssertEqual(info.osName, "iOS")
     }
 
+    func testDataDirectoryIsExcludedFromBackup() throws {
+        let dir = AppDirectories.dataDirectory()
+        let values = try dir.resourceValues(forKeys: [.isExcludedFromBackupKey])
+        XCTAssertEqual(values.isExcludedFromBackup, true)
+    }
+
     func testFactoryBuildsFromConfig() {
         let config = SharedConfig(
             dataDirectory: FileManager.default.temporaryDirectory.path,

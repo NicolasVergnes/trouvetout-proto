@@ -32,7 +32,8 @@ Objectif : que la fiche « App Privacy » (Apple) et « Data safety » (Google) 
 - Interdits absolus (bloqués par hook) : SDK Firebase Analytics/Crashlytics, Google Analytics, Facebook SDK, Sentry, Mixpanel, Amplitude, AppsFlyer, Adjust, Branch, OneSignal, tout SDK publicitaire.
 
 ### Stockage
-- Base dans `filesDir/db/` (Android, `Context.getNoBackupFilesDir()` pour exclure d'Auto Backup) et `Application Support/` avec `isExcludedFromBackup = true` (iOS). Photos idem.
+- Base dans `noBackupFilesDir/db/` (Android, `Context.getNoBackupFilesDir()` : exclu d'Auto Backup et du transfert appareil-à-appareil ; jamais `filesDir/`) et `Application Support/<bundle>/` avec `isExcludedFromBackup = true` (iOS). Photos idem. En défense en profondeur, le manifeste déclare `allowBackup="false"` **et** des règles `dataExtractionRules` / `fullBackupContent` qui excluent tous les domaines.
+- Les exceptions levées par `shared` ne portent que des identifiants ou des compteurs dans leur message : un `Throwable.message` peut finir dans un log de debug ou un `LocalizedError` affiché par l'OS.
 - Aucune donnée métier dans les logs. Les logs de debug sont désactivés en release (`BuildConfig.DEBUG`, `#if DEBUG`). Pas de `Log.d(…)` contenant un nom d'objet ou de lieu, même en debug : utiliser des identifiants.
 - Clés : Android Keystore (AES-256-GCM, `setUserAuthenticationRequired(false)` pour la clé de base, StrongBox si disponible) ; iOS Keychain `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, `kSecAttrSynchronizable = false`.
 - Suppression totale (H6) : fermer la base, supprimer les fichiers, supprimer les clés, effacer `meta` et les préférences, annuler les notifications programmées, puis redémarrer l'état initial.

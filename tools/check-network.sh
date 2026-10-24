@@ -8,9 +8,9 @@ status=0
 
 echo "== Analyse statique des accès réseau =="
 ALLOWED_PATHS='shared/src/commonMain/kotlin/.*/ml/ModelPackDownloader|androidApp/src/main/java/.*/billing/|iosApp/.*/Billing/|iosApp/.*/Platform/ModelPackDownloader'
-MATCHES=$(grep -rnE "HttpClient|URLSession|OkHttpClient|io\.ktor\.client|URLRequest\(|HttpURLConnection|NSURLSession|Socket\(|WebSocket" \
+MATCHES=$(grep -rnE "HttpClient|URLSession|OkHttpClient|io\.ktor\.client|URLRequest\(|HttpURLConnection|NSURLSession|Socket\(|WebSocket|java\.net\.URL|openConnection\(|NWConnection|import Network|WebView|WKWebView" \
   "$ROOT/shared" "$ROOT/androidApp" "$ROOT/iosApp" 2>/dev/null \
-  --include='*.kt' --include='*.swift' | grep -vE "$ALLOWED_PATHS" | grep -vE "/build/|Test" || true)
+  --include='*.kt' --include='*.swift' | grep -vE "$ALLOWED_PATHS" | grep -vE "/build/|Test\.kt|Tests\.swift|/commonTest/|/androidHostTest/|/androidDeviceTest/|/iosTest/|Tests/" || true)
 if [ -n "$MATCHES" ]; then
   echo "VIOLATION : accès réseau hors emplacements autorisés :"; echo "$MATCHES"; status=1
 else

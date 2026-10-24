@@ -15,6 +15,13 @@ style:
     ignoreCompanionObjectPropertyDeclaration: true
   ForbiddenComment:
     active: false
+  # Rule 3 of CLAUDE.md: no business data in logs. Only the injected LogcatLogger may touch android.util.Log.
+  ForbiddenImport:
+    active: true
+    imports:
+      - value: 'android.util.Log'
+        reason: 'Log through the injected app.trouvetout.core.log.Logger (identifiers only).'
+    excludes: ['**/log/LogcatLogger.kt']
 
 complexity:
   LongParameterList:

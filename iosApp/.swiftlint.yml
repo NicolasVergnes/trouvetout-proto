@@ -14,3 +14,10 @@ line_length:
 identifier_name:
   min_length: 2
   excluded: [id, x, y]
+custom_rules:
+  no_logging:
+    name: "No logging in the app"
+    regex: '^\s*(print|debugPrint|NSLog|os_log)\('
+    message: "The app never logs from Swift: business data must stay out of logs (CLAUDE.md rule 3)."
+    severity: error
+    excluded: ".*Tests/.*"

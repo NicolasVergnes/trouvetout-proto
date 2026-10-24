@@ -41,6 +41,8 @@
 
 ## Journalisation
 - Logger commun `shared/log` avec niveaux ; en release, niveau `warn` minimum et aucune donnée métier (noms d'objets, lieux, phrases dictées) à aucun niveau. Utiliser des identifiants.
+- Même règle pour les messages d'exception produits par `shared` (identifiants et compteurs seulement) : ils remontent dans les logs de debug et dans les erreurs Swift.
+- Outillage : detekt interdit l'import d'`android.util.Log` hors `LogcatLogger` ; SwiftLint interdit `print`/`NSLog`/`os_log` dans `iosApp/iosApp`.
 
 ## Chaînes et i18n
 - Clés de chaînes stables, `snake_case`, préfixées par écran (`capture_confirm_title`).
