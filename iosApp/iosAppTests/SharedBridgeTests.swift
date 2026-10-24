@@ -35,6 +35,7 @@ final class SharedBridgeTests: XCTestCase {
 
     func testStreamDeliversEveryValueThenCompletes() async throws {
         let scope = FlowFixtures.shared.backgroundScope()
+        defer { FlowFixtures.shared.cancelScope(scope: scope) }
         var received: [Int] = []
         for try await value in stream(FlowFixtures.shared.counting(count: 3, scope: scope)) {
             received.append(value.intValue)
@@ -44,6 +45,7 @@ final class SharedBridgeTests: XCTestCase {
 
     func testStreamPropagatesKotlinFailure() async {
         let scope = FlowFixtures.shared.backgroundScope()
+        defer { FlowFixtures.shared.cancelScope(scope: scope) }
         do {
             for try await _ in stream(FlowFixtures.shared.failing(message: "boom", scope: scope)) {
                 XCTFail("No value expected")
@@ -54,8 +56,9 @@ final class SharedBridgeTests: XCTestCase {
         }
     }
 
-    func testLeavingTheLoopStopsAnEndlessFlow() async throws {
+    func testLeavingTheLoopCancelsTheKotlinCollection() async throws {
         let scope = FlowFixtures.shared.backgroundScope()
+        defer { FlowFixtures.shared.cancelScope(scope: scope) }
         var count = 0
         for try await _ in stream(FlowFixtures.shared.endless(intervalMillis: 5, scope: scope)) {
             count += 1
@@ -64,5 +67,26 @@ final class SharedBridgeTests: XCTestCase {
             }
         }
         XCTAssertEqual(count, 3)
+        // Cancellation is asynchronous on the Kotlin side: wait (bounded) until the collector is gone.
+        for _ in 0 ..< 100 where FlowFixtures.shared.activeEndlessCollectors() != 0 {
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertEqual(FlowFixtures.shared.activeEndlessCollectors(), 0)
+    }
+
+    func testCancellingTheScopeFinishesTheStream() async throws {
+        let scope = FlowFixtures.shared.backgroundScope()
+        let task = Task {
+            var count = 0
+            for try await _ in stream(FlowFixtures.shared.endless(intervalMillis: 5, scope: scope)) {
+                count += 1
+                if count == 2 {
+                    FlowFixtures.shared.cancelScope(scope: scope)
+                }
+            }
+            return count
+        }
+        let count = try await task.value
+        XCTAssertGreaterThanOrEqual(count, 2)
     }
 }

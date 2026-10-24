@@ -17,22 +17,16 @@ struct TrouveToutApp: App {
 @MainActor
 final class AppContainer: ObservableObject {
     let shared: SharedFactory
-    /// Set when the data directory could not be prepared or excluded from backups; the core then
-    /// works in the temporary directory (never backed up) and the UI reports it in a later lot.
+    /// Set when the data directory could not be prepared or excluded from backups. The core still points at
+    /// the real directory; from lot 1 the data layer refuses to open the store while this is set and the UI
+    /// explains it, rather than losing or leaking the journal silently.
     @Published private(set) var storageFailure: Error?
 
     init() {
-        var failure: Error?
-        let directory: URL
-        do {
-            directory = try AppDirectories.dataDirectory()
-        } catch {
-            failure = error
-            directory = FileManager.default.temporaryDirectory
-        }
-        storageFailure = failure
+        let prepared = AppDirectories.prepareDataDirectory()
+        storageFailure = prepared.failure
         let config = SharedConfig(
-            dataDirectory: directory.path,
+            dataDirectory: prepared.url.path,
             deviceInfo: IosDeviceInfo(),
             logger: NoopLogger.shared
         )
