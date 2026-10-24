@@ -1,0 +1,9 @@
+# Normalise line endings: LF in the repo and in working copies (shell scripts, Gradle, CI).
+* text=auto eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.jar binary
+*.wav binary

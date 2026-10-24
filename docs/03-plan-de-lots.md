@@ -4,7 +4,7 @@ Le périmètre v1 est livré en une seule version, mais construit par lots ordon
 
 Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ terminé).
 
-## Lot 0 — Fondations du dépôt ☐
+## Lot 0 — Fondations du dépôt ◐
 - Monorepo KMP : `shared` (commonMain/androidMain/iosMain), `androidApp` (Compose, minSdk 29, targetSdk courant), `iosApp` (SwiftUI, iOS 16, framework KMP via SPM/CocoaPods ou embedAndSignAppleFrameworkForXcode).
 - Versions épinglées (`libs.versions.toml`), ktlint/detekt, SwiftLint, SwiftFormat, `.editorconfig`.
 - CI (GitHub Actions ou équivalent) : `./gradlew :shared:allTests :androidApp:assembleDebug` sur Linux ; `xcodebuild test` sur macOS.
