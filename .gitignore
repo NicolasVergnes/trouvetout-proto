@@ -60,3 +60,4 @@ Thumbs.db
 # Rapports
 build/reports/
 corpus/audio/*.wav
+.kotlin/
