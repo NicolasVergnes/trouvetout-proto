@@ -52,13 +52,11 @@ case "$FILE" in
   *.gradle|*.gradle.kts|*libs.versions.toml|*Package.swift|*Podfile|*Cartfile|*.podspec|*Package.resolved|*project.yml|*.xcconfig|*.entitlements)
     FORBIDDEN_FILE="$(dirname "$0")/forbidden-deps.txt"
     if [ -f "$FORBIDDEN_FILE" ]; then
-      while IFS= read -r pat; do
-        [ -z "$pat" ] && continue
-        case "$pat" in \#*) continue ;; esac
-        if printf '%s' "$NEW" | tr '[:upper:]' '[:lower:]' | grep -Fq -- "$(printf '%s' "$pat" | tr '[:upper:]' '[:lower:]')"; then
-          deny "dépendance interdite ($pat) dans $FILE — aucune télémétrie ni SDK tiers (docs/02-securite-rgpd.md)"
-        fi
-      done < "$FORBIDDEN_FILE"
+      # Une seule passe grep sur le texte en minuscules (les boucles par motif coûtaient plusieurs secondes).
+      MATCH="$(printf '%s' "$NEW" | tr '[:upper:]' '[:lower:]' | grep -Fof <(grep -vE '^(#|$)' "$FORBIDDEN_FILE" | tr '[:upper:]' '[:lower:]') | head -n1 || true)"
+      if [ -n "$MATCH" ]; then
+        deny "dépendance interdite ($MATCH) dans $FILE — aucune télémétrie ni SDK tiers (docs/02-securite-rgpd.md)"
+      fi
     fi;;
 esac
 

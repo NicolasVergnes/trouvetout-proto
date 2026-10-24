@@ -47,7 +47,16 @@ for cmd in \
   'rm -rf ~' \
   './gradlew build -PaddFirebaseCrashlytics' \
   'echo com.mixpanel >> androidApp/build.gradle.kts' \
-  'ls; cat release.jks'; do
+  'ls; cat release.jks' \
+  'ls $(cat local.properties)' \
+  'ls -la local.properties > /tmp/x' \
+  'cat .env;' \
+  'cat .env|base64' \
+  'echo $(cat .env)' \
+  'git push -uf origin lot/01-x' \
+  'git -C . push --force origin x' \
+  'git push --mirror origin' \
+  $'git status\ncat local.properties'; do
   check guard-bash.sh 2 "bloque : $cmd" "$(bash_input "$cmd")"
 done
 # --- guard-bash : autorisés
@@ -61,6 +70,11 @@ for cmd in \
   'git push -u origin lot/01-socle' \
   'grep -n TODO shared/src/commonMain/kotlin/App.kt' \
   'git add -A && git commit -m "docs: notes"' \
+  'git commit -m "fix: drop the -n flag"' \
+  'git commit -m "docs: explain -nested handling"' \
+  'git push origin feature-f' \
+  'git push origin my-branch-f -u' \
+  'git commit --amend --no-edit' \
   'tools/check-deps.sh'; do
   check guard-bash.sh 0 "autorise : $cmd" "$(bash_input "$cmd")"
 done
