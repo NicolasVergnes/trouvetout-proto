@@ -47,3 +47,28 @@ Format : date, décision, raison, conséquences. Ajouter une entrée à chaque c
 
 ## ADR-010 — 2026-10-24 — « TrouveTout » est un nom de prototype
 **Décision** : ne pas figer de nom de marque dans les identifiants techniques exposés (bundle id, package name, nom de schéma d'URL, domaine) avant le choix définitif ; utiliser un identifiant neutre interne (ex. `app.trouvetout.proto` ou un nom de code) et une constante unique `AppName`.
+
+## ADR-011 — 2026-10-24 — Identifiants techniques neutres
+**Décision** : packages Kotlin `app.trouvetout.core` (shared) et `app.trouvetout.android` (androidApp) ; `applicationId` et bundle id `app.trouvetout.proto` ; schéma d'URL `trouvetout-proto://` ; le nom affiché vient d'un seul objet `AppInfo`.
+**Raison** : application de l'ADR-010 — rien de la marque dans les identifiants exposés avant le choix définitif.
+**Conséquences** : renommer l'app = changer `AppInfo`, les chaînes et les identifiants des magasins ; le code ne change pas.
+
+## ADR-012 — 2026-10-24 — Chaîne de build et pont iOS
+**Décision** : Kotlin 2.4.21, Gradle 9.7.0, AGP 9.3.x ; `shared` utilise le plugin `com.android.kotlin.multiplatform.library` (AGP 9 interdit `com.android.library` + KMP dans un même module) ; `androidApp` utilise le Kotlin intégré d'AGP 9. Injection **manuelle** (`SharedFactory`), pas de Koin. Pont Swift **manuel** (`FlowWatcher` en commonMain + `Shared+Swift.swift`), pas de SKIE. Projet Xcode **généré par XcodeGen** (`iosApp/project.yml` versionné) ; framework statique via `embedAndSignAppleFrameworkForXcode`, pas de CocoaPods.
+**Raison** : développement sur Windows sans Xcode — le moins de pièces possible que l'on ne peut pas tester localement ; un `.pbxproj` écrit à la main serait fragile.
+**Conséquences** : la compilation et les tests iOS n'ont lieu que sur la CI macOS ; `swift`/`xcodebuild` ne sont jamais lancés en local ; chaque exposition d'un `Flow` à Swift passe par `FlowWatcher`.
+
+## ADR-013 — 2026-10-24 — Dépôt public et flux git sans PR
+**Décision** : dépôt GitHub public `trouvetout-proto` (minutes GitHub Actions illimitées, macOS compris) ; une branche `lot/NN-*` par lot, poussée pour la CI, fusionnée localement dans `main` (`--no-ff`) sans pull request ; revues faites par `/code-review` et les agents du projet avant la fusion.
+**Raison** : la CI macOS est la seule vérification iOS ; les PR n'apportent rien tant qu'il n'y a qu'un développeur et un agent.
+**Conséquences** : le code du prototype est visible ; pas de licence pour l'instant (tous droits réservés) — voir « Questions ouvertes ».
+
+## ADR-014 — 2026-10-24 — Deux produits d'achat
+**Décision** : précise l'ADR-007 — l'écran d'échéance propose **les deux** produits : déblocage non consommable à 10 € et abonnement annuel à 2 €/an ; `purchased` est vrai si l'un des deux est actif.
+**Raison** : laisser le choix à l'utilisateur ; coût d'implémentation acceptable avec StoreKit 2 / Play Billing.
+**Conséquences** : deux identifiants de produit à configurer dans chaque console (lot 10) ; les deux états à tester (y compris abonnement expiré → ajouts bloqués de nouveau).
+
+## Questions ouvertes
+- **Licence du dépôt public** : aucun fichier `LICENSE` pour l'instant (tous droits réservés par défaut). À trancher avant la publication (lot 12) avec le nom définitif.
+- **Ancrage de `trialStart` sur Android (lot 10)** : `docs/01-architecture.md` §6 et le skill `android-ui` prévoient de sauvegarder le fichier de préférences de `trialStart`/`deviceId` par Auto Backup clé-valeur, mais le manifeste fixe `allowBackup="false"` et des règles d'extraction qui excluent tout (lot 0, défense en profondeur), et la clé maître d'`EncryptedSharedPreferences` ne survit de toute façon pas à une réinstallation. À trancher avant le lot 10 : (A) accepter la remise à zéro à la réinstallation (déjà notée « acceptée » dans l'ADR-007) et retirer la mention Auto Backup des docs ; (B) inclure un seul fichier de préférences en clair (`trialStart` n'est pas une donnée sensible) dans les règles de sauvegarde. Recommandation : A.
+- **Règle de découpe objet/lieu et étiquettes du corpus (lot 3)** : le skill `capture-parser` dit « la préposition de lieu la plus à droite sépare objet et lieu », mais plusieurs phrases du seed attendent la découpe la plus à gauche avec le chemin complet comme lieu (p0011 « carton 7 de l'étagère du fond de la cave », p0025, p0028) ; et la préposition est tantôt retirée du lieu (p0012 « bureau »), tantôt conservée (p0014 « sous le canapé », p0016 « derrière les livres… »). À trancher au début du lot 3 : (a) la première préposition de lieu après l'objet ouvre le lieu, qui garde tout le reste de la phrase ; (b) la préposition de position (`sous`, `derrière`, `au fond de`) fait partie du lieu, celle de simple localisation (`dans`, `sur`, `à`, `@`) n'en fait pas partie. Corriger le corpus en conséquence, en une seule passe documentée.

@@ -3,7 +3,16 @@
 Application mobile « où ai-je rangé ça ? » : on déclare en deux secondes (voix, photo, texte) où l'on pose un objet, on le retrouve des mois plus tard avec ses propres mots. **100 % local, sans compte ni serveur**, iOS 16+ et Android 10+.
 
 ## État
-Dossier de démarrage préparé le 24 octobre 2026 : documentation, décisions, plan de lots et configuration Claude Code. Aucun code applicatif encore — le lot 0 (fondations du dépôt) est la première étape.
+Dossier de démarrage préparé le 24 octobre 2026 : documentation, décisions, plan de lots et configuration Claude Code.
+Le lot 0 (fondations) a mis en place le monorepo Kotlin Multiplatform (`shared`, `androidApp`, `iosApp`, `tools`), la CI
+GitHub Actions (Linux pour shared/Android, macOS pour iOS) et les scripts de contrôle. Statut détaillé : `docs/03-plan-de-lots.md`.
+Dépôt : <https://github.com/NicolasVergnes/trouvetout-proto> (public, voir ADR-013).
+
+## Construire
+- Prérequis : JDK 17, Android SDK (plateforme 37, build-tools 36) ; iOS : macOS + Xcode 16 + `brew install xcodegen swiftlint swiftformat`.
+- Android / shared : `./gradlew :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :androidApp:assembleRelease :tools:build ktlintCheck detekt`
+- iOS : `cd iosApp && xcodegen generate && xcodebuild test -project iosApp.xcodeproj -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone 16'`
+- Contrôles : `tools/check-deps.sh`, `tools/check-network.sh` ; corpus : `./gradlew :tools:evalParser :tools:evalSearch`
 
 ## Lire dans l'ordre
 1. `docs/00-cahier-des-charges.md` — périmètre v1 (P0 + P1), décisions, critères d'acceptation

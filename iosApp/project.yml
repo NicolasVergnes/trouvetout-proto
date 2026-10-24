@@ -1,0 +1,63 @@
+# XcodeGen spec (ADR-012): the Xcode project is generated, never hand-edited.
+#   brew install xcodegen && cd iosApp && xcodegen generate
+# Swift packages, when any, are declared here with `exactVersion:` (this file is scanned by the project hooks
+# and by tools/check-deps.sh, the generated Package.resolved is not versioned).
+name: iosApp
+options:
+  bundleIdPrefix: app.trouvetout.proto
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: "YES"
+    # The Kotlin framework is built by a Gradle run script; Xcode's script sandbox would block it.
+    ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    FRAMEWORK_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: iosApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.trouvetout.proto
+        INFOPLIST_FILE: iosApp/Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        OTHER_LDFLAGS: "$(inherited) -framework Shared"
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: "NO"
+    preBuildScripts:
+      - name: Compile Kotlin Framework
+        basedOnDependencyAnalysis: false
+        script: |
+          export JAVA_HOME="${JAVA_HOME:-$(/usr/libexec/java_home -v 17)}"
+          cd "$SRCROOT/.."
+          sh ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+  iosAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: iosAppTests
+    dependencies:
+      - target: iosApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.trouvetout.proto.tests
+        GENERATE_INFOPLIST_FILE: "YES"
+schemes:
+  iosApp:
+    build:
+      targets:
+        iosApp: all
+        iosAppTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - iosAppTests

@@ -22,6 +22,7 @@
 - SwiftLint + SwiftFormat avec la config du dépôt ; 0 warning en CI.
 - Deployment target iOS 16 ; `@available` pour les API plus récentes (App Intents iOS 16 ok ; Foundation Models iOS 26 derrière une interface optionnelle).
 - Pas d'`UIKit` sauf nécessité (impression, partage, protection d'écran).
+- Le projet Xcode est généré par XcodeGen (`iosApp/project.yml`, ADR-012) : les paquets SPM y sont déclarés avec `exactVersion:` ; ce fichier, les `.xcconfig` et les `.entitlements` sont scannés par les hooks et `tools/check-deps.sh` comme des fichiers de build. `ENABLE_USER_SCRIPT_SANDBOXING=NO` est requis par le script Gradle de pré-build (portée build uniquement).
 
 ## Tests
 - `shared/commonTest` : domaine, journal, projection, parseur, recherche (avec un `TextEmbedder` factice déterministe + un test d'intégration avec le vrai modèle sur JVM).
@@ -30,7 +31,7 @@
 - Aucune dépendance réseau dans les tests.
 
 ## Git
-- Branche principale `main` protégée ; une branche par lot `lot/NN-nom` ; PR obligatoire avec CI verte.
+- Branche principale `main` ; une branche par lot `lot/NN-nom`, poussée à chaque étape pour la CI. Pendant la construction de la v1 (ADR-013) : fusion locale `--no-ff` dans `main` après CI verte et revues (`/code-review`, agents du projet), sans pull request ; les PR reviendront dès qu'il y aura un second contributeur.
 - Commits : Conventional Commits (`feat(capture): …`, `fix(search): …`, `docs: …`, `test: …`, `chore: …`), message en anglais, corps expliquant le pourquoi.
 - Pas de secrets, de keystore, de profil de provisionnement, de poids de modèle dans le dépôt (`.gitignore`).
 - Le fichier `docs/03-plan-de-lots.md` est mis à jour dans la PR qui termine un lot.
@@ -41,6 +42,8 @@
 
 ## Journalisation
 - Logger commun `shared/log` avec niveaux ; en release, niveau `warn` minimum et aucune donnée métier (noms d'objets, lieux, phrases dictées) à aucun niveau. Utiliser des identifiants.
+- Même règle pour les messages d'exception produits par `shared` (identifiants et compteurs seulement) : ils remontent dans les logs de debug et dans les erreurs Swift.
+- Outillage : detekt interdit l'import d'`android.util.Log` hors `LogcatLogger` ; SwiftLint interdit `print`/`NSLog`/`os_log` dans `iosApp/iosApp`.
 
 ## Chaînes et i18n
 - Clés de chaînes stables, `snake_case`, préfixées par écran (`capture_confirm_title`).

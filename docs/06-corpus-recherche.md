@@ -39,6 +39,6 @@ Répartition visée par `kind` : exact 20 %, typo/accents 15 %, synonym 20 %, pa
 - `tools/eval-search --model none` permet de mesurer le mot-clé seul (utile pour les appareils sans pack).
 
 ## 4. Procédure d'enrichissement
-1. Toute phrase réelle saisie par le développeur pendant ses tests est ajoutée avec `origin: own-usage` (sans donnée personnelle sensible).
+1. Toute phrase réelle saisie par le développeur pendant ses tests est ajoutée avec `origin: own-usage` (sans donnée personnelle sensible). Le dépôt est public (ADR-013) : seules des phrases synthétiques ou écrites par le développeur sont versionnées ; aucune phrase d'un utilisateur ne rejoint jamais le corpus — l'app n'a, et n'aura, aucun canal pour cela.
 2. Chaque bug de capture ou de recherche corrigé ajoute au moins une ligne au corpus correspondant.
 3. Les seuils ne sont jamais abaissés ; si un ajout fait échouer, on corrige le moteur ou on documente l'exception dans la ligne (`"xfail": "raison"`).

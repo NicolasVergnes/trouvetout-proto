@@ -60,3 +60,14 @@ Thumbs.db
 # Rapports
 build/reports/
 corpus/audio/*.wav
+.kotlin/
+
+# Autres fichiers de configuration sensibles (SDK tiers, comptes de service, clés)
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+*.pfx
+*.key
+
+# Projet Xcode généré par XcodeGen (ADR-012), jamais versionné
+iosApp/iosApp.xcodeproj/

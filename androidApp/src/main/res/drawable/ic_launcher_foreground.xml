@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder prototype icon: an open box. Final artwork is a lot 12 task. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,44 L54,34 L78,44 L78,74 L54,84 L30,74 Z M34,47 L34,71.5 L52,79 L52,54.5 Z M56,54.5 L56,79 L74,71.5 L74,47 Z M54,38.3 L36.5,45.6 L54,52.6 L71.5,45.6 Z" />
+</vector>

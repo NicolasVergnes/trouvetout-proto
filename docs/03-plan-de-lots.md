@@ -4,7 +4,7 @@ Le périmètre v1 est livré en une seule version, mais construit par lots ordon
 
 Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ terminé).
 
-## Lot 0 — Fondations du dépôt ☐
+## Lot 0 — Fondations du dépôt ☑
 - Monorepo KMP : `shared` (commonMain/androidMain/iosMain), `androidApp` (Compose, minSdk 29, targetSdk courant), `iosApp` (SwiftUI, iOS 16, framework KMP via SPM/CocoaPods ou embedAndSignAppleFrameworkForXcode).
 - Versions épinglées (`libs.versions.toml`), ktlint/detekt, SwiftLint, SwiftFormat, `.editorconfig`.
 - CI (GitHub Actions ou équivalent) : `./gradlew :shared:allTests :androidApp:assembleDebug` sur Linux ; `xcodebuild test` sur macOS.
@@ -13,6 +13,7 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 
 ## Lot 1 — Socle de données (A1–A4, A6, A10, N9) ☐
 - Entités, journal d'événements, projection `location_state`, SQLDelight, migrations, `meta`.
+- Avant d'ajouter SQLDelight / kotlinx.serialization : activer la vérification des dépendances Gradle (`./gradlew --write-verification-metadata sha256`, fichier `gradle/verification-metadata.xml` versionné) — recommandation de la revue sécurité du lot 0.
 - Stockage des photos (compression, miniatures, exclusion des sauvegardes système).
 - `docs/format-export.md` : schéma SQL et JSON publiés.
 - Tests : `replay(events) == state` sur 50 scénarios ; propriétés (un item a toujours un état) ; performance N7 (10 000 objets / 100 000 événements) en test JVM.
@@ -58,6 +59,7 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 - SQLCipher + clés Keystore/Keychain (H2) avec migration depuis la base en clair du lot 1 ; verrouillage biométrique et masquage (H3) ; objets sensibles (H4) ; permissions au premier usage avec explication (H9).
 - Accessibilité complète (VoiceOver/TalkBack, Dynamic Type, contrastes), mode simplifié deux boutons (I7), thème système (I8).
 - Audit batterie : aucun travail en arrière-plan (N6).
+- Réévaluer `ITSAppUsesNonExemptEncryption` (iOS) et `PrivacyInfo.xcprivacy` quand SQLCipher et les APIs à raison déclarée (UserDefaults, horodatages de fichiers) arrivent ; consigner la réponse au questionnaire d'export dans l'ADR du lot.
 - Critères : liste de contrôle `02-securite-rgpd.md §4` entièrement verte ; audit d'accessibilité (Accessibility Scanner / Xcode Accessibility Inspector) sans erreur bloquante.
 
 ## Lot 9 — Rappels et impression (E2, E6, C16) ☐
