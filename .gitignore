@@ -68,3 +68,6 @@ GoogleService-Info.plist
 service-account*.json
 *.pfx
 *.key
+
+# Projet Xcode généré par XcodeGen (ADR-012), jamais versionné
+iosApp/iosApp.xcodeproj/

@@ -31,7 +31,7 @@
 - Aucune dépendance réseau dans les tests.
 
 ## Git
-- Branche principale `main` protégée ; une branche par lot `lot/NN-nom` ; PR obligatoire avec CI verte.
+- Branche principale `main` ; une branche par lot `lot/NN-nom`, poussée à chaque étape pour la CI. Pendant la construction de la v1 (ADR-013) : fusion locale `--no-ff` dans `main` après CI verte et revues (`/code-review`, agents du projet), sans pull request ; les PR reviendront dès qu'il y aura un second contributeur.
 - Commits : Conventional Commits (`feat(capture): …`, `fix(search): …`, `docs: …`, `test: …`, `chore: …`), message en anglais, corps expliquant le pourquoi.
 - Pas de secrets, de keystore, de profil de provisionnement, de poids de modèle dans le dépôt (`.gitignore`).
 - Le fichier `docs/03-plan-de-lots.md` est mis à jour dans la PR qui termine un lot.
