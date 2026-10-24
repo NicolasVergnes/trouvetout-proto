@@ -26,7 +26,6 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.trouvetout.proto
-        PRODUCT_NAME: TrouveTout
         INFOPLIST_FILE: iosApp/Info.plist
         GENERATE_INFOPLIST_FILE: "NO"
         OTHER_LDFLAGS: "$(inherited) -framework Shared"
