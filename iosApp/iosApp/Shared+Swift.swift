@@ -4,7 +4,9 @@ import Shared
 /// Error surfaced to Swift when a Kotlin flow fails.
 struct SharedError: LocalizedError {
     let message: String
-    var errorDescription: String? { message }
+    var errorDescription: String? {
+        message
+    }
 }
 
 extension FlowWatcher {
