@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Vérifie qu'aucune dépendance interdite n'est référencée et que les permissions Android restent minimales.
+# Vérifie qu'aucune dépendance interdite n'est référencée et que les permissions Android/iOS restent minimales.
 # Usage : tools/check-deps.sh   (exit 1 en cas de violation)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -7,7 +7,8 @@ FORBIDDEN="$ROOT/.claude/hooks/forbidden-deps.txt"
 status=0
 
 echo "== Dépendances interdites =="
-BUILD_FILES=$(find "$ROOT" -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "libs.versions.toml" -o -name "Package.swift" -o -name "Podfile" -o -name "Package.resolved" \) -not -path "*/build/*" -not -path "*/.gradle/*" 2>/dev/null || true)
+# Le projet XcodeGen (project.yml) porte les paquets SPM : il est scanné comme un fichier de build.
+BUILD_FILES=$(find "$ROOT" -type f \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "libs.versions.toml" -o -name "Package.swift" -o -name "Podfile" -o -name "Package.resolved" -o -name "project.yml" -o -name "*.xcconfig" -o -name "*.entitlements" \) -not -path "*/build/*" -not -path "*/.gradle/*" -not -path "*/.git/*" 2>/dev/null || true)
 while IFS= read -r pat; do
   [ -z "$pat" ] && continue
   case "$pat" in \#*) continue ;; esac
@@ -30,18 +31,18 @@ for m in $(find "$ROOT/androidApp" -name AndroidManifest.xml -not -path "*/build
       fi
     fi
   done
-  grep -q 'allowBackup="true"' "$m" && { echo "VIOLATION: allowBackup=true dans $m"; status=1; }
-  grep -q 'usesCleartextTraffic="true"' "$m" && { echo "VIOLATION: usesCleartextTraffic=true dans $m"; status=1; }
+  grep -Eq 'allowBackup\s*=\s*["'"'"']true' "$m" && { echo "VIOLATION: allowBackup=true dans $m"; status=1; }
+  grep -Eq 'usesCleartextTraffic\s*=\s*["'"'"']true' "$m" && { echo "VIOLATION: usesCleartextTraffic=true dans $m"; status=1; }
 done
 
-echo "== Info.plist =="
-for p in $(find "$ROOT/iosApp" -name Info.plist -not -path "*/build/*" 2>/dev/null || true); do
-  grep -q 'NSAllowsArbitraryLoads' "$p" && { echo "VIOLATION: NSAllowsArbitraryLoads dans $p"; status=1; }
-  grep -Eq 'NSLocation|NSContactsUsageDescription|NSCalendarsUsageDescription' "$p" && [ ! -f "$ROOT/docs/adr-permissions.ok" ] && { echo "VIOLATION: permission non prévue dans $p"; status=1; }
+echo "== Info.plist / project.yml / entitlements =="
+for p in $(find "$ROOT/iosApp" \( -name Info.plist -o -name project.yml -o -name "*.xcconfig" -o -name "*.entitlements" \) -not -path "*/build/*" 2>/dev/null || true); do
+  grep -Eq 'NSAllowsArbitraryLoads|NSExceptionAllowsInsecureHTTPLoads' "$p" && { echo "VIOLATION: ATS assoupli dans $p"; status=1; }
+  grep -Eq 'NSLocation|NSContactsUsageDescription|NSCalendarsUsageDescription|INFOPLIST_KEY_NS(Location|Contacts|Calendars)' "$p" && [ ! -f "$ROOT/docs/adr-permissions.ok" ] && { echo "VIOLATION: permission non prévue dans $p"; status=1; }
 done
 
 echo "== Poids de modèles dans le dépôt =="
-if git -C "$ROOT" ls-files 2>/dev/null | grep -Eq '\.(tflite|litertlm|task|gguf|onnx|mlmodel|safetensors)$'; then
+if git -C "$ROOT" ls-files 2>/dev/null | grep -Eq '\.(tflite|litertlm|task|gguf|onnx|mlmodel|mlpackage|safetensors|bin)(/|$)'; then
   echo "VIOLATION: des poids de modèles sont versionnés"; status=1
 fi
 
