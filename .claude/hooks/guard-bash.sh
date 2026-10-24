@@ -30,8 +30,8 @@ fi
 if printf '%s' "$CMD" | grep -Eq 'chmod\s+(-R\s+)?777'; then
   deny "chmod 777"
 fi
-# Secrets : jamais affichés ni copiés
-if printf '%s' "$CMD" | grep -Eq '(\.jks|\.keystore|\.p12|\.p8|\.mobileprovision|keystore\.properties|local\.properties)(\s|$)' \
+# Secrets : jamais affichés ni copiés (signature, clés, .env, secrets/, gradle.properties utilisateur)
+if printf '%s' "$CMD" | grep -Eq '(\.jks|\.keystore|\.p12|\.p8|\.pem|\.cer|\.mobileprovision|keystore\.properties|local\.properties|\.gradle/gradle\.properties|(^|[/[:space:]])\.env([./[:space:]]|$)|secrets/)' \
    && printf '%s' "$CMD" | grep -Eq '(^|[;&|]\s*)(cat|less|more|head|tail|base64|xxd|cp|scp|curl|git\s+add)\s'; then
   deny "manipulation d'un fichier de signature ou de secret"
 fi
@@ -45,7 +45,7 @@ if [ -f "$FORBIDDEN_FILE" ]; then
   while IFS= read -r pat; do
     [ -z "$pat" ] && continue
     case "$pat" in \#*) continue ;; esac
-    if printf '%s' "$CMD" | grep -Fqi -- "$pat"; then
+    if printf '%s' "$CMD" | tr '[:upper:]' '[:lower:]' | grep -Fq -- "$(printf '%s' "$pat" | tr '[:upper:]' '[:lower:]')"; then
       deny "référence à une dépendance interdite ($pat) — voir docs/02-securite-rgpd.md"
     fi
   done < "$FORBIDDEN_FILE"

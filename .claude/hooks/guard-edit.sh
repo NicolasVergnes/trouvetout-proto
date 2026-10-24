@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse hook (Edit|Write) — refuse les modifications qui violent les règles sécurité/RGPD.
 set -euo pipefail
+shopt -s nocasematch
 INPUT="$(cat)"
 # Lecture d'un champ JSON depuis stdin : jq si présent, sinon python3.
 json_get() { # $1 = expression jq, $2 = chemin python équivalent (séparé par des points)
@@ -12,15 +13,17 @@ for k in '$2'.split('.'):
 print(d if isinstance(d,str) else '')"; fi
 }
 FILE="$(json_get '.tool_input.file_path // empty' 'tool_input.file_path')"
+# Contenu ajouté : Write.content, Edit.new_string et chaque edits[].new_string (éditions groupées).
 NEW="$(json_get '.tool_input.content // empty' 'tool_input.content')
-$(json_get '.tool_input.new_string // empty' 'tool_input.new_string')"
+$(json_get '.tool_input.new_string // empty' 'tool_input.new_string')
+$(if command -v jq >/dev/null 2>&1; then printf '%s' "$INPUT" | jq -r '[.tool_input.edits[]?.new_string // empty] | join("\n")'; fi)"
 [ -z "$FILE" ] && exit 0
 
 deny() { echo "Bloqué par .claude/hooks/guard-edit.sh : $1" >&2; exit 2; }
 
-# 1. Fichiers de secrets et de signature
+# 1. Fichiers de secrets et de signature (comparaison insensible à la casse)
 case "$FILE" in
-  *.jks|*.keystore|*.p12|*.p8|*.mobileprovision|*.pem|*/secrets/*|*/.env|*/.env.*|*keystore.properties)
+  *.jks|*.keystore|*.p12|*.p8|*.mobileprovision|*.pem|*.cer|*/secrets/*|*/.env|*/.env.*|*keystore.properties|*local.properties|*/.gradle/gradle.properties)
     deny "écriture dans un fichier de secret/signature ($FILE)";;
 esac
 
@@ -38,7 +41,7 @@ case "$FILE" in
       while IFS= read -r pat; do
         [ -z "$pat" ] && continue
         case "$pat" in \#*) continue ;; esac
-        if printf '%s' "$NEW" | grep -Fqi -- "$pat"; then
+        if printf '%s' "$NEW" | tr '[:upper:]' '[:lower:]' | grep -Fq -- "$(printf '%s' "$pat" | tr '[:upper:]' '[:lower:]')"; then
           deny "dépendance interdite ($pat) dans $FILE — aucune télémétrie ni SDK tiers (docs/02-securite-rgpd.md)"
         fi
       done < "$FORBIDDEN_FILE"

@@ -12,7 +12,7 @@ while IFS= read -r pat; do
   [ -z "$pat" ] && continue
   case "$pat" in \#*) continue ;; esac
   for f in $BUILD_FILES; do
-    if grep -Fqi -- "$pat" "$f"; then
+    if tr '[:upper:]' '[:lower:]' < "$f" | grep -Fq -- "$(printf '%s' "$pat" | tr '[:upper:]' '[:lower:]')"; then
       echo "VIOLATION: '$pat' dans $f"; status=1
     fi
   done
@@ -21,7 +21,7 @@ done < "$FORBIDDEN"
 echo "== Permissions Android =="
 ALLOWED_PERMS="android.permission.RECORD_AUDIO|android.permission.CAMERA|android.permission.POST_NOTIFICATIONS|android.permission.RECEIVE_BOOT_COMPLETED|android.permission.VIBRATE|android.permission.USE_BIOMETRIC|com.android.vending.BILLING|android.permission.SCHEDULE_EXACT_ALARM|android.permission.USE_EXACT_ALARM"
 for m in $(find "$ROOT/androidApp" -name AndroidManifest.xml -not -path "*/build/*" 2>/dev/null || true); do
-  grep -o 'android:name="[^"]*permission[^"]*"' "$m" | sed 's/android:name="//;s/"//' | while read -r p; do
+  { grep -o 'android:name="[^"]*permission[^"]*"' "$m" || true; } | sed 's/android:name="//;s/"//' | while read -r p; do
     if ! echo "$p" | grep -Eq "^($ALLOWED_PERMS)$"; then
       if [ "$p" = "android.permission.INTERNET" ] && [ -f "$ROOT/docs/adr-permissions.ok" ]; then
         echo "INFO: INTERNET autorisé par ADR"
