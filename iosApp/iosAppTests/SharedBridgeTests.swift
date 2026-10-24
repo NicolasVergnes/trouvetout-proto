@@ -1,3 +1,4 @@
+@testable import iosApp
 import Shared
 import XCTest
 
