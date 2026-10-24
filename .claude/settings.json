@@ -1,0 +1,115 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Bash(./gradlew *)",
+      "Bash(gradle *)",
+      "Bash(xcodebuild *)",
+      "Bash(xcrun *)",
+      "Bash(swift *)",
+      "Bash(swiftlint *)",
+      "Bash(swiftformat *)",
+      "Bash(adb *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(git switch *)",
+      "Bash(git branch *)",
+      "Bash(tools/*)",
+      "Bash(./tools/*)",
+      "Bash(python3 tools/*)",
+      "Bash(jq *)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(cat *)",
+      "Bash(wc *)",
+      "Bash(mkdir *)",
+      "WebFetch(domain:developer.android.com)",
+      "WebFetch(domain:developer.apple.com)",
+      "WebFetch(domain:kotlinlang.org)",
+      "WebFetch(domain:ai.google.dev)",
+      "WebFetch(domain:developers.google.com)",
+      "WebFetch(domain:huggingface.co)",
+      "WebFetch(domain:sqldelight.github.io)",
+      "WebFetch(domain:github.com)",
+      "Skill(*)",
+      "Agent(security-reviewer)",
+      "Agent(privacy-auditor)",
+      "Agent(android-reviewer)",
+      "Agent(ios-reviewer)",
+      "Agent(search-quality-evaluator)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(git rebase *)",
+      "Bash(git reset *)",
+      "Bash(rm *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(brew *)",
+      "Bash(npm *)",
+      "Bash(pip *)",
+      "WebFetch"
+    ],
+    "deny": [
+      "Read(./**/*.jks)",
+      "Read(./**/*.keystore)",
+      "Read(./**/*.p12)",
+      "Read(./**/*.p8)",
+      "Read(./**/*.mobileprovision)",
+      "Read(./**/*.cer)",
+      "Read(./**/*.pem)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./keystore.properties)",
+      "Read(./local.properties)",
+      "Read(~/.gradle/gradle.properties)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-edit.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
