@@ -30,7 +30,7 @@ jobs:
       - name: Make scripts executable
         run: chmod +x gradlew tools/*.sh .claude/hooks/*.sh
       - name: Build, test, lint
-        run: ./gradlew :shared:allTests :androidApp:assembleDebug :tools:build ktlintCheck detekt
+        run: ./gradlew :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :androidApp:assembleRelease :tools:build ktlintCheck detekt
       - name: Project checks (dependencies, permissions, network)
         run: |
           tools/check-deps.sh

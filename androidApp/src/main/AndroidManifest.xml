@@ -3,9 +3,12 @@
 
     <!-- No permissions in lot 0. Microphone, camera and notifications are requested at first use (H9). -->
 
+    <!-- Backups are disabled; the rules below additionally exclude every data domain (defence in depth, A9 is the only backup channel). -->
     <application
         android:name=".App"
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/full_backup_content"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"

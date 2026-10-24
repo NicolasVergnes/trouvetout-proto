@@ -9,8 +9,8 @@ GitHub Actions (Linux pour shared/Android, macOS pour iOS) et les scripts de con
 Dépôt : <https://github.com/NicolasVergnes/trouvetout-proto> (public, voir ADR-013).
 
 ## Construire
-- Prérequis : JDK 17, Android SDK (plateforme 36, build-tools 36) ; iOS : macOS + Xcode 16 + `brew install xcodegen`.
-- Android / shared : `./gradlew :shared:allTests :androidApp:assembleDebug :tools:build ktlintCheck detekt`
+- Prérequis : JDK 17, Android SDK (plateforme 37, build-tools 36) ; iOS : macOS + Xcode 16 + `brew install xcodegen swiftlint swiftformat`.
+- Android / shared : `./gradlew :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :androidApp:assembleRelease :tools:build ktlintCheck detekt`
 - iOS : `cd iosApp && xcodegen generate && xcodebuild test -project iosApp.xcodeproj -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone 16'`
 - Contrôles : `tools/check-deps.sh`, `tools/check-network.sh` ; corpus : `./gradlew :tools:evalParser :tools:evalSearch`
 
