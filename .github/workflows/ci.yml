@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "lot/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
+jobs:
+  shared-android:
+    name: shared + Android (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Make scripts executable
+        run: chmod +x gradlew tools/*.sh .claude/hooks/*.sh
+      - name: Build, test, lint
+        run: ./gradlew :shared:allTests :androidApp:assembleDebug :tools:build ktlintCheck detekt
+      - name: Project checks (dependencies, permissions, network)
+        run: |
+          tools/check-deps.sh
+          tools/check-network.sh
+      - name: Upload debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: androidApp-debug
+          path: androidApp/build/outputs/apk/debug/*.apk
+          retention-days: 7
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-reports
+          path: |
+            **/build/reports/**
+            **/build/test-results/**
+          retention-days: 7
+
+  ios:
+    name: shared (native) + iOS (macOS)
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Toolchain versions
+        run: |
+          xcodebuild -version
+          swiftlint version
+          swiftformat --version
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: SwiftLint / SwiftFormat
+        working-directory: iosApp
+        run: |
+          swiftlint lint --strict
+          swiftformat --lint .
+      - name: Kotlin/Native tests and framework
+        run: ./gradlew :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64
+      - name: Generate Xcode project
+        working-directory: iosApp
+        run: xcodegen generate
+      - name: Build and test on simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | first | .udid')
+          test -n "$UDID" && test "$UDID" != "null"
+          echo "Simulator: $UDID"
+          xcodebuild test \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -destination "id=$UDID" \
+            -resultBundlePath build/ios-tests.xcresult \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+      - name: Upload iOS results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-results
+          path: build/ios-tests.xcresult
+          retention-days: 7
