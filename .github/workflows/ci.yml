@@ -63,13 +63,13 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v5
+      - name: Install XcodeGen, SwiftLint and SwiftFormat
+        run: brew install xcodegen swiftlint swiftformat
       - name: Toolchain versions
         run: |
           xcodebuild -version
           swiftlint version
           swiftformat --version
-      - name: Install XcodeGen
-        run: brew install xcodegen
       - name: SwiftLint / SwiftFormat
         working-directory: iosApp
         run: |
