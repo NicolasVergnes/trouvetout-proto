@@ -1,0 +1,62 @@
+# Secrets et signature — ne jamais versionner
+*.jks
+*.keystore
+*.p12
+*.p8
+*.pem
+*.cer
+*.mobileprovision
+keystore.properties
+local.properties
+secrets/
+.env
+.env.*
+
+# Poids de modèles — livrés en packs, jamais dans le dépôt
+*.tflite
+*.litertlm
+*.task
+*.gguf
+*.onnx
+*.mlmodel
+*.mlpackage/
+*.safetensors
+models/weights/
+
+# Claude Code — réglages personnels et mémoire locale
+.claude/settings.local.json
+CLAUDE.local.md
+# claude-config/ est la copie de référence de .claude/ ; supprimable après installation
+
+# Gradle / Android
+.gradle/
+build/
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+.cxx/
+*.hprof
+
+# Xcode / iOS
+iosApp/**/xcuserdata/
+iosApp/**/*.xcuserstate
+iosApp/**/DerivedData/
+iosApp/**/Pods/
+iosApp/**/*.xcarchive
+iosApp/**/build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Rapports
+build/reports/
+corpus/audio/*.wav
