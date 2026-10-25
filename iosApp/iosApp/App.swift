@@ -33,5 +33,10 @@ final class AppContainer: ObservableObject {
             logger: NoopLogger.shared
         )
         shared = SharedFactory(config: config)
+        let factory = shared
+        // Opens the database off the main thread so the first capture (lot 3) is instant.
+        Task.detached(priority: .utility) {
+            _ = try? await factory.warmUp()
+        }
     }
 }

@@ -17,6 +17,18 @@ public class AndroidImageCodec : ImageCodec {
         maxSide: Int,
         quality: Int,
     ): EncodedImage? {
+        val oriented = decode(source, maxSide) ?: return null
+        val scaled = scaleDown(oriented, maxSide)
+        val out = ByteArrayOutputStream()
+        val written = scaled.compress(Bitmap.CompressFormat.JPEG, quality.coerceIn(0, MAX_QUALITY), out)
+        return if (written) EncodedImage(out.toByteArray(), scaled.width, scaled.height) else null
+    }
+
+    /** Decodes with a power-of-two subsampling close to [maxSide], then applies the EXIF orientation. */
+    private fun decode(
+        source: ByteArray,
+        maxSide: Int,
+    ): Bitmap? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(source, 0, source.size, bounds)
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
@@ -24,23 +36,22 @@ public class AndroidImageCodec : ImageCodec {
             inSampleSize =
                 sampleSize(max(bounds.outWidth, bounds.outHeight), maxSide)
         }
-        val decoded = BitmapFactory.decodeByteArray(source, 0, source.size, options) ?: return null
-        val oriented = applyOrientation(decoded, orientationOf(source))
-        val scale = min(1f, maxSide.toFloat() / max(oriented.width, oriented.height))
-        val scaled =
-            if (scale < 1f) {
-                Bitmap.createScaledBitmap(
-                    oriented,
-                    max(1, (oriented.width * scale).roundToInt()),
-                    max(1, (oriented.height * scale).roundToInt()),
-                    true,
-                )
-            } else {
-                oriented
-            }
-        val out = ByteArrayOutputStream()
-        if (!scaled.compress(Bitmap.CompressFormat.JPEG, quality.coerceIn(0, MAX_QUALITY), out)) return null
-        return EncodedImage(out.toByteArray(), scaled.width, scaled.height)
+        val decoded = BitmapFactory.decodeByteArray(source, 0, source.size, options)
+        return decoded?.let { applyOrientation(it, orientationOf(source)) }
+    }
+
+    private fun scaleDown(
+        bitmap: Bitmap,
+        maxSide: Int,
+    ): Bitmap {
+        val scale = min(1f, maxSide.toFloat() / max(bitmap.width, bitmap.height))
+        if (scale >= 1f) return bitmap
+        return Bitmap.createScaledBitmap(
+            bitmap,
+            max(1, (bitmap.width * scale).roundToInt()),
+            max(1, (bitmap.height * scale).roundToInt()),
+            true,
+        )
     }
 
     /** Largest power of two keeping the decoded long side at or above [maxSide] (then scaled precisely). */

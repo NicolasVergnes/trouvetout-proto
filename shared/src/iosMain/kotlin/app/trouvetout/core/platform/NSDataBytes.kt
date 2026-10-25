@@ -1,5 +1,6 @@
 package app.trouvetout.core.platform
 
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
@@ -7,7 +8,7 @@ import platform.Foundation.NSData
 import platform.Foundation.create
 import platform.posix.memcpy
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 internal fun ByteArray.toNSData(): NSData = if (isEmpty()) {
     NSData()
 } else {

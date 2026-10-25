@@ -18,6 +18,7 @@ import app.trouvetout.core.domain.usecase.ContainerCommands
 import app.trouvetout.core.domain.usecase.ItemCommands
 import app.trouvetout.core.domain.usecase.PlaceCommands
 import app.trouvetout.core.platform.createFileStore
+import kotlinx.coroutines.withContext
 
 /**
  * Composition root of the core: manual injection, one instance per process (ADR-012).
@@ -53,6 +54,12 @@ public class SharedFactory(
     public val photoStore: PhotoStore by lazy {
         PhotoStore(createFileStore(config.dataDirectory), config.imageCodec, photoIds::next)
     }
+
+    /**
+     * Opens the database and settles the device identity off the main thread, so the first capture does not
+     * pay the schema creation. Returns the device id; safe to call several times.
+     */
+    public suspend fun warmUp(): String = withContext(config.dispatchers.io) { deviceId }
 
     /** Releases held resources (database connection, loaded models). */
     public fun close() {
