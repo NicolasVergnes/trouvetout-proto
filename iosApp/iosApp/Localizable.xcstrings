@@ -60,7 +60,23 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Annuler"
+            "value": "Défaire"
+          }
+        }
+      }
+    },
+    "capture_card_edit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Correct the last entry"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corriger la dernière saisie"
           }
         }
       }
@@ -141,6 +157,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "→ %@"
+          }
+        }
+      }
+    },
+    "capture_card_stored_spoken": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stored in %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rangé dans %@"
           }
         }
       }
@@ -429,6 +461,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Impossible d'enregistrer."
+          }
+        }
+      }
+    },
+    "capture_problem_too_long": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That sentence is too long: a few words are enough."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette phrase est trop longue : quelques mots suffisent."
           }
         }
       }
@@ -925,6 +973,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sans lieu pour l'instant"
+          }
+        }
+      }
+    },
+    "storage_unavailable_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app could not prepare its private storage on this phone. Free some space or restart the phone, then open the app again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'app n'a pas pu préparer son espace privé sur ce téléphone. Libérez de la place ou redémarrez le téléphone, puis rouvrez l'app."
+          }
+        }
+      }
+    },
+    "storage_unavailable_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage unavailable"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stockage indisponible"
           }
         }
       }

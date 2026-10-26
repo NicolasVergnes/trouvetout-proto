@@ -6,10 +6,12 @@
 
     <string name="settings_busy">En cours…</string>
     <string name="action_back">Retour</string>
-    <string name="action_undo">Annuler</string>
+    <string name="action_undo">Défaire</string>
     <string name="action_close">Fermer</string>
 
     <string name="capture_hint">objet @ lieu</string>
+    <string name="capture_card_edit">Corriger la dernière saisie</string>
+    <string name="capture_problem_too_long">Cette phrase est trop longue : quelques mots suffisent.</string>
     <string name="capture_send">Enregistrer</string>
     <string name="capture_empty">Dites où vous posez un objet, par exemple « passeport dans le tiroir du haut ». Une question comme « où sont les clés » cherche.</string>
     <string name="capture_card_stored">→ %1$s</string>

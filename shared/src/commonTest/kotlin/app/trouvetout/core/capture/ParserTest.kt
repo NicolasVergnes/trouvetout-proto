@@ -162,4 +162,36 @@ class ParserTest {
         assertEquals(Intent.RETURN_FROM_LEND, parser.parse("Mark returned the tent").intent)
         assertEquals(Lang.EN, parser.parse("Mark returned the tent").lang)
     }
+
+    @Test
+    fun should_keep_count_nouns_as_objects_unless_they_measure_something() {
+        val boxes = fr("2 boîtes à outils dans le garage").items.single()
+        assertEquals("boîtes à outils", boxes.name)
+        assertEquals(2.0, boxes.quantity)
+        assertNull(boxes.unit)
+        val bags = en("3 bags in the attic").items.single()
+        assertEquals("bags", bags.name)
+        assertEquals(3.0, bags.quantity)
+        val nails = fr("2 boîtes de clous dans le bac jaune").items.single()
+        assertEquals("boîtes", nails.unit)
+        assertEquals("clous", nails.name)
+        val bit = en("10 mm drill bit in the toolbox").items.single()
+        assertEquals("mm", bit.unit)
+        assertEquals("drill bit", bit.name)
+    }
+
+    @Test
+    fun should_not_mistake_pronouns_or_object_names_for_people() {
+        assertTrue(en("She took the drill").intent != Intent.LEND)
+        assertTrue(en("He has the tent").intent != Intent.LEND)
+        val wrench = fr("j'ai prêté la clé à molette")
+        assertEquals(Intent.LEND, wrench.intent)
+        assertEquals(listOf("clé à molette"), wrench.items.map { it.name })
+        assertNull(wrench.person)
+        val neighbour = fr("j'ai prêté la perceuse à la voisine")
+        assertEquals("la voisine", neighbour.person)
+        val ready = fr("tente prête dans le garage")
+        assertEquals(Intent.STORE, ready.intent)
+        assertEquals("garage", ready.place)
+    }
 }

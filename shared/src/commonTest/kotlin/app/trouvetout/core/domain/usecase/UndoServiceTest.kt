@@ -229,4 +229,30 @@ class UndoServiceTest {
         assertEquals("TAKEN", location(drill).state, "the drill is out again, as before the put-back (U5)")
         assertEquals(garage, location(drill).place_id)
     }
+
+    @Test
+    fun should_undo_a_given_set_of_events_written_at_different_instants() = runTest {
+        val cave = place("cave")
+        val skis = item("skis", LocationRef.InPlace(cave))
+        val everything =
+            store.historyOf(
+                app.trouvetout.core.domain.model.EventSubject(
+                    app.trouvetout.core.domain.model.EventSubject.SubjectType.ITEM,
+                    skis,
+                ),
+            ) +
+                store.historyOf(
+                    app.trouvetout.core.domain.model.EventSubject(
+                        app.trouvetout.core.domain.model.EventSubject.SubjectType.PLACE,
+                        cave,
+                    ),
+                )
+        clock.tick()
+
+        val result = undo.undo(everything.distinctBy { it.id }, EventSource.TEXT).events()
+
+        assertEquals(setOf("ItemStored", "ItemDeleted", "PlaceDeleted"), result.map { it.type }.toSet())
+        assertEquals(0L, db.itemQueries.countActive().executeAsOne())
+        assertEquals(0L, db.placeQueries.countActive().executeAsOne())
+    }
 }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="path_separator" translatable="false"> › </string>
     <string name="app_name" translatable="false">TrouveTout</string>
 
     <string name="action_ok">OK</string>
@@ -9,6 +10,8 @@
     <string name="action_close">Close</string>
 
     <string name="capture_hint">object @ place</string>
+    <string name="capture_card_edit">Correct the last entry</string>
+    <string name="capture_problem_too_long">That sentence is too long: a few words are enough.</string>
     <string name="capture_send">Record</string>
     <string name="capture_empty">Say where you put something, for example "passport in the top drawer". A question like "where are the keys" searches.</string>
     <string name="capture_card_stored">→ %1$s</string>

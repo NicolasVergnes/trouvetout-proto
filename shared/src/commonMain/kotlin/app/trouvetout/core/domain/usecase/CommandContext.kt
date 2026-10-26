@@ -34,7 +34,7 @@ internal class CommandContext(
         deviceId = deviceId,
         payload = payload,
         source = source,
-        rawInput = rawInput,
+        rawInput = rawInput?.take(MAX_TEXT),
     )
 
     suspend fun commit(events: List<Event>): CommandResult {
@@ -75,9 +75,14 @@ internal class CommandContext(
     companion object {
         fun rejected(reason: Rejection): CommandResult = CommandResult.Rejected(reason)
 
-        fun cleanName(name: String): String? = name.trim().ifEmpty { null }
+        /** Trimmed, non-empty and no longer than [MAX_TEXT]; otherwise null (rejected as a blank name). */
+        fun cleanName(name: String): String? = name.trim().takeIf { it.isNotEmpty() && it.length <= MAX_TEXT }
 
-        fun cleanTags(tags: List<String>): List<String> = tags.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        fun cleanTags(tags: List<String>): List<String> =
+            tags.map { it.trim().take(MAX_TEXT) }.filter { it.isNotEmpty() }.distinct()
+
+        /** Longest text a single field of the journal accepts (an export line holds 64 KiB). */
+        const val MAX_TEXT: Int = 1_024
 
         fun LocationRef.toStored(itemId: String): EventPayload.ItemStored = when (this) {
             is LocationRef.InPlace -> EventPayload.ItemStored(itemId, placeId = placeId)

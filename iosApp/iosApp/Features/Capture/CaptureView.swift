@@ -4,7 +4,6 @@ import SwiftUI
 /// Home screen since lot 3: one field to say where things go, a confirmation card, the objects below.
 struct CaptureView: View {
     @StateObject private var viewModel: CaptureViewModel
-    @FocusState private var fieldFocused: Bool
 
     init(container: AppContainer) {
         _viewModel = StateObject(wrappedValue: CaptureViewModel(container: container))
@@ -12,25 +11,30 @@ struct CaptureView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            field
-            if !viewModel.suggestions.isEmpty {
-                suggestionRow
+            Group {
+                field
+                if !viewModel.suggestions.isEmpty {
+                    suggestionRow
+                }
+                if let card = viewModel.card {
+                    CaptureCardView(card: card, onEdit: { viewModel.editLast() }, onUndo: { viewModel.undo() })
+                        .task(id: card.token) {
+                            // VoiceOver users read at their own pace: the card then stays until they act.
+                            guard !UIAccessibility.isVoiceOverRunning else { return }
+                            try? await Task.sleep(nanoseconds: 3_000_000_000)
+                            viewModel.dismissCard(token: card.token)
+                        }
+                }
+                if let problem = viewModel.problem {
+                    Text(problemKey(problem))
+                        .font(.callout)
+                        .foregroundStyle(.red)
+                        .accessibilityAddTraits(.updatesFrequently)
+                }
             }
-            if let card = viewModel.card {
-                CaptureCardView(card: card, onEdit: viewModel.editLast, onUndo: viewModel.undo)
-                    .task(id: card.token) {
-                        try? await Task.sleep(nanoseconds: 3_000_000_000)
-                        viewModel.dismissCard(token: card.token)
-                    }
-            }
-            if let problem = viewModel.problem {
-                Text(problemKey(problem))
-                    .font(.callout)
-                    .foregroundStyle(.red)
-            }
+            .padding(.horizontal, 16)
             itemList
         }
-        .padding(.horizontal, 16)
         .sheet(isPresented: pendingPresented) {
             if let pending = viewModel.pending {
                 DecisionSheet(pending: pending, viewModel: viewModel)
@@ -38,19 +42,24 @@ struct CaptureView: View {
         }
     }
 
+    private var typedText: Binding<String> {
+        Binding(get: { viewModel.input }, set: { viewModel.typed($0) })
+    }
+
     private var field: some View {
         HStack {
-            TextField("capture_hint", text: $viewModel.input)
+            TextField("capture_hint", text: typedText)
                 .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
                 .submitLabel(.done)
-                .focused($fieldFocused)
                 .onSubmit { viewModel.submit() }
-                .disabled(viewModel.busy)
             Button {
                 viewModel.submit()
             } label: {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.title2)
+                    .frame(minWidth: 44, minHeight: 44)
             }
             .accessibilityLabel("capture_send")
             .disabled(viewModel.input.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.busy)
@@ -63,6 +72,7 @@ struct CaptureView: View {
                 ForEach(viewModel.suggestions, id: \.id) { candidate in
                     Button(candidate.name) { viewModel.pick(candidate) }
                         .buttonStyle(.bordered)
+                        .controlSize(.large)
                 }
             }
         }
@@ -84,12 +94,10 @@ struct CaptureView: View {
                 Spacer()
                 Button("action_close") { viewModel.dismissMessages() }
             }
+            .padding(.horizontal, 16)
         }
         if shown.isEmpty {
-            Text(query == nil ? "capture_empty" : "capture_search_empty")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .padding(.top, 24)
+            emptyText(searching: query != nil)
             Spacer()
         } else {
             List(shown, id: \.item.id) { view in
@@ -100,9 +108,25 @@ struct CaptureView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityElement(children: .combine)
             }
             .listStyle(.plain)
         }
+    }
+
+    @ViewBuilder
+    private func emptyText(searching: Bool) -> some View {
+        Group {
+            if searching {
+                Text("capture_search_empty")
+            } else {
+                Text("capture_empty")
+            }
+        }
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 16)
+        .padding(.top, 24)
     }
 
     private var pendingPresented: Binding<Bool> {
@@ -121,9 +145,11 @@ struct CaptureView: View {
         case .taken: NSLocalizedString("state_taken", comment: "")
         case .lent: String(format: NSLocalizedString("state_lent", comment: ""), view.location.lentTo ?? "")
         default:
-            view.path.isUnknown
-                ? NSLocalizedString("state_unknown_place", comment: "")
-                : view.path.labels.joined(separator: " › ")
+            if view.path.isUnknown {
+                NSLocalizedString("state_unknown_place", comment: "")
+            } else {
+                view.path.labels.joined(separator: " › ")
+            }
         }
     }
 
@@ -133,6 +159,7 @@ struct CaptureView: View {
         case .placeUndecided: "capture_problem_place"
         case .itemNotFound: "capture_problem_item"
         case .personMissing: "capture_problem_person"
+        case .inputTooLong: "capture_problem_too_long"
         default: "capture_problem_rejected"
         }
     }
@@ -145,19 +172,27 @@ private struct CaptureCardView: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading) {
-                Text(card.itemNames.joined(separator: ", "))
-                    .font(.headline)
-                Text(detail)
-                    .font(.subheadline)
+            Button(action: onEdit) {
+                VStack(alignment: .leading) {
+                    Text(card.itemNames.joined(separator: ", "))
+                        .font(.headline)
+                    Text(detail)
+                        .font(.subheadline)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            Spacer()
+            .buttonStyle(.plain)
+            .accessibilityHint("capture_card_edit")
             Button("action_undo", action: onUndo)
         }
         .padding(12)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onEdit)
+        .accessibilityElement(children: .contain)
+        .onAppear {
+            let spoken = card.itemNames.joined(separator: ", ") + ", " + spokenDetail
+            UIAccessibility.post(notification: .announcement, argument: spoken)
+        }
     }
 
     private var detail: String {
@@ -168,6 +203,15 @@ private struct CaptureCardView: View {
         case .return_: placeOr("capture_card_put_back")
         default: placeOr("capture_card_no_place")
         }
+    }
+
+    /// The arrow of `capture_card_stored` is for the eye; VoiceOver hears « rangé dans … ».
+    private var spokenDetail: String {
+        let movement = card.intent == .take || card.intent == .lend || card.intent == .returnFromLend
+        if let place = card.placeText, !movement {
+            return String(format: NSLocalizedString("capture_card_stored_spoken", comment: ""), place)
+        }
+        return detail
     }
 
     private func placeOr(_ fallbackKey: String) -> String {
@@ -225,7 +269,7 @@ private struct DecisionSheet: View {
             ForEach(ambiguous.suggestions, id: \.candidate.id) { match in
                 Button(String(format: NSLocalizedString("capture_place_attach", comment: ""), match.candidate.name)) {
                     viewModel.choosePlace(
-                        PlaceChoice.Existing(
+                        PlaceChoiceExisting(
                             id: match.candidate.id,
                             isContainer: match.candidate.isContainer,
                             rememberAlias: true
@@ -249,15 +293,15 @@ private struct DecisionSheet: View {
         }
     }
 
-    private func creationChoice(proposal: CaptureProposal, resolution: PlaceResolution) -> PlaceChoice.CreateNew {
+    private func creationChoice(proposal: CaptureProposal, resolution: PlaceResolution) -> PlaceChoiceCreateNew {
         if let unknown = resolution as? PlaceResolutionUnknown {
-            return PlaceChoice.CreateNew(
+            return PlaceChoiceCreateNew(
                 names: unknown.names,
                 underId: unknown.under?.candidate.id,
                 underIsContainer: unknown.under?.candidate.isContainer ?? false
             )
         }
-        return PlaceChoice.CreateNew(
+        return PlaceChoiceCreateNew(
             names: [proposal.parse.place ?? ""],
             underId: nil,
             underIsContainer: false

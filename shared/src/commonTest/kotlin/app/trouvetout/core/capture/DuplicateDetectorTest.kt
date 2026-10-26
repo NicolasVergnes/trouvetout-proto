@@ -27,4 +27,18 @@ class DuplicateDetectorTest {
         val matches = detector.find("perceuse sans fils")
         assertEquals("2", matches.first().itemId)
     }
+
+    @Test
+    fun should_not_merge_names_that_differ_by_a_number_or_a_last_letter() {
+        val people = DuplicateDetector(listOf("a" to "passeport de Léa", "7" to "carton 7"))
+        assertEquals(emptyList(), people.find("passeport de Léo").map { it.itemId })
+        assertEquals(emptyList(), people.find("carton 8").map { it.itemId })
+        assertEquals(
+            listOf("a"),
+            people.find("passeports de léa").map {
+                it.itemId
+            },
+            "plural and accents are tolerated",
+        )
+    }
 }

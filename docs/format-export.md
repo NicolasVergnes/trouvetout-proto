@@ -168,7 +168,8 @@ hors des sauvegardes système, avec sa miniature et son empreinte SHA-256.
 Tout ce qui s'y trouve a été saisi par l'utilisateur ou dérivé de sa saisie ; rien ne provient d'un capteur, d'un compte,
 d'un contact ou d'un identifiant système :
 
-- le texte libre tapé ou dicté : `name`, `description`, `tags`, noms et alias de lieux, libellés de contenants, et la
+- le texte libre tapé ou dicté : `name`, `description`, `tags`, noms et alias de lieux (y compris les alias mémorisés
+  lors d'une désambiguïsation, B7), libellés de contenants, et la
   phrase complète `rawInput` **telle quelle** (elle peut contenir tout ce que l'utilisateur a dit) ;
 - les prénoms ou noms de tiers saisis lors d'un prêt (`ItemLent.to`, `location_state.lent_to`) ;
 - les horodatages d'activité (`at`, `since`, `created_at`, `fire_at`, en millisecondes UTC) ;

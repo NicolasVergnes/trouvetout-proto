@@ -51,17 +51,17 @@ public class PlaceResolver(
     private val extraScorer: ((String, String) -> Double)? = null,
 ) {
     private val byId = candidates.associateBy { it.id }
-    private val rules = Rules.of(lang)
     private val levelLinks = Phrases(if (lang == Lang.FR) FR_LEVEL_LINKS else EN_LEVEL_LINKS)
 
     public fun resolve(placeText: String): PlaceResolution {
-        val text = stripPosition(placeText)
+        val text = placeName(placeText, lang)
         val whole = rank(text)
-        val best = whole.firstOrNull()
-        return if (best != null && best.score >= RESOLVED) {
-            PlaceResolution.Resolved(best)
-        } else {
-            walk(text) ?: suggestOrCreate(text, whole)
+        val top = whole.takeWhile { it.score >= RESOLVED }
+        return when {
+            // Two locations scoring the same (« tiroir » in two rooms): ask, never pick one (B7).
+            top.size >= 2 && top[0].score - top[1].score < TIE -> PlaceResolution.Ambiguous(top.take(MAX_SUGGESTIONS))
+            top.isNotEmpty() -> PlaceResolution.Resolved(top[0])
+            else -> walk(text) ?: suggestOrCreate(text, whole)
         }
     }
 
@@ -181,18 +181,27 @@ public class PlaceResolver(
         it.score >= RESOLVED && (parent == null || it.candidate.parentId == parent.candidate.id)
     }
 
-    /** A kept position preposition is dropped for matching (« sous le canapé » is looked up as « canapé »). */
-    private fun stripPosition(text: String): String {
-        val toks = Tokens.tokenize(text)
-        val n = rules.positionPrepositions.matchAt(toks, 0)
-        if (n == 0 || n >= toks.size) return text.trim()
-        var rest = toks.drop(n)
-        while (rest.isNotEmpty() && rest[0].key in rules.lex.articles) rest = rest.drop(1)
-        return Tokens.render(rest).ifEmpty { text.trim() }
-    }
-
     public companion object {
         public const val RESOLVED: Double = 0.85
+        private const val TIE = 1e-9
+
+        /**
+         * The name a dictated place gets when created or remembered: a kept position preposition and the article
+         * after it are dropped (« sous le canapé » → « canapé »), the rest is unchanged.
+         */
+        public fun placeName(
+            text: String,
+            lang: Lang,
+        ): String {
+            val rules = Rules.of(lang)
+            val toks = Tokens.tokenize(text)
+            val n = rules.positionPrepositions.matchAt(toks, 0)
+            if (n == 0 || n >= toks.size) return text.trim()
+            var rest = toks.drop(n)
+            while (rest.isNotEmpty() && rest[0].key in rules.lex.articles) rest = rest.drop(1)
+            return Tokens.render(rest).ifEmpty { text.trim() }
+        }
+
         public const val SUGGEST: Double = 0.6
         public const val MAX_SUGGESTIONS: Int = 5
         private const val OUT_OF_SCOPE = 0.9

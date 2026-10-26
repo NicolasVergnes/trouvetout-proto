@@ -23,6 +23,10 @@ public data class ItemTarget(
 ) {
     /** An existing item close enough to act on without asking. */
     public val confident: DuplicateMatch? get() = matches.firstOrNull { it.score >= CaptureService.AUTO_ITEM }
+
+    /** A14 / movements: the user must choose when a store has look-alikes or a movement has no confident target. */
+    public fun needsDecision(movesExisting: Boolean): Boolean =
+        if (movesExisting) confident == null else matches.isNotEmpty()
 }
 
 /** Everything the confirmation card needs before anything is written (B6, B7). */
@@ -31,10 +35,16 @@ public data class CaptureProposal(
     /** Null when the sentence names no place. */
     val place: PlaceResolution?,
     val targets: List<ItemTarget>,
+    /** Set when the sentence cannot be captured at all (too long); [CaptureService.commit] refuses it. */
+    val problem: CaptureProblem? = null,
 ) {
     public val movesExistingItems: Boolean get() = parse.intent in MOVEMENTS
     public val needsPlaceDecision: Boolean get() = place != null && place !is PlaceResolution.Resolved
-    public val needsItemDecision: Boolean get() = movesExistingItems && targets.any { it.confident == null }
+    public val needsItemDecision: Boolean get() = targets.any { it.needsDecision(movesExistingItems) }
+
+    /** Index of the next target to ask the user about, skipping the ones in [answered]; null when none is left. */
+    public fun nextQuestion(answered: List<Int>): Int? =
+        targets.indices.firstOrNull { it !in answered && targets[it].needsDecision(movesExistingItems) }
 
     private companion object {
         val MOVEMENTS = setOf(Intent.TAKE, Intent.RETURN, Intent.MOVE_TO, Intent.LEND, Intent.RETURN_FROM_LEND)
@@ -64,7 +74,14 @@ public enum class CaptureProblem {
     ITEM_NOT_FOUND,
     PERSON_MISSING,
     COMMAND_REJECTED,
+    INPUT_TOO_LONG,
 }
+
+/** The user's answer for one target of a proposal: act on [existingId], or null to create a new object. */
+public data class ItemChoice(
+    val index: Int,
+    val existingId: String?,
+)
 
 public sealed interface CaptureOutcome {
     public data class Recorded(
@@ -100,20 +117,34 @@ public class CaptureService internal constructor(
         text: String,
         lang: Lang? = null,
     ): CaptureProposal = withContext(dispatcher) {
-        val snapshot = snapshot()
         val language = lang ?: defaultLang
+        // A sentence is a few words: anything longer is refused before any quadratic comparison runs (and before
+        // a rawInput that no export line could hold is written).
+        if (text.length > MAX_INPUT_CHARS || Tokens.tokenize(text).size > MAX_INPUT_TOKENS) {
+            return@withContext tooLong(text, language)
+        }
+        val snapshot = snapshot()
         val parse = Parser(snapshot.itemNames.map { it.second }, language).parse(text, lang)
+        if (parse.items.size > MAX_MENTIONS) return@withContext tooLong(text, language)
         val place = parse.place?.let { PlaceResolver(snapshot.locations, parse.lang).resolve(it) }
         val detector = DuplicateDetector(snapshot.itemNames)
         val targets = parse.items.map { mention -> ItemTarget(mention, detector.find(mention.name)) }
         CaptureProposal(parse, place, targets)
     }
 
+    private fun tooLong(
+        text: String,
+        language: Lang,
+    ): CaptureProposal {
+        val parse = ParseResult(Intent.UNKNOWN, emptyList(), null, null, null, language, 0f, text)
+        return CaptureProposal(parse, null, emptyList(), CaptureProblem.INPUT_TOO_LONG)
+    }
+
     /** Autocomplete of places and containers while typing (B4). */
     public suspend fun suggestPlaces(
         prefix: String,
         limit: Int = PlaceResolver.MAX_SUGGESTIONS,
-    ): List<LocationCandidate> = withContext(dispatcher) { PlaceResolver(snapshot().locations).suggest(prefix, limit) }
+    ): List<LocationCandidate> = withContext(dispatcher) { PlaceResolver(locations()).suggest(prefix, limit) }
 
     /**
      * Writes the proposal. [placeChoice] is required when [CaptureProposal.needsPlaceDecision]; [itemChoices] gives,
@@ -122,29 +153,48 @@ public class CaptureService internal constructor(
     public suspend fun commit(
         proposal: CaptureProposal,
         placeChoice: PlaceChoice? = null,
-        itemChoices: List<String?> = emptyList(),
+        itemChoices: List<ItemChoice> = emptyList(),
         source: EventSource = EventSource.TEXT,
     ): CaptureOutcome = withContext(dispatcher) {
         val parse = proposal.parse
+        proposal.problem?.let { return@withContext CaptureOutcome.Refused(it) }
         when (parse.intent) {
             Intent.UNKNOWN -> return@withContext CaptureOutcome.Refused(CaptureProblem.NOTHING_UNDERSTOOD)
             Intent.QUERY -> return@withContext CaptureOutcome.Search(parse.query ?: parse.input)
             else -> Unit
         }
-        if (parse.intent == Intent.LEND && parse.person.isNullOrBlank()) {
-            return@withContext CaptureOutcome.Refused(CaptureProblem.PERSON_MISSING)
-        }
+        // Every refusal that can be known up front is raised before the first write (the commit is not transactional).
+        val existingFor =
+            proposal.targets.mapIndexed { index, target ->
+                itemChoices.firstOrNull { it.index == index }?.existingId
+                    ?: target.confident?.itemId?.takeIf { proposal.movesExistingItems }
+            }
+        val upFront = refusalBeforeWriting(proposal, placeChoice, existingFor)
+        if (upFront != null) return@withContext CaptureOutcome.Refused(upFront)
         val writer = Writer(parse, source)
         val location =
             writer.location(proposal, placeChoice)
                 ?: return@withContext CaptureOutcome.Refused(CaptureProblem.PLACE_UNDECIDED)
         for ((index, target) in proposal.targets.withIndex()) {
-            val existing =
-                itemChoices.getOrNull(index) ?: target.confident?.itemId?.takeIf { proposal.movesExistingItems }
-            val problem = writer.apply(target.mention, existing, location.ref)
+            val problem = writer.apply(target.mention, existingFor[index], location.ref)
             if (problem != null) return@withContext CaptureOutcome.Refused(problem)
         }
         CaptureOutcome.Recorded(writer.events, writer.itemIds, location.ref)
+    }
+
+    private fun refusalBeforeWriting(
+        proposal: CaptureProposal,
+        placeChoice: PlaceChoice?,
+        existingFor: List<String?>,
+    ): CaptureProblem? {
+        val parse = proposal.parse
+        return when {
+            parse.intent == Intent.LEND && parse.person.isNullOrBlank() -> CaptureProblem.PERSON_MISSING
+            proposal.movesExistingItems && existingFor.any { it == null } -> CaptureProblem.ITEM_NOT_FOUND
+            proposal.needsPlaceDecision && placeChoice == null -> CaptureProblem.PLACE_UNDECIDED
+            parse.intent == Intent.MOVE_TO && proposal.place == null -> CaptureProblem.PLACE_UNDECIDED
+            else -> null
+        }
     }
 
     private class Located(
@@ -174,7 +224,9 @@ public class CaptureService internal constructor(
                 }
             return when (decided) {
                 is PlaceChoice.Existing -> {
-                    if (decided.rememberAlias && !decided.isContainer) rememberAlias(decided.id, parse.place.orEmpty())
+                    if (decided.rememberAlias && !decided.isContainer) {
+                        rememberAlias(decided.id, PlaceResolver.placeName(parse.place.orEmpty(), parse.lang))
+                    }
                     Located(
                         if (decided.isContainer) {
                             LocationRef.InContainer(
@@ -312,23 +364,26 @@ public class CaptureService internal constructor(
         val itemNames: List<Pair<String, String>>,
     )
 
-    private fun snapshot(): Snapshot {
+    private fun snapshot(): Snapshot = Snapshot(
+        locations = locations(),
+        itemNames = db.itemQueries.selectActive().executeAsList().map { it.toItem() }.map { it.id to it.name },
+    )
+
+    private fun locations(): List<LocationCandidate> {
         val placeRows = db.placeQueries.selectActive().executeAsList().map { it.toPlace() }
         val containerRows = db.containerQueries.selectActive().executeAsList().map { it.toContainer() }
-        val itemRows = db.itemQueries.selectActive().executeAsList().map { it.toItem() }
-        return Snapshot(
-            locations =
-                placeRows.map { LocationCandidate(it.id, it.name, it.aliases, it.parentId, isContainer = false) } +
-                    containerRows.map {
-                        LocationCandidate(it.id, it.label, emptyList(), it.placeId, isContainer = true)
-                    },
-            itemNames = itemRows.map { it.id to it.name },
-        )
+        return placeRows.map { LocationCandidate(it.id, it.name, it.aliases, it.parentId, isContainer = false) } +
+            containerRows.map { LocationCandidate(it.id, it.label, emptyList(), it.placeId, isContainer = true) }
     }
 
     public companion object {
         /** Similarity from which an existing item is acted on without asking (« je prends la perceuse »). */
         public const val AUTO_ITEM: Double = 0.85
+
+        /** Bounds of one captured sentence; well under the 64 KiB an export line may hold. */
+        public const val MAX_INPUT_CHARS: Int = 500
+        public const val MAX_INPUT_TOKENS: Int = 80
+        public const val MAX_MENTIONS: Int = 20
 
         private val CONTAINER_WORDS =
             setOf(

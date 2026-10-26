@@ -27,6 +27,9 @@ import app.trouvetout.core.log.LogLevel
 import app.trouvetout.core.platform.FileStore
 import app.trouvetout.core.platform.createFileStore
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -158,8 +161,12 @@ public class SharedFactory(
         DATA_DIRECTORIES.filter { files.deleteDirectory(it) }
     }
 
+    /** Scope for the host's long-lived flow collections (Swift bridge); cancelled by [close]. */
+    public val uiScope: CoroutineScope = CoroutineScope(SupervisorJob() + config.dispatchers.default)
+
     /** Releases held resources (database connection, loaded models). */
     public fun close() {
+        uiScope.cancel()
         openedDriver?.close()
         openedDriver = null
     }

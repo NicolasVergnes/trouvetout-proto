@@ -22,7 +22,7 @@ internal object Tokens {
     fun tokenize(text: String): List<Tok> {
         val unified = text.replace('’', '\'').replace('‘', '\'').replace('`', '\'')
         val out = ArrayList<Tok>()
-        for (word in unified.split(' ', '\t', '\n', ' ').filter { it.isNotEmpty() }) {
+        for (word in unified.split(' ', '\t', '\n', '\r', '\u00A0', '\u202F', '\u2009').filter { it.isNotEmpty() }) {
             emitWord(word, out)
         }
         return out

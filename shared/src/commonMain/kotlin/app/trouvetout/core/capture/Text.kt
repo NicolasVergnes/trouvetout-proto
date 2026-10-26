@@ -83,18 +83,52 @@ internal object Text {
         return previous[b.length]
     }
 
-    /** 1.0 for identical strings (after folding), 0.0 for nothing in common; tolerant to accents and case. */
+    /**
+     * 1.0 for identical strings once folded and singularised, 0.0 for nothing in common. Word by word when both
+     * sides have the same number of words: the weakest word decides, and a number must match exactly, so
+     * « carton 8 » is not « carton 7 » and « passeport de Léo » is not « passeport de Léa ».
+     */
     fun similarity(
         a: String,
         b: String,
     ): Double {
-        val x = fold(a).trim()
-        val y = fold(b).trim()
-        if (x == y) return 1.0
+        val x = normalize(a)
+        val y = normalize(b)
         val longest = maxOf(x.length, y.length)
-        if (longest == 0) return 1.0
-        return 1.0 - levenshtein(x, y).toDouble() / longest
+        return when {
+            x == y -> 1.0
+            // A length gap alone caps the score below any threshold: skip the quadratic distance.
+            kotlin.math.abs(x.length - y.length) > longest * MAX_LENGTH_GAP -> 0.0
+            else -> wordAware(x, y, 1.0 - levenshtein(x, y).toDouble() / longest)
+        }
     }
+
+    private fun wordAware(
+        x: String,
+        y: String,
+        whole: Double,
+    ): Double {
+        val wordsA = x.split(' ')
+        val wordsB = y.split(' ')
+        if (wordsA.size != wordsB.size) return whole
+        return minOf(whole, wordsA.indices.minOf { wordSimilarity(wordsA[it], wordsB[it]) })
+    }
+
+    private fun wordSimilarity(
+        p: String,
+        q: String,
+    ): Double {
+        if (p == q) return 1.0
+        if (p.any(Char::isDigit) || q.any(Char::isDigit)) return 0.0
+        return 1.0 - levenshtein(p, q).toDouble() / maxOf(p.length, q.length)
+    }
+
+    /** Folded, single-spaced, each word without its plural mark (« clés » and « clé » are one word). */
+    private fun normalize(text: String): String =
+        fold(text).trim().split(WHITESPACE).filter { it.isNotEmpty() }.joinToString(" ", transform = ::singular)
+
+    private fun singular(word: String): String =
+        if (word.length > MIN_PLURAL_LENGTH && (word.endsWith('s') || word.endsWith('x'))) word.dropLast(1) else word
 
     /** Jaccard index of the folded word sets, ignoring one-letter words (articles, elisions). */
     fun tokenJaccard(
@@ -108,6 +142,11 @@ internal object Text {
         return (x intersect y).size.toDouble() / union
     }
 
+    /** Words of more than one letter, plus numbers (« carton 7 » keeps its 7). */
     private fun words(text: String): Set<String> =
-        fold(text).split(' ', '\'', '-', ',').filter { it.length > 1 }.toSet()
+        fold(text).split(' ', '\'', '-', ',').filter { it.length > 1 || it.any(Char::isDigit) }.map(::singular).toSet()
+
+    private val WHITESPACE = Regex("\\s+")
+    private const val MIN_PLURAL_LENGTH = 3
+    private const val MAX_LENGTH_GAP = 0.4
 }

@@ -112,7 +112,10 @@ class CaptureServiceTest {
         val proposal = service.propose("perceuse dans la cave")
         assertEquals(first.itemIds, proposal.targets.single().matches.map { it.itemId })
         val choice = (proposal.place as PlaceResolution.Unknown).let { PlaceChoice.CreateNew(it.names, null, false) }
-        val moved = assertIs<CaptureOutcome.Recorded>(service.commit(proposal, choice, itemChoices = first.itemIds))
+        val moved =
+            assertIs<CaptureOutcome.Recorded>(
+                service.commit(proposal, choice, itemChoices = listOf(ItemChoice(0, first.itemIds.single()))),
+            )
 
         assertEquals(1, items().size)
         assertEquals(moved.location, LocationRef.InPlace(location(first.itemIds.single()).place_id!!))
@@ -166,5 +169,79 @@ class CaptureServiceTest {
         assertEquals(-1L, CaptureService.containerNumber("boîte rouge"))
         assertNull(CaptureService.containerNumber("étagère du fond"))
         assertEquals(3L, CaptureService.containerNumber("box 3"))
+    }
+
+    @Test
+    fun should_refuse_before_writing_anything_when_the_item_of_a_movement_is_unknown() = runTest {
+        val proposal = service.propose("perceuse remise au garage")
+        val choice = (proposal.place as PlaceResolution.Unknown).let { PlaceChoice.CreateNew(it.names, null, false) }
+
+        assertEquals(CaptureOutcome.Refused(CaptureProblem.ITEM_NOT_FOUND), service.commit(proposal, choice))
+
+        assertTrue(places().isEmpty(), "no place created by a refused capture")
+        assertEquals(0L, db.eventQueries.count().executeAsOne())
+    }
+
+    @Test
+    fun should_apply_each_item_choice_to_its_own_target() = runTest {
+        say("perceuse dans le garage")
+        val tent = assertIs<CaptureOutcome.Recorded>(say("tente dans la cave")).itemIds.single()
+        clock.tick()
+
+        val proposal = service.propose("perceuse et tente dans le salon")
+        assertEquals(2, proposal.targets.size)
+        val choice = (proposal.place as PlaceResolution.Unknown).let { PlaceChoice.CreateNew(it.names, null, false) }
+        // First target: create a second drill; second target: move the existing tent.
+        assertIs<CaptureOutcome.Recorded>(service.commit(proposal, choice, itemChoices = listOf(ItemChoice(1, tent))))
+
+        assertEquals(3, items().size)
+        val salon = places().single { it.name == "salon" }
+        assertEquals(salon.id, location(tent).place_id)
+    }
+
+    @Test
+    fun should_remember_the_alias_without_its_position_preposition() = runTest {
+        say("tapis dans le salon")
+        clock.tick()
+        val proposal = service.propose("ballon sous le canapé du salon")
+        val salon = places().single()
+        assertIs<CaptureOutcome.Recorded>(
+            service.commit(proposal, PlaceChoice.Existing(salon.id, isContainer = false, rememberAlias = true)),
+        )
+        assertTrue(places().single().aliases.contains("canapé du salon"), places().single().aliases)
+        assertTrue(!places().single().aliases.contains("sous"), places().single().aliases)
+    }
+
+    @Test
+    fun should_refuse_an_overlong_sentence_before_any_work() = runTest {
+        val wall = "a".repeat(100_000)
+        val proposal = service.propose("$wall dans le garage")
+        assertEquals(CaptureProblem.INPUT_TOO_LONG, proposal.problem)
+        assertEquals(CaptureOutcome.Refused(CaptureProblem.INPUT_TOO_LONG), service.commit(proposal))
+        val list = (1..10_000).joinToString(", ") { "objet $it" }
+        assertEquals(CaptureProblem.INPUT_TOO_LONG, service.propose("$list dans le garage").problem)
+        assertEquals(0L, db.eventQueries.count().executeAsOne())
+    }
+
+    @Test
+    fun should_keep_hostile_characters_as_plain_text() = runTest {
+        val nasty = "clé ';\" -- DROP TABLE item; % * 🔑 ‏ dans le garage"
+        val outcome = assertIs<CaptureOutcome.Recorded>(say(nasty))
+        val name = items().single().name
+        // Quotes and semicolons are punctuation for the tokenizer; the rest stays plain text, nothing is interpreted.
+        assertTrue(name.contains("DROP TABLE item") && name.contains("% *") && name.contains("🔑"), name)
+        assertEquals(nasty, outcome.events.first().rawInput)
+        assertEquals(1, places().size)
+    }
+
+    @Test
+    fun should_tell_the_host_which_target_to_ask_about() = runTest {
+        say("perceuse dans le garage")
+        clock.tick()
+        val proposal = service.propose("marteau et perceuse dans la cave")
+        assertEquals(1, proposal.nextQuestion(emptyList()), "only the drill has a look-alike")
+        assertEquals(null, proposal.nextQuestion(listOf(1)))
+        val movement = service.propose("je prends le marteau et la perceuse")
+        assertEquals(0, movement.nextQuestion(emptyList()), "the hammer is unknown, the drill is confident")
     }
 }

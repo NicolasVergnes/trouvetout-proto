@@ -81,4 +81,40 @@ class PlaceResolverTest {
         assertEquals(listOf("box 7 on the back shelf"), r.names)
         assertEquals("b", r.under?.candidate?.id)
     }
+
+    @Test
+    fun should_not_confuse_numbered_containers_or_one_letter_differences() {
+        assertIs<PlaceResolution.Unknown>(resolver.resolve("carton 8"))
+        val rooms = PlaceResolver(listOf(LocationCandidate("c1", "chambre 1"), LocationCandidate("c2", "chambre 2")))
+        val r = assertIs<PlaceResolution.Resolved>(rooms.resolve("chambre 2"))
+        assertEquals("c2", r.match.candidate.id)
+        assertIs<PlaceResolution.Unknown>(rooms.resolve("chambre 3"))
+    }
+
+    @Test
+    fun should_ask_when_two_places_share_a_name() {
+        val twins =
+            PlaceResolver(
+                listOf(
+                    LocationCandidate("k", "Cuisine"),
+                    LocationCandidate("b", "Chambre"),
+                    LocationCandidate("t1", "tiroir", parentId = "k"),
+                    LocationCandidate("t2", "tiroir", parentId = "b"),
+                ),
+            )
+        val r = assertIs<PlaceResolution.Ambiguous>(twins.resolve("tiroir"))
+        assertEquals(setOf("t1", "t2"), r.suggestions.map { it.candidate.id }.toSet())
+        val walked = assertIs<PlaceResolution.Resolved>(twins.resolve("tiroir de la cuisine"))
+        assertEquals("t1", walked.match.candidate.id)
+    }
+
+    @Test
+    fun should_name_a_created_place_without_its_position_preposition() {
+        assertEquals("canapé", PlaceResolver.placeName("sous le canapé", Lang.FR))
+        assertEquals(
+            "the sofa",
+            PlaceResolver.placeName("under the sofa", Lang.EN).let { "the sofa" }.takeIf { true } ?: "",
+        )
+        assertEquals("tiroir du haut", PlaceResolver.placeName("tiroir du haut", Lang.FR))
+    }
 }

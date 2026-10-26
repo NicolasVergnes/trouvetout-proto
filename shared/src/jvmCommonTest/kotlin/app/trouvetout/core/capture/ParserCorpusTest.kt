@@ -47,6 +47,10 @@ class ParserCorpusTest {
         assertTrue(fr >= MIN_FR, "fr: $fr < $MIN_FR")
         assertTrue(en >= MIN_EN, "en: $en < $MIN_EN")
         assertTrue(lines.map { it.id }.toSet().size == lines.size, "duplicate ids")
+        assertTrue(
+            lines.all { it.origin == "synthetic" || it.origin == "own-usage" },
+            "no real user sentence in the public corpus (docs/06 §4)",
+        )
     }
 
     private companion object {

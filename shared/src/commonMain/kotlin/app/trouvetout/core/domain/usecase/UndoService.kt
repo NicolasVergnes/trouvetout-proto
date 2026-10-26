@@ -36,6 +36,23 @@ public class UndoService internal constructor(
         }
     }
 
+    /**
+     * Reverts exactly [events] (newest first), whatever their instants: a text capture writes several groups
+     * (place, container, one per object) and its card undoes them all at once.
+     */
+    public suspend fun undo(
+        events: List<Event>,
+        source: EventSource,
+    ): CommandResult {
+        val ordered = events.sortedWith(compareByDescending<Event> { it.at }.thenByDescending { it.id })
+        val inverses = ordered.map { inverseOf(it) }
+        return when {
+            ordered.isEmpty() -> CommandContext.rejected(Rejection.NOTHING_TO_UNDO)
+            inverses.any { it == null } -> CommandContext.rejected(Rejection.NOT_UNDOABLE)
+            else -> ctx.commit(inverses.filterNotNull().map { ctx.event(it, source) })
+        }
+    }
+
     /** Null when the event cannot be reverted. */
     private suspend fun inverseOf(event: Event): EventPayload? = when (val p = event.payload) {
         is EventPayload.ItemCreated -> EventPayload.ItemDeleted(p.itemId)

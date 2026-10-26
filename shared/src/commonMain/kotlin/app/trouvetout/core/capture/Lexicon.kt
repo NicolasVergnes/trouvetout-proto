@@ -458,7 +458,7 @@ internal class Lexicon(
                         "some",
                         "its",
                     ),
-                fillers = setOf("um", "uh", "er", "erm", "hmm", "uhm", "mm"),
+                fillers = setOf("um", "uh", "er", "erm", "hmm", "uhm"),
                 openers = setOf("well", "so", "ok", "okay", "right", "alright", "yeah", "yes", "no", "oh", "hey"),
                 numberWords =
                     mapOf(
@@ -663,7 +663,7 @@ internal class Lexicon(
                 ),
                 lendVerbs = setOf("lent", "lend", "lending", "loaned", "loan", "loaning"),
                 lendPersonLink = "to",
-                borrowVerbs = setOf("borrowed", "took", "has"),
+                borrowVerbs = setOf("borrowed", "took"),
                 returnFromLendVerbs = setOf("returned", "brought", "gave", "handed", "dropped", "sent"),
                 returnFromLendTrailers = setOf("back", "back to me", "over"),
                 returnFromLendFromLink = listOf("from"),

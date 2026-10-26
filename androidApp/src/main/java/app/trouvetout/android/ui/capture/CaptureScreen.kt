@@ -1,6 +1,5 @@
 package app.trouvetout.android.ui.capture
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,8 +9,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.AlertDialog
@@ -30,17 +31,26 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewFontScale
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
+import app.trouvetout.android.ui.theme.AppTheme
 import app.trouvetout.core.capture.CaptureProblem
 import app.trouvetout.core.capture.Intent
 import app.trouvetout.core.capture.PlaceChoice
@@ -59,10 +69,8 @@ fun CaptureRoute(
     val viewModel: CaptureViewModel = viewModel { CaptureViewModel(app) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val items by viewModel.items.collectAsStateWithLifecycle()
-    CaptureScreen(
-        state = state,
-        items = items,
-        callbacks =
+    val callbacks =
+        remember(viewModel, onOpenSettings) {
             CaptureCallbacks(
                 onInputChange = viewModel::onInputChange,
                 onSubmit = viewModel::submit,
@@ -75,9 +83,9 @@ fun CaptureRoute(
                 onUndo = viewModel::undo,
                 onDismissMessages = viewModel::dismissMessages,
                 onOpenSettings = onOpenSettings,
-            ),
-        modifier = modifier,
-    )
+            )
+        }
+    CaptureScreen(state = state, items = items, callbacks = callbacks, modifier = modifier)
 }
 
 /** All the screen can do, grouped to keep the composable signature readable. */
@@ -138,6 +146,7 @@ fun CaptureScreen(
                     problemText(problem),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
             ItemList(state, items, callbacks)
@@ -162,7 +171,6 @@ private fun CaptureField(
         modifier = Modifier.fillMaxWidth(),
         placeholder = { Text(stringResource(R.string.capture_hint)) },
         singleLine = true,
-        enabled = !state.busy,
         trailingIcon = {
             IconButton(onClick = callbacks.onSubmit, enabled = state.input.isNotBlank() && !state.busy) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.capture_send))
@@ -188,11 +196,16 @@ private fun ConfirmationCardView(
         delay(CARD_MILLIS)
         callbacks.onDismissCard(card.token)
     }
+    val editLabel = stringResource(R.string.capture_card_edit)
     Card(
+        onClick = callbacks.onEditLast,
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = callbacks.onEditLast),
+                .semantics {
+                    liveRegion = LiveRegionMode.Polite
+                    onClick(label = editLabel, action = null)
+                },
     ) {
         Row(
             modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
@@ -225,7 +238,15 @@ private fun ItemList(
     callbacks: CaptureCallbacks,
 ) {
     val query = state.searchQuery
-    val shown = if (query == null) items else items.filter { it.item.name.contains(query, ignoreCase = true) }
+    val shown = remember(items, query) {
+        if (query ==
+            null
+        ) {
+            items
+        } else {
+            items.filter { it.item.name.contains(query, ignoreCase = true) }
+        }
+    }
     if (query != null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -266,7 +287,7 @@ private fun ItemRow(view: ItemView) {
                             R.string.state_unknown_place,
                         )
                     } else {
-                        view.path.labels.joinToString(" › ")
+                        view.path.labels.joinToString(stringResource(R.string.path_separator))
                     }
             }
         Text(where, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -283,7 +304,7 @@ private fun PlaceDecisionDialog(
         onDismissRequest = callbacks.onDismissDecision,
         title = { Text(stringResource(R.string.capture_place_title, placeText)) },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
                 when (val resolution = pending.resolution) {
                     is PlaceResolution.Ambiguous ->
                         resolution.suggestions.forEach { match ->
@@ -319,7 +340,12 @@ private fun PlaceDecisionDialog(
                         else -> PlaceChoice.CreateNew(listOf(placeText), null, false)
                     }
                 TextButton(onClick = { callbacks.onChoosePlace(creation) }) {
-                    Text(stringResource(R.string.capture_place_create, creation.names.joinToString(" › ")))
+                    Text(
+                        stringResource(
+                            R.string.capture_place_create,
+                            creation.names.joinToString(stringResource(R.string.path_separator)),
+                        ),
+                    )
                 }
             }
         },
@@ -343,7 +369,7 @@ private fun ItemDecisionDialog(
             Text(stringResource(if (moving) R.string.capture_item_which else R.string.capture_item_exists, name))
         },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
                 pending.target.matches.forEach { match ->
                     TextButton(onClick = { callbacks.onChooseItem(match.itemId) }) {
                         Text(
@@ -379,7 +405,36 @@ private fun problemText(problem: CaptureProblem): String = stringResource(
         CaptureProblem.ITEM_NOT_FOUND -> R.string.capture_problem_item
         CaptureProblem.PERSON_MISSING -> R.string.capture_problem_person
         CaptureProblem.COMMAND_REJECTED -> R.string.capture_problem_rejected
+        CaptureProblem.INPUT_TOO_LONG -> R.string.capture_problem_too_long
     },
 )
 
 private const val CARD_MILLIS = 3_000L
+
+@Preview(showBackground = true)
+@PreviewLightDark
+@PreviewFontScale
+@Composable
+private fun CaptureScreenPreview() {
+    val noop = {}
+    AppTheme {
+        CaptureScreen(
+            state = CaptureUiState(input = "clés @ ent"),
+            items = emptyList(),
+            callbacks =
+                CaptureCallbacks(
+                    onInputChange = {},
+                    onSubmit = noop,
+                    onPickSuggestion = {},
+                    onChoosePlace = {},
+                    onChooseItem = {},
+                    onDismissDecision = noop,
+                    onDismissCard = {},
+                    onEditLast = noop,
+                    onUndo = noop,
+                    onDismissMessages = noop,
+                    onOpenSettings = noop,
+                ),
+        )
+    }
+}

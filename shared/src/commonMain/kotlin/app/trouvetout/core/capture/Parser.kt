@@ -197,7 +197,14 @@ internal class Sentence(
     fun lend(): ParseResult? {
         val verb = toks.indexOfFirst { it.key in lex.lendVerbs }
         if (verb < 0) return null
-        val link = toks.indexOfLast { it.key == lex.lendPersonLink }
+        // The person link is the last « à » / "to" that introduces a name or a determiner; « clé à molette » has none.
+        val link =
+            (verb + 1 until toks.size - 1).lastOrNull {
+                toks[it].key == lex.lendPersonLink && startsPerson(toks[it + 1])
+            }
+                ?: -1
+        // « tente prête dans le garage »: a located sentence without a borrower is a store, not a loan.
+        if (link < 0 && splitAtPreposition(toks) != null) return null
         val objectEnd = if (link > verb) link else toks.size
         val person = if (link > verb) Tokens.render(toks.drop(link + 1)).ifBlank { null } else null
         val after = mentions(toks.subList(verb + 1, objectEnd))
@@ -222,6 +229,8 @@ internal class Sentence(
             )
         }
     }
+
+    private fun startsPerson(tok: Tok): Boolean = tok.text.first().isUpperCase() || tok.key in PERSON_DETERMINERS
 
     /** « Marc a emprunté la tente », "Mark borrowed the tent": the borrower comes first. */
     fun borrow(): ParseResult? {
@@ -494,8 +503,17 @@ internal class Sentence(
         if (list.isNotEmpty() && list[0].isNumber) {
             quantity = list[0].key.replace(',', '.').toDouble()
             list = list.drop(1)
-            if (list.isNotEmpty() && list[0].key in lex.units) {
-                unit = list[0].text.lowercase()
+            val linked = list.getOrNull(1)?.key in lex.quantityLinks
+            val unitTok = list.firstOrNull()
+            // A measure (« 3 m », "10 mm") is always a unit; a count noun (« 2 boîtes ») only before « de »/"of",
+            // and never when it would leave no object (« 4 boîtes » are four boxes).
+            val isUnit =
+                unitTok != null &&
+                    unitTok.key in lex.units &&
+                    (unitTok.key in MEASURE_UNITS || linked) &&
+                    list.size > 1 + (if (linked) 1 else 0)
+            if (isUnit) {
+                unit = unitTok.text.lowercase()
                 list = list.drop(1)
             }
             if (list.isNotEmpty() && list[0].key in lex.quantityLinks) list = list.drop(1)
@@ -521,6 +539,62 @@ internal class Sentence(
         const val LOW = 0.7f
         const val BARE = 0.5f
         const val NO_PLACE = 0.8f
-        val PRONOUNS = setOf("i", "i'm", "i've", "je", "j'", "on", "it", "we", "nous", "il", "elle", "ils", "elles")
+        val PRONOUNS =
+            setOf(
+                "i",
+                "i'm",
+                "i've",
+                "je",
+                "j'",
+                "on",
+                "it",
+                "we",
+                "nous",
+                "il",
+                "elle",
+                "ils",
+                "elles",
+                "he",
+                "she",
+                "they",
+                "you",
+                "who",
+                "tu",
+                "vous",
+                "ca",
+                "cela",
+                "this",
+                "that",
+                "there",
+            )
+        val PERSON_DETERMINERS =
+            setOf("ma", "mon", "mes", "notre", "nos", "my", "our", "la", "le", "les", "the", "un", "une", "a", "an")
+        val MEASURE_UNITS =
+            setOf(
+                "m",
+                "metre",
+                "metres",
+                "meter",
+                "meters",
+                "cm",
+                "mm",
+                "km",
+                "kg",
+                "g",
+                "l",
+                "litre",
+                "litres",
+                "liter",
+                "liters",
+                "cl",
+                "ml",
+                "ft",
+                "feet",
+                "foot",
+                "inch",
+                "inches",
+                "lb",
+                "lbs",
+            )
     }
 }
