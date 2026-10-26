@@ -28,7 +28,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: app.trouvetout.proto
         INFOPLIST_FILE: iosApp/Info.plist
         GENERATE_INFOPLIST_FILE: "NO"
-        OTHER_LDFLAGS: "$(inherited) -framework Shared"
+        # Static Kotlin framework: the app links the system SQLite that the native SQLDelight driver calls.
+        OTHER_LDFLAGS: "$(inherited) -framework Shared -lsqlite3"
         TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: "NO"
     preBuildScripts:
