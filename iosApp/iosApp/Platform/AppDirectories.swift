@@ -6,6 +6,8 @@ enum AppDirectories {
     enum Failure: Error {
         case noApplicationSupportDirectory
         case backupExclusionNotApplied
+        /// The directory is fine but the core could not open its store (full disk, corrupt file).
+        case storeUnavailable
     }
 
     /// The data directory and, when the backup exclusion could not be created or verified, the reason.

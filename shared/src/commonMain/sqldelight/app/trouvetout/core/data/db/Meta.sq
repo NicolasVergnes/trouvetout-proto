@@ -1,0 +1,17 @@
+-- Métadonnées locales : schema_version, device_id, model_variant, trial_started_at...
+CREATE TABLE meta (
+  key TEXT NOT NULL PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+get:
+SELECT value FROM meta WHERE key = ?;
+
+set:
+INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?);
+
+remove:
+DELETE FROM meta WHERE key = ?;
+
+selectAll:
+SELECT key, value FROM meta ORDER BY key;

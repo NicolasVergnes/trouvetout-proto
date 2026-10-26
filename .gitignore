@@ -71,3 +71,9 @@ service-account*.json
 
 # Projet Xcode généré par XcodeGen (ADR-012), jamais versionné
 iosApp/iosApp.xcodeproj/
+
+# Bases SQLite : seul le schéma vide versionné par SQLDelight est autorisé
+*.db
+*.db-wal
+*.db-shm
+!shared/src/commonMain/sqldelight/databases/*.db

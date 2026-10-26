@@ -1,0 +1,52 @@
+-- Projection : lieux hiérarchiques (A2). Écrite uniquement par data/projection.
+CREATE TABLE place (
+  id TEXT NOT NULL PRIMARY KEY,
+  name TEXT NOT NULL,
+  parent_id TEXT,
+  kind TEXT NOT NULL,
+  aliases TEXT NOT NULL DEFAULT '[]',
+  created_at INTEGER NOT NULL,
+  deleted_at INTEGER,
+  merged_into TEXT
+);
+
+CREATE INDEX place_parent ON place(parent_id);
+
+insert:
+INSERT OR REPLACE INTO place(id, name, parent_id, kind, aliases, created_at, deleted_at, merged_into)
+VALUES (?, ?, ?, ?, ?, ?, NULL, NULL);
+
+rename:
+UPDATE place SET name = ?, aliases = ? WHERE id = ?;
+
+setParent:
+UPDATE place SET parent_id = ? WHERE id = ?;
+
+reparentChildren:
+UPDATE place SET parent_id = ? WHERE parent_id = ?;
+
+setDeletedAt:
+UPDATE place SET deleted_at = ? WHERE id = ?;
+
+setMergedInto:
+UPDATE place SET merged_into = ?, deleted_at = ? WHERE id = ?;
+
+selectById:
+SELECT id, name, parent_id, kind, aliases, created_at, deleted_at, merged_into FROM place WHERE id = ?;
+
+selectAll:
+SELECT id, name, parent_id, kind, aliases, created_at, deleted_at, merged_into FROM place ORDER BY name;
+
+selectActive:
+SELECT id, name, parent_id, kind, aliases, created_at, deleted_at, merged_into
+FROM place WHERE deleted_at IS NULL ORDER BY name;
+
+selectChildren:
+SELECT id, name, parent_id, kind, aliases, created_at, deleted_at, merged_into
+FROM place WHERE deleted_at IS NULL AND parent_id IS ? ORDER BY name;
+
+countActive:
+SELECT COUNT(*) FROM place WHERE deleted_at IS NULL;
+
+deleteAll:
+DELETE FROM place;

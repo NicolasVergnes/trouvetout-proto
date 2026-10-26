@@ -1,0 +1,39 @@
+-- Journal d'événements : source de vérité, jamais réécrit (A4).
+CREATE TABLE event (
+  id TEXT NOT NULL PRIMARY KEY,
+  at INTEGER NOT NULL,
+  device_id TEXT NOT NULL,
+  actor TEXT NOT NULL DEFAULT 'me',
+  type TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  source TEXT NOT NULL,
+  raw_input TEXT
+);
+
+CREATE INDEX event_order ON event(at, device_id, id);
+
+insert:
+INSERT INTO event(id, at, device_id, actor, type, payload, source, raw_input)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+exists:
+SELECT COUNT(*) FROM event WHERE id = ?;
+
+count:
+SELECT COUNT(*) FROM event;
+
+allOrdered:
+SELECT id, at, device_id, actor, type, payload, source, raw_input
+FROM event
+ORDER BY at, device_id, id;
+
+-- Une page du journal dans l'ordre canonique (rejeu par morceaux, sans tout charger en mémoire).
+pageOrdered:
+SELECT id, at, device_id, actor, type, payload, source, raw_input
+FROM event
+ORDER BY at, device_id, id
+LIMIT ? OFFSET ?;
+
+-- Dernier événement dans l'ordre canonique (at, device_id, id) : la « tête » du journal.
+head:
+SELECT at, device_id, id FROM event ORDER BY at DESC, device_id DESC, id DESC LIMIT 1;

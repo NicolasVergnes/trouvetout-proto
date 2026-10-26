@@ -11,9 +11,9 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 - Scripts `tools/check-deps.sh` (dépendances interdites, permissions) et `tools/check-network.sh` (squelette).
 - Critères : les deux apps démarrent sur un écran vide ; CI verte ; hooks Claude Code actifs.
 
-## Lot 1 — Socle de données (A1–A4, A6, A10, N9) ☐
+## Lot 1 — Socle de données (A1–A4, A6, A10, N9) ☑
 - Entités, journal d'événements, projection `location_state`, SQLDelight, migrations, `meta`.
-- Avant d'ajouter SQLDelight / kotlinx.serialization : activer la vérification des dépendances Gradle (`./gradlew --write-verification-metadata sha256`, fichier `gradle/verification-metadata.xml` versionné) — recommandation de la revue sécurité du lot 0.
+- Vérification des dépendances Gradle (`gradle/verification-metadata.xml`) : recommandée par la revue sécurité du lot 0, **reportée** — un fichier généré sous Windows ne couvre pas les artefacts Kotlin/Native résolus seulement sur macOS et ferait échouer le job iOS ; voir la question ouverte dans `docs/04-decisions.md`.
 - Stockage des photos (compression, miniatures, exclusion des sauvegardes système).
 - `docs/format-export.md` : schéma SQL et JSON publiés.
 - Tests : `replay(events) == state` sur 50 scénarios ; propriétés (un item a toujours un état) ; performance N7 (10 000 objets / 100 000 événements) en test JVM.
@@ -22,7 +22,8 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 ## Lot 2 — Export / import (A7, A8, A13 corbeille, H6 suppression) ☐
 - ZIP `manifest + events.jsonl + snapshot.json + photos/`, feuille de partage système ; import en flux avec validations (taille, chemins, zip bomb) ; fusion par `id` d'événement.
 - Corbeille 30 jours (purge des photos), annulation de la dernière action (événement inverse).
-- Suppression totale : fichiers, clés, préférences, notifications.
+- Suppression totale : fichiers (base + `-wal`/`-shm`, `photos/` y compris d'éventuels fichiers temporaires), clés, préférences, notifications ; `SharedFactory` doit pouvoir être recréée après fermeture (aujourd'hui `close()` ne permet pas la réouverture).
+- Vérification des sommes des dépendances Gradle (`gradle/verification-metadata.xml`) générée par la CI Linux, stricte sur Linux, `lenient` sur macOS — voir la question ouverte de `docs/04-decisions.md`.
 - Critères : export → suppression totale → import = état identique (test automatisé sur les deux plateformes) ; un export v1 fabriqué à la main avec des champs inconnus s'importe (N9).
 
 ## Lot 3 — Capture texte et parseur (B4, B7, B11, B12, B14, A14, I4) ☐
@@ -35,6 +36,7 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 ## Lot 4 — Lieux et navigation (A2, A3, D1, D2, D4, D5, D6, C6, C7) ☐
 - Arborescence des lieux, contenants déplaçables (déplacement = un événement), modèles de lieux proposés, photo du lieu, renommage/fusion sans perte d'historique.
 - Écrans : navigation par lieu, fil d'Ariane, fiche objet (photos, tags A11, quantités A12, historique optionnel A5, archivage D11, épinglage D7 en option).
+- Tests de plateforme Android (revue du lot 1) : `withDeviceTest` dans `shared` ou `androidTest` dans l'app, exécutés sur un Gradle Managed Device API 29 en CI — `AndroidDriverFactory` (fichier sous `no_backup/db`, WAL), `AndroidImageCodec` (orientation EXIF 6, PNG avec alpha, HEIC), smoke test de la release ; activer `lint { checkDependencies = true }` côté app pour couvrir `shared/androidMain` ; message « format non pris en charge » quand le codec renvoie null.
 - Critères : U2 (photo attachée à un contenant) ; déplacer un carton met à jour tous ses objets en un événement ; fusion de deux lieux conserve tous les événements.
 
 ## Lot 5 — Capture vocale et points d'entrée (B1, B2, B5, B6, B10, C5, N1) ☐

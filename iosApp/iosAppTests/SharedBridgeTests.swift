@@ -20,14 +20,53 @@ final class SharedBridgeTests: XCTestCase {
         XCTAssertEqual(values.isExcludedFromBackup, true)
     }
 
-    func testFactoryBuildsFromConfig() {
+    // MARK: - Core factory
+
+    private func temporaryDirectory() -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tt-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
+    }
+
+    private func factory(in directory: URL, storageReady: Bool = true) -> SharedFactory {
         let config = SharedConfig(
-            dataDirectory: FileManager.default.temporaryDirectory.path,
+            dataDirectory: directory.path,
             deviceInfo: IosDeviceInfo(),
-            logger: NoopLogger.shared
+            driverFactory: IosDriverFactory(directory: directory.path, fileName: "test.db"),
+            imageCodec: UIImageCodec(),
+            logger: NoopLogger.shared,
+            storageReady: storageReady
         )
-        let factory = SharedFactory(config: config)
-        XCTAssertEqual(factory.appInfo.NAME, "TrouveTout")
+        return SharedFactory(config: config)
+    }
+
+    func testFactoryOpensTheDatabaseInTheGivenDirectoryAndKeepsTheDeviceId() async throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let first = factory(in: directory)
+        let ready = try await first.warmUp()
+        XCTAssertTrue(ready.boolValue)
+        let deviceId = first.deviceId
+        XCTAssertEqual(deviceId.count, 26)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: directory.appendingPathComponent("test.db").path))
+        first.close()
+
+        let second = factory(in: directory)
+        XCTAssertEqual(second.deviceId, deviceId, "the installation identity survives a reopen (ADR-005)")
+        second.close()
+    }
+
+    func testFactoryRefusesToOpenTheStoreWhenStorageIsNotReady() async throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let factory = factory(in: directory, storageReady: false)
+        let ready = try await factory.warmUp()
+
+        XCTAssertFalse(ready.boolValue)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: directory.appendingPathComponent("test.db").path))
         factory.close()
     }
 

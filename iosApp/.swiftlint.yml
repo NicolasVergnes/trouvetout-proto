@@ -12,6 +12,9 @@ opt_in_rules:
 line_length:
   warning: 120
   error: 160
+# Same convention as SwiftFormat's trailingCommas rule.
+trailing_comma:
+  mandatory_comma: true
 identifier_name:
   min_length: 2
   excluded: [id, x, y]
