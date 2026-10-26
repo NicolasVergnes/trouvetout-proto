@@ -25,6 +25,15 @@ public interface FileStore {
 
     /** File names (not paths) directly under [relativeDirectory], sorted; empty when the directory is absent. */
     public fun list(relativeDirectory: String): List<String>
+
+    /** Streams a large file (export archive); the target appears only when the sink is closed. */
+    public fun sink(relativePath: String): ByteSink
+
+    /** Random access to an existing file (import archive); null when absent. */
+    public fun source(relativePath: String): RandomAccessSource?
+
+    /** Removes a directory and everything below it; true when something was removed. */
+    public fun deleteDirectory(relativeDirectory: String): Boolean
 }
 
 public expect fun createFileStore(rootDirectory: String): FileStore
