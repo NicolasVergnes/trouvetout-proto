@@ -44,6 +44,8 @@ jobs:
         run: |
           ./gradlew --write-verification-metadata sha256 --dependency-verification off $GRADLE_TASKS --dry-run
           mv gradle/verification-metadata.dryrun.xml gradle/verification-metadata.xml
+          # aapt2 (platform-specific) is resolved only when resources are really processed: run that task for real.
+          ./gradlew --write-verification-metadata sha256 --dependency-verification off :androidApp:processDebugResources :androidApp:processReleaseResources
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: verification-metadata-linux
@@ -80,6 +82,8 @@ jobs:
         run: |
           ./gradlew --write-verification-metadata sha256 --dependency-verification off $GRADLE_TASKS --dry-run
           mv gradle/verification-metadata.dryrun.xml gradle/verification-metadata.xml
+          # aapt2 (platform-specific) is resolved only when resources are really processed: run that task for real.
+          ./gradlew --write-verification-metadata sha256 --dependency-verification off :androidApp:processDebugResources :androidApp:processReleaseResources
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: verification-metadata
