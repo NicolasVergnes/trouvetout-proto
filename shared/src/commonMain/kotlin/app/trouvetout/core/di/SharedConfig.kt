@@ -1,5 +1,6 @@
 package app.trouvetout.core.di
 
+import app.trouvetout.core.AppInfo
 import app.trouvetout.core.data.db.DriverFactory
 import app.trouvetout.core.log.Logger
 import app.trouvetout.core.log.NoopLogger
@@ -26,6 +27,8 @@ public class SharedConfig(
     public val imageCodec: ImageCodec,
     public val logger: Logger = NoopLogger,
     public val storageReady: Boolean = true,
+    /** Written in export manifests. */
+    public val appVersion: String = AppInfo.CORE_VERSION,
 ) {
     /** Overridable for tests; the host apps keep the system defaults. */
     public var clock: Clock = Clock.System
