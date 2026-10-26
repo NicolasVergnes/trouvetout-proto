@@ -13,6 +13,7 @@ import app.trouvetout.core.data.export.ImportService
 import app.trouvetout.core.data.photo.BinService
 import app.trouvetout.core.data.photo.PhotoStore
 import app.trouvetout.core.data.projection.Projector
+import app.trouvetout.core.data.repository.BrowseRepository
 import app.trouvetout.core.data.repository.ContainerRepository
 import app.trouvetout.core.data.repository.ItemRepository
 import app.trouvetout.core.data.repository.PlaceRepository
@@ -89,6 +90,11 @@ public class SharedFactory(
     public val itemRepository: ItemRepository by lazy { ItemRepository(database, config.dispatchers) }
     public val placeRepository: PlaceRepository by lazy { PlaceRepository(database, config.dispatchers) }
     public val containerRepository: ContainerRepository by lazy { ContainerRepository(database, config.dispatchers) }
+
+    /** Navigation by place and item-sheet extras (lot 4). */
+    public val browse: BrowseRepository by lazy {
+        BrowseRepository(database, config.dispatchers, itemRepository, eventStore)
+    }
 
     private val photoIds: MonotonicUlidGenerator by lazy { MonotonicUlidGenerator(config.clock, config.random) }
     private val photoIdLock = Mutex()

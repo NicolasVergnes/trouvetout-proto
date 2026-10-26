@@ -104,7 +104,7 @@ public class ContainerRepository internal constructor(
         query.asFlow().mapToList(dispatchers.io).map { rows -> rows.map { it.toContainer() } }
 }
 
-private fun resolvers(
+internal fun resolvers(
     db: TrouveToutDb,
     dispatchers: CoroutineDispatchers,
 ): Flow<LocationResolver> = combine(
