@@ -1,6 +1,7 @@
 package app.trouvetout.android
 
 import android.app.Application
+import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.data.db.AndroidDriverFactory
 import app.trouvetout.core.di.SharedConfig
 import app.trouvetout.core.di.SharedFactory
@@ -13,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.Locale
 
 class App : Application() {
     @Volatile
@@ -52,6 +54,7 @@ class App : Application() {
                 logger = if (BuildConfig.DEBUG) LogcatLogger else NoopLogger,
                 storageReady = databaseDirectory.isDirectory || databaseDirectory.mkdirs(),
                 appVersion = BuildConfig.VERSION_NAME,
+                captureLang = if (Locale.getDefault().language == "fr") Lang.FR else Lang.EN,
             ),
         )
     }

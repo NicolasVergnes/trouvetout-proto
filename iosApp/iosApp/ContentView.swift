@@ -1,14 +1,12 @@
 import SwiftUI
 
-/// Placeholder home until the capture screen arrives in lot 3; gives access to the settings (export, import).
+/// Home: the capture screen (lot 3), with the settings (export, import, erase) in the toolbar.
 struct ContentView: View {
     @EnvironmentObject private var container: AppContainer
 
     var body: some View {
         NavigationStack {
-            Text("home_empty_title")
-                .font(.title3)
-                .padding()
+            CaptureView(container: container)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         NavigationLink("settings_title") {
