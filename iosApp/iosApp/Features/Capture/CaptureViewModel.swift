@@ -41,7 +41,7 @@ final class CaptureViewModel: ObservableObject {
 
     private let container: AppContainer
     private var cardToken = 0
-    private var itemsTask: Task<Void, Never>?
+    private var itemsSubscription: FlowSubscription?
     private var suggestionTask: Task<Void, Never>?
     private var readiness: AnyCancellable?
 
@@ -54,24 +54,29 @@ final class CaptureViewModel: ObservableObject {
     }
 
     deinit {
-        itemsTask?.cancel()
+        itemsSubscription?.cancel()
         suggestionTask?.cancel()
     }
 
     private func observeItems(_ shared: SharedFactory?) {
-        itemsTask?.cancel()
+        itemsSubscription?.cancel()
+        itemsSubscription = nil
         items = []
         guard let shared else { return }
+        // The core's uiScope runs on the main dispatcher: the callbacks are already on the main actor.
         let watcher = FlowWatcher<NSArray>(flow: shared.itemRepository.observeActive(), scope: shared.uiScope)
-        itemsTask = Task { [weak self] in
-            do {
-                for try await list in stream(watcher) {
+        itemsSubscription = watcher.watch(
+            onEach: { [weak self] list in
+                MainActor.assumeIsolated {
                     self?.items = (list as? [ItemView]) ?? []
                 }
-            } catch {
-                self?.items = []
+            },
+            onComplete: { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.items = []
+                }
             }
-        }
+        )
     }
 
     /// What the user types; programmatic changes to `input` go through `setInput` and never touch the search.
