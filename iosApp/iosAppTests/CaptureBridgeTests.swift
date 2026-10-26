@@ -100,7 +100,7 @@ final class CaptureBridgeTests: XCTestCase {
         let search = try XCTUnwrap(asked as? CaptureOutcomeSearch)
         XCTAssertEqual(search.query, "clés")
 
-        let wall = String(repeating: "a", count: 10_000)
+        let wall = String(repeating: "a", count: 10000)
         let refused = try await factory.capture.propose(text: wall, lang: .fr)
         XCTAssertEqual(refused.problem, .inputTooLong)
     }

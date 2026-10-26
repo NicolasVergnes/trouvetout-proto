@@ -114,7 +114,6 @@ struct CaptureView: View {
         }
     }
 
-    @ViewBuilder
     private func emptyText(searching: Bool) -> some View {
         Group {
             if searching {
