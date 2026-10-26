@@ -36,10 +36,11 @@ final class AppContainer: ObservableObject {
         shared = SharedFactory(config: config)
         let factory = shared
         // Opens the database off the main thread so the first capture (lot 3) is instant; never throws.
-        Task.detached(priority: .utility) { [weak self] in
+        // The container lives as long as the process: a strong capture is intended.
+        Task.detached(priority: .utility) { [self] in
             let ready = await (try? factory.warmUp())?.boolValue ?? false
             if !ready {
-                await MainActor.run { self?.recordStoreUnavailable() }
+                await recordStoreUnavailable()
             }
         }
     }
