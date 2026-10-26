@@ -150,4 +150,16 @@ class ParserTest {
         assertEquals(Intent.UNKNOWN, fr("euh").intent)
         assertEquals(Intent.UNKNOWN, fr("  ").intent)
     }
+
+    @Test
+    fun should_fall_back_to_the_other_language_when_the_default_reading_is_weak() {
+        val english = Parser(defaultLang = Lang.EN)
+        val back = english.parse("perceuse remise au garage")
+        assertEquals(Intent.RETURN, back.intent)
+        assertEquals(Lang.FR, back.lang)
+        assertEquals("garage", back.place)
+        assertEquals(Intent.RETURN_FROM_LEND, english.parse("Marc a rendu la tente").intent)
+        assertEquals(Intent.RETURN_FROM_LEND, parser.parse("Mark returned the tent").intent)
+        assertEquals(Lang.EN, parser.parse("Mark returned the tent").lang)
+    }
 }

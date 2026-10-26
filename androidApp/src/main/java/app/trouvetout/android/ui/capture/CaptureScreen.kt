@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -167,7 +168,13 @@ private fun CaptureField(
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.capture_send))
             }
         },
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        // Object and place names are not dictionary words: no autocorrection, no capitalisation.
+        keyboardOptions =
+            KeyboardOptions(
+                imeAction = ImeAction.Done,
+                autoCorrectEnabled = false,
+                capitalization = KeyboardCapitalization.None,
+            ),
         keyboardActions = KeyboardActions(onDone = { callbacks.onSubmit() }),
     )
 }

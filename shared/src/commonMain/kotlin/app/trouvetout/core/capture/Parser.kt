@@ -38,7 +38,20 @@ public class Parser(
         lang: Lang? = null,
     ): ParseResult {
         val raw = Tokens.tokenize(text)
-        val language = lang ?: detectLang(raw)
+        if (lang != null) return parseWith(raw, lang, text)
+        // Marker counting is a hint: when the first reading is weak, the other language gets a try.
+        val first = parseWith(raw, detectLang(raw), text)
+        if (first.confidence >= CONFIDENT) return first
+        val other = parseWith(raw, if (first.lang == Lang.FR) Lang.EN else Lang.FR, text)
+        // Only a confident reading in the other language beats the hint (an empty or bare phrase stays as is).
+        return if (other.confidence > first.confidence && other.confidence >= CONFIDENT) other else first
+    }
+
+    private fun parseWith(
+        raw: List<Tok>,
+        language: Lang,
+        text: String,
+    ): ParseResult {
         val rules = Rules.of(language)
         val question = raw.any { it.key == "?" }
         val toks = rules.clean(raw)
@@ -65,6 +78,10 @@ public class Parser(
             fr > en -> Lang.FR
             else -> defaultLang
         }
+    }
+
+    private companion object {
+        const val CONFIDENT = 0.85f
     }
 }
 
