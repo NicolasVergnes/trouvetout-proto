@@ -11,7 +11,7 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 - Scripts `tools/check-deps.sh` (dépendances interdites, permissions) et `tools/check-network.sh` (squelette).
 - Critères : les deux apps démarrent sur un écran vide ; CI verte ; hooks Claude Code actifs.
 
-## Lot 1 — Socle de données (A1–A4, A6, A10, N9) ◐
+## Lot 1 — Socle de données (A1–A4, A6, A10, N9) ☑
 - Entités, journal d'événements, projection `location_state`, SQLDelight, migrations, `meta`.
 - Vérification des dépendances Gradle (`gradle/verification-metadata.xml`) : recommandée par la revue sécurité du lot 0, **reportée** — un fichier généré sous Windows ne couvre pas les artefacts Kotlin/Native résolus seulement sur macOS et ferait échouer le job iOS ; voir la question ouverte dans `docs/04-decisions.md`.
 - Stockage des photos (compression, miniatures, exclusion des sauvegardes système).
