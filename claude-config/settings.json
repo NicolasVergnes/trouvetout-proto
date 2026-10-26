@@ -44,12 +44,12 @@
       "Agent(privacy-auditor)",
       "Agent(android-reviewer)",
       "Agent(ios-reviewer)",
-      "Agent(search-quality-evaluator)"
+      "Agent(search-quality-evaluator)",
+      "Bash(rm *)"
     ],
     "ask": [
       "Bash(git rebase *)",
       "Bash(git reset *)",
-      "Bash(rm *)",
       "Bash(curl *)",
       "Bash(wget *)",
       "Bash(brew *)",
