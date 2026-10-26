@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -34,6 +35,27 @@ class SharedFactoryTest {
         config.dispatchers =
             CoroutineDispatchers(Dispatchers.Unconfined, Dispatchers.Unconfined, Dispatchers.Unconfined)
         return SharedFactory(config)
+    }
+
+    @Test
+    fun should_wipe_every_data_directory_and_refuse_to_reopen() = runTest {
+        val directory = app.trouvetout.core.platform.testTempDirectory()
+        val config = SharedConfig(directory, FakeDevice, inMemoryDriverFactory(), FakeImageCodec())
+        config.dispatchers =
+            CoroutineDispatchers(Dispatchers.Unconfined, Dispatchers.Unconfined, Dispatchers.Unconfined)
+        val factory = SharedFactory(config)
+        factory.placeCommands.create("cave", kind = PlaceKind.ROOT, source = EventSource.TEXT)
+        factory.photoStore.store("3000x1500".encodeToByteArray())
+        factory.exportService.export()
+        val files = app.trouvetout.core.platform.createFileStore(directory)
+        assertTrue(files.list("photos").isNotEmpty() && files.list("exports").isNotEmpty())
+
+        val removed = factory.wipeAllData()
+
+        assertTrue("photos" in removed && "exports" in removed, removed.toString())
+        assertTrue(files.list("photos").isEmpty() && files.list("exports").isEmpty())
+        assertFailsWith<IllegalStateException> { factory.deviceId }
+        assertEquals(false, factory.warmUp(), "a wiped factory never reopens; the host creates a new one")
     }
 
     @Test

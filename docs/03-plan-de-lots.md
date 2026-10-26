@@ -13,18 +13,19 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 
 ## Lot 1 — Socle de données (A1–A4, A6, A10, N9) ☑
 - Entités, journal d'événements, projection `location_state`, SQLDelight, migrations, `meta`.
-- Vérification des dépendances Gradle (`gradle/verification-metadata.xml`) : recommandée par la revue sécurité du lot 0, **reportée** — un fichier généré sous Windows ne couvre pas les artefacts Kotlin/Native résolus seulement sur macOS et ferait échouer le job iOS ; voir la question ouverte dans `docs/04-decisions.md`.
+- Vérification des dépendances Gradle (`gradle/verification-metadata.xml`) : recommandée par la revue sécurité du lot 0, livrée au lot 2 (ADR-017).
 - Stockage des photos (compression, miniatures, exclusion des sauvegardes système).
 - `docs/format-export.md` : schéma SQL et JSON publiés.
 - Tests : `replay(events) == state` sur 50 scénarios ; propriétés (un item a toujours un état) ; performance N7 (10 000 objets / 100 000 événements) en test JVM.
 - Critères : couverture des use cases Store/Take/Return/MoveTo/Lend ; aucune requête SQL non paramétrée.
 
-## Lot 2 — Export / import (A7, A8, A13 corbeille, H6 suppression) ☐
+## Lot 2 — Export / import (A7, A8, A13 corbeille, H6 suppression) ☑
 - ZIP `manifest + events.jsonl + snapshot.json + photos/`, feuille de partage système ; import en flux avec validations (taille, chemins, zip bomb) ; fusion par `id` d'événement.
 - Corbeille 30 jours (purge des photos), annulation de la dernière action (événement inverse).
-- Suppression totale : fichiers (base + `-wal`/`-shm`, `photos/` y compris d'éventuels fichiers temporaires), clés, préférences, notifications ; `SharedFactory` doit pouvoir être recréée après fermeture (aujourd'hui `close()` ne permet pas la réouverture).
-- Vérification des sommes des dépendances Gradle (`gradle/verification-metadata.xml`) générée par la CI Linux, stricte sur Linux, `lenient` sur macOS — voir la question ouverte de `docs/04-decisions.md`.
+- Suppression totale : fichiers (base + `-wal`/`-shm`, `photos/`, `exports/`, `imports/`) ; l'instance `SharedFactory` est épuisée après `wipeAllData()` et l'hôte en recrée une. Clés (lot 8), préférences et notifications (lot 9) s'ajouteront à la procédure quand ils existeront.
+- Vérification des sommes des dépendances Gradle (`gradle/verification-metadata.xml`) : fichier généré par le workflow `Dependency verification metadata` (Linux puis macOS) et fusionné localement, vérification stricte sur les deux jobs (ADR-017).
 - Critères : export → suppression totale → import = état identique (test automatisé sur les deux plateformes) ; un export v1 fabriqué à la main avec des champs inconnus s'importe (N9).
+- Suites consignées par les revues du lot : (a) inflater `events.jsonl` ligne à ligne au lieu d'une entrée en mémoire (plafond 64 Mio en attendant) ; (b) ZIP64 ou export multi-volumes avant le lot 7 (les photos pleine taille peuvent dépasser 4 Gio) ; (c) tests Compose de l'écran Réglages (`busy`, confirmation d'effacement, textes de refus) et aller-retour export → effacement → import sur appareil Android (avec les tests de plateforme du lot 4) ; (d) tests manquants : `EVENTS_TOO_LARGE`, `TOO_MANY_EVENTS`, photo > 48 Mio, ligne > 64 Kio ; (e) `viewModel {}` hors NavHost : le NavHost du lot 3 doit porter le ViewModel des réglages (état consommé en événement unique).
 
 ## Lot 3 — Capture texte et parseur (B4, B7, B11, B12, B14, A14, I4) ☐
 - `shared/capture` : normalisation, intents FR/EN, extraction objet/lieu/quantité/personne, résolution de lieu par similarité (distance d'édition d'abord ; embeddings branchés au lot 6), alias, multi-objets.

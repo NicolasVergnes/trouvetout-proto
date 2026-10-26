@@ -12,6 +12,8 @@ style:
     ignoreAnnotated: ['Preview']
   MagicNumber:
     ignoreAnnotated: ['Composable', 'Preview']
+    # detekt's default test list plus the KMP source sets of this repo (jvmCommonTest, androidHostTest).
+    excludes: ['**/test/**', '**/androidTest/**', '**/androidHostTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jvmCommonTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/iosSimulatorArm64Test/**']
     ignorePropertyDeclaration: true
     ignoreCompanionObjectPropertyDeclaration: true
   ForbiddenComment:
@@ -31,11 +33,13 @@ complexity:
     ignoreAnnotated: ['Composable']
   LongMethod:
     ignoreAnnotated: ['Composable']
+    excludes: ['**/test/**', '**/androidTest/**', '**/androidHostTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jvmCommonTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/iosSimulatorArm64Test/**']
   TooManyFunctions:
     ignorePrivate: true
 
 naming:
   FunctionNaming:
     ignoreAnnotated: ['Composable']
+    excludes: ['**/test/**', '**/androidTest/**', '**/androidHostTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jvmCommonTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/iosSimulatorArm64Test/**']
   TopLevelPropertyNaming:
     constantPattern: '[A-Z][_A-Za-z0-9]*'

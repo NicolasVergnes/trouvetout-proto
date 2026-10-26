@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the cache copy of an export is ever shared; the database and photos directories are never exposed. -->
+<paths>
+    <cache-path name="exports" path="share/" />
+</paths>

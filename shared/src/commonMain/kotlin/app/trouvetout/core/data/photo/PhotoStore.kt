@@ -33,6 +33,25 @@ public class PhotoStore internal constructor(
         PhotoFile(fileName, thumbName, full.width, full.height, sha256(full.bytes).toHexString())
     }
 
+    /**
+     * Import path (A8): stores a foreign image under an id chosen by the archive, after the same re-encoding
+     * as a capture (bounded size, no metadata) and with a regenerated thumbnail. Null when not decodable.
+     */
+    public suspend fun importPhoto(
+        fileName: String,
+        source: ByteArray,
+    ): PhotoFile? = withContext(dispatcher) {
+        require(isValidFileName(fileName) && !fileName.endsWith("_t.jpg")) { "Not a photo file name" }
+        val full = codec.transcodeJpeg(source, MAX_SIDE, QUALITY) ?: return@withContext null
+        val thumb = codec.transcodeJpeg(source, THUMB_SIDE, THUMB_QUALITY) ?: return@withContext null
+        val thumbName = fileName.removeSuffix(".jpg") + "_t.jpg"
+        files.write("$DIRECTORY/$fileName", full.bytes)
+        val thumbWrite = runCatching { files.write("$DIRECTORY/$thumbName", thumb.bytes) }
+        if (thumbWrite.isFailure) files.delete("$DIRECTORY/$fileName")
+        thumbWrite.getOrThrow()
+        PhotoFile(fileName, thumbName, full.width, full.height, sha256(full.bytes).toHexString())
+    }
+
     public fun absolutePath(fileName: String): String = files.absolutePath(path(fileName))
 
     public suspend fun read(fileName: String): ByteArray? = withContext(dispatcher) { files.read(path(fileName)) }

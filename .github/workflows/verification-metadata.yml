@@ -1,0 +1,91 @@
+name: Dependency verification metadata
+
+# Regenerates gradle/verification-metadata.xml (SHA-256 of every resolved artifact, build plugins included) on
+# the two CI platforms so that the strict verification covers Linux, macOS and Kotlin/Native artifacts.
+# Manual: Actions → this workflow → Run, then download the `verification-metadata` artifact and commit the file.
+on:
+  workflow_dispatch:
+  # Also whenever the dependency graph may change, so a fresh file is one artifact download away.
+  push:
+    branches: [main, "lot/**"]
+    paths:
+      - ".github/workflows/verification-metadata.yml"
+      - "gradle/libs.versions.toml"
+      - "gradle/wrapper/**"
+      - "settings.gradle.kts"
+      - "**/build.gradle.kts"
+
+permissions:
+  contents: read
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+  # Every task of both CI jobs, dry-run: resolves all their configurations without building.
+  GRADLE_TASKS: >-
+    :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :androidApp:assembleRelease :tools:build
+    ktlintCheck ktlintFormat detekt :shared:iosSimulatorArm64Test :shared:embedAndSignAppleFrameworkForXcode
+
+jobs:
+  linux:
+    name: Resolve on Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
+        with:
+          validate-wrappers: true
+      - run: chmod +x gradlew
+      - name: Write metadata (merges into the committed file)
+        run: |
+          ./gradlew --write-verification-metadata sha256 --dependency-verification off $GRADLE_TASKS --dry-run
+          mv gradle/verification-metadata.dryrun.xml gradle/verification-metadata.xml
+          # aapt2 (platform-specific) is resolved only when resources are really processed: run that task for real.
+          ./gradlew --write-verification-metadata sha256 --dependency-verification off :androidApp:processDebugResources :androidApp:processReleaseResources
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verification-metadata-linux
+          path: gradle/verification-metadata.xml
+          retention-days: 7
+
+  macos:
+    name: Resolve on macOS (adds Kotlin/Native and Apple artifacts)
+    needs: linux
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
+        with:
+          validate-wrappers: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: verification-metadata-linux
+          path: gradle
+      - run: chmod +x gradlew
+      - name: Write metadata (merges Linux + macOS)
+        env:
+          CONFIGURATION: Debug
+          SDK_NAME: iphonesimulator
+          ARCHS: arm64
+          TARGET_BUILD_DIR: ${{ github.workspace }}/build/ios
+          FRAMEWORKS_FOLDER_PATH: Frameworks
+          BUILT_PRODUCTS_DIR: ${{ github.workspace }}/build/ios
+        run: |
+          ./gradlew --write-verification-metadata sha256 --dependency-verification off $GRADLE_TASKS --dry-run
+          mv gradle/verification-metadata.dryrun.xml gradle/verification-metadata.xml
+          # aapt2 (platform-specific) is resolved only when resources are really processed: run that task for real.
+          ./gradlew --write-verification-metadata sha256 --dependency-verification off :androidApp:processDebugResources :androidApp:processReleaseResources
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verification-metadata
+          path: gradle/verification-metadata.xml
+          retention-days: 7

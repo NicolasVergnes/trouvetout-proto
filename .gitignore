@@ -77,3 +77,6 @@ iosApp/iosApp.xcodeproj/
 *.db-wal
 *.db-shm
 !shared/src/commonMain/sqldelight/databases/*.db
+
+# Gradle dependency verification: dry-run output, merged into verification-metadata.xml then discarded
+gradle/verification-metadata.dryrun.xml

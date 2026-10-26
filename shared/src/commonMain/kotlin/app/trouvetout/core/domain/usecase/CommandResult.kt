@@ -28,6 +28,8 @@ public enum class Rejection {
     PLACE_CYCLE,
     UNKNOWN_PHOTO,
     UNKNOWN_REMINDER,
+    NOTHING_TO_UNDO,
+    NOT_UNDOABLE,
 }
 
 public sealed interface CommandResult {

@@ -37,3 +37,11 @@ LIMIT ? OFFSET ?;
 -- Dernier événement dans l'ordre canonique (at, device_id, id) : la « tête » du journal.
 head:
 SELECT at, device_id, id FROM event ORDER BY at DESC, device_id DESC, id DESC LIMIT 1;
+
+-- Les derniers événements de cet appareil (pour l'annulation) : le dernier ajout partage le même instant.
+lastForDevice:
+SELECT id, at, device_id, actor, type, payload, source, raw_input
+FROM event
+WHERE device_id = ?
+ORDER BY at DESC, id DESC
+LIMIT ?;

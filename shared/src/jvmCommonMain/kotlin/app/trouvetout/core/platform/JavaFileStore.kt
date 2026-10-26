@@ -1,6 +1,8 @@
 package app.trouvetout.core.platform
 
 import java.io.File
+import java.io.FileOutputStream
+import java.io.RandomAccessFile
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.UUID
@@ -19,16 +21,10 @@ internal class JavaFileStore(
         bytes: ByteArray,
     ) {
         val target = resolve(relativePath)
-        target.parentFile?.mkdirs()
-        val temporary = File(target.parentFile, ".${target.name}.${UUID.randomUUID()}$TEMP_SUFFIX")
+        val temporary = temporaryFor(target)
         try {
             temporary.writeBytes(bytes)
-            Files.move(
-                temporary.toPath(),
-                target.toPath(),
-                StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.ATOMIC_MOVE,
-            )
+            moveInto(temporary, target)
         } finally {
             temporary.delete()
         }
@@ -43,12 +39,103 @@ internal class JavaFileStore(
     override fun list(relativeDirectory: String): List<String> =
         resolve(relativeDirectory).list()?.filter(::isListableName)?.sorted() ?: emptyList()
 
+    override fun sink(relativePath: String): ByteSink {
+        val target = resolve(relativePath)
+        val temporary = temporaryFor(target)
+        return FileSink(temporary, target)
+    }
+
+    override fun source(relativePath: String): RandomAccessSource? =
+        resolve(relativePath).takeIf { it.isFile }?.let { FileSource(RandomAccessFile(it, "r")) }
+
+    override fun deleteDirectory(relativeDirectory: String): Boolean {
+        val directory = resolve(relativeDirectory)
+        return directory.exists() && directory.deleteRecursively()
+    }
+
+    private fun temporaryFor(target: File): File {
+        target.parentFile?.mkdirs()
+        return File(target.parentFile, ".${target.name}.${UUID.randomUUID()}$TEMP_SUFFIX")
+    }
+
+    private fun moveInto(
+        temporary: File,
+        target: File,
+    ) {
+        Files.move(
+            temporary.toPath(),
+            target.toPath(),
+            StandardCopyOption.REPLACE_EXISTING,
+            StandardCopyOption.ATOMIC_MOVE,
+        )
+    }
+
     /** Validates the relative path, then checks the resolved file really sits under the root (defence in depth). */
     private fun resolve(relativePath: String): File {
         requireSafeRelativePath(relativePath)
         val file = File(root, relativePath)
         require(file.canonicalPath.startsWith(root.canonicalPath + File.separator)) { "Path escapes the store" }
         return file
+    }
+
+    private inner class FileSink(
+        private val temporary: File,
+        private val target: File,
+    ) : ByteSink {
+        private val stream = FileOutputStream(temporary)
+        override var position: Long = 0
+            private set
+        private var closed = false
+
+        override fun write(
+            bytes: ByteArray,
+            offset: Int,
+            length: Int,
+        ) {
+            stream.write(bytes, offset, length)
+            position += length
+        }
+
+        override fun close() {
+            if (closed) return
+            closed = true
+            try {
+                try {
+                    stream.fd.sync()
+                } finally {
+                    stream.close()
+                }
+                moveInto(temporary, target)
+            } finally {
+                temporary.delete()
+            }
+        }
+
+        override fun abort() {
+            if (closed) return
+            closed = true
+            runCatching { stream.close() }
+            temporary.delete()
+        }
+    }
+
+    private class FileSource(
+        private val file: RandomAccessFile,
+    ) : RandomAccessSource {
+        override val size: Long = file.length()
+
+        override fun read(
+            offset: Long,
+            length: Int,
+        ): ByteArray {
+            require(offset >= 0 && length >= 0 && offset + length <= size) { "Read out of range" }
+            val out = ByteArray(length)
+            file.seek(offset)
+            file.readFully(out)
+            return out
+        }
+
+        override fun close() = file.close()
     }
 }
 

@@ -54,6 +54,26 @@ public class EventStore internal constructor(
         }
     }
 
+    /**
+     * Inserts events (deduplicated by id) without touching the projection. For bulk imports: call
+     * [rebuildProjection] once afterwards instead of paying one replay per out-of-order batch.
+     */
+    public suspend fun appendWithoutProjection(events: List<Event>): AppendResult = withContext(dispatcher) {
+        db.transactionWithResult {
+            var appended = 0
+            var skipped = 0
+            for (event in events) {
+                if (db.eventQueries.exists(event.id).executeAsOne() > 0L) {
+                    skipped++
+                } else {
+                    insert(event)
+                    appended++
+                }
+            }
+            AppendResult(appended = appended, skipped = skipped, rebuilt = false)
+        }
+    }
+
     /** Rebuilds every projected table from the journal (import, repair, tests). */
     public suspend fun rebuildProjection() {
         withContext(dispatcher) { db.transaction { replayAll() } }
@@ -70,6 +90,14 @@ public class EventStore internal constructor(
     ): Unit = withContext(dispatcher) { pages(pageSize, action) }
 
     public suspend fun count(): Long = withContext(dispatcher) { db.eventQueries.count().executeAsOne() }
+
+    /** The most recent events of one device, newest first (at most [limit]). */
+    public suspend fun lastOf(
+        deviceId: String,
+        limit: Int,
+    ): List<Event> = withContext(dispatcher) {
+        db.eventQueries.lastForDevice(deviceId, limit.toLong()).executeAsList().map { it.toEvent() }
+    }
 
     /** History of one record (A5), oldest first. */
     public suspend fun historyOf(subject: EventSubject): List<Event> = withContext(dispatcher) {

@@ -2,4 +2,42 @@
 <resources>
     <string name="app_name" translatable="false">TrouveTout</string>
     <string name="home_empty_title">Nothing here yet</string>
+
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_back">Back</string>
+
+    <string name="settings_busy">Working…</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_data_section">Your data</string>
+    <string name="settings_export_hint">Export everything (objects, places, photos) as a ZIP file you can read without the app, and share it where you like. Nothing is sent anywhere by itself. The file is not encrypted and contains everything, including items marked sensitive and photos: share it with care.</string>
+    <string name="settings_export">Export</string>
+    <string name="settings_import_hint">Restore or merge an export: known entries are skipped, nothing is overwritten.</string>
+    <string name="settings_import">Import an export</string>
+    <string name="settings_wipe_hint">Erase every piece of data stored by the app on this phone.</string>
+    <string name="settings_wipe">Erase all data</string>
+    <string name="settings_wipe_confirm_title">Erase all data?</string>
+    <string name="settings_wipe_confirm_text">Objects, places, photos and history will be deleted from this phone. Export first if you want to keep them. This cannot be undone.</string>
+    <string name="settings_wipe_confirm_button">Erase</string>
+    <string name="settings_wipe_done_title">Data erased</string>
+    <string name="settings_wipe_done_text">The app starts from scratch.</string>
+    <string name="settings_export_done_title">Export ready</string>
+    <string name="settings_export_done_text">%1$s and %2$s. Choose where to send the file.</string>
+    <string name="settings_import_done_title">Import finished</string>
+    <string name="settings_import_done_text">Added: %1$s and %3$s. Already known: %2$d. Ignored: %4$d.</string>
+    <string name="settings_import_refused_title">Import refused</string>
+    <string name="settings_import_refused_newer">This export comes from a newer version of the app. Update the app, then try again.</string>
+    <string name="settings_import_refused_not_archive">This file is not a TrouveTout export.</string>
+    <string name="settings_import_refused_invalid">This export is damaged or incomplete.</string>
+    <string name="settings_failed_title">Something went wrong</string>
+    <string name="settings_failed_text">The operation could not be completed. Check the free space on the phone and try again.</string>
+
+    <plurals name="count_events">
+        <item quantity="one">%d entry</item>
+        <item quantity="other">%d entries</item>
+    </plurals>
+    <plurals name="count_photos">
+        <item quantity="one">%d photo</item>
+        <item quantity="other">%d photos</item>
+    </plurals>
 </resources>
