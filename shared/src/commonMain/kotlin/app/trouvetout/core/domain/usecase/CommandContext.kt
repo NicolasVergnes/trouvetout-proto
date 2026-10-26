@@ -6,23 +6,30 @@ import app.trouvetout.core.domain.ids.MonotonicUlidGenerator
 import app.trouvetout.core.domain.model.Event
 import app.trouvetout.core.domain.model.EventPayload
 import app.trouvetout.core.domain.model.EventSource
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
 
-/** Shared plumbing of the command classes: event construction, validation reads, append. */
+/**
+ * Shared plumbing of the command classes: event construction, validation reads, append.
+ * Commands run on whatever thread calls them; the single ULID generator is guarded by a mutex.
+ */
 internal class CommandContext(
     private val store: EventStore,
     private val ids: MonotonicUlidGenerator,
     private val clock: Clock,
     private val deviceId: String,
 ) {
-    fun newId(): String = ids.next()
+    private val idLock = Mutex()
 
-    fun event(
+    suspend fun newId(): String = idLock.withLock { ids.next() }
+
+    suspend fun event(
         payload: EventPayload,
         source: EventSource,
         rawInput: String? = null,
     ): Event = Event(
-        id = ids.next(),
+        id = newId(),
         at = clock.now(),
         deviceId = deviceId,
         payload = payload,

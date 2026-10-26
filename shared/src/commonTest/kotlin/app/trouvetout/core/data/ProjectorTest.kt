@@ -133,13 +133,16 @@ class ProjectorTest {
             EventPayload.PlaceCreated("cave", "cave", kind = PlaceKind.ROOT),
             EventPayload.ItemCreated("i1", "skis"),
             EventPayload.ItemStored("i1", placeId = "cave"),
+            EventPayload.ItemLent("i1", to = "Léa"),
             EventPayload.ItemArchived("i1"),
         )
-        assertEquals(LocationStatus.ARCHIVED, location("i1").status)
         assertTrue(db.itemQueries.selectById("i1").executeAsOne().archived)
+        assertEquals(LocationStatus.LENT, location("i1").status, "archiving keeps the loan in progress")
+        assertEquals("Léa", location("i1").lentTo)
 
         apply(EventPayload.ItemArchived("i1", archived = false))
-        assertEquals(LocationStatus.STORED, location("i1").status)
+        assertFalse(db.itemQueries.selectById("i1").executeAsOne().archived)
+        assertEquals(LocationStatus.LENT, location("i1").status)
 
         apply(EventPayload.ItemDeleted("i1"))
         assertNotNull(db.itemQueries.selectById("i1").executeAsOne().deleted_at)
@@ -149,6 +152,35 @@ class ProjectorTest {
         apply(EventPayload.ItemRestored("i1"))
         assertNull(db.itemQueries.selectById("i1").executeAsOne().deleted_at)
         assertEquals(1L, db.itemQueries.countActive().executeAsOne())
+    }
+
+    @Test
+    fun should_ignore_merges_into_a_descendant_or_of_retired_places() = runTest {
+        apply(
+            EventPayload.PlaceCreated("house", "maison", kind = PlaceKind.ROOT),
+            EventPayload.PlaceCreated("cellar", "cave", parentId = "house", kind = PlaceKind.ROOM),
+            EventPayload.PlaceCreated("shelf", "étagère", parentId = "cellar", kind = PlaceKind.FURNITURE),
+            EventPayload.PlaceMerged("house", intoPlaceId = "shelf"),
+        )
+        assertNull(db.placeQueries.selectById("house").executeAsOne().merged_into, "merge into own descendant ignored")
+        assertEquals("house", db.placeQueries.selectById("cellar").executeAsOne().parent_id)
+
+        apply(
+            EventPayload.PlaceMerged("cellar", intoPlaceId = "house"),
+            EventPayload.PlaceMerged("house", intoPlaceId = "cellar"),
+        )
+        assertEquals("house", db.placeQueries.selectById("cellar").executeAsOne().merged_into)
+        assertNull(db.placeQueries.selectById("house").executeAsOne().merged_into, "merge into a retired place ignored")
+        assertNull(db.placeQueries.selectById("house").executeAsOne().deleted_at)
+        assertEquals("house", db.placeQueries.selectById("shelf").executeAsOne().parent_id)
+    }
+
+    @Test
+    fun should_keep_unknown_payloads_in_the_journal_and_ignore_them() = runTest {
+        apply(EventPayload.Unknown("ItemTeleported", """{"type":"ItemTeleported","itemId":"i9"}"""))
+        assertEquals(1L, store.count())
+        assertEquals("ItemTeleported", store.all().single().type)
+        assertEquals(0L, db.itemQueries.countActive().executeAsOne())
     }
 
     @Test

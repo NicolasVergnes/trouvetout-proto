@@ -17,7 +17,11 @@ import app.trouvetout.core.domain.usecase.CommandContext
 import app.trouvetout.core.domain.usecase.ContainerCommands
 import app.trouvetout.core.domain.usecase.ItemCommands
 import app.trouvetout.core.domain.usecase.PlaceCommands
+import app.trouvetout.core.log.LogLevel
 import app.trouvetout.core.platform.createFileStore
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -30,7 +34,10 @@ public class SharedFactory(
     public val appInfo: AppInfo = AppInfo
 
     private var openedDriver: SqlDriver? = null
-    private val driver: SqlDriver by lazy { config.driverFactory.create().also { openedDriver = it } }
+    private val driver: SqlDriver by lazy {
+        check(config.storageReady) { "storage not ready" }
+        config.driverFactory.create().also { openedDriver = it }
+    }
     private val database: TrouveToutDb by lazy { openDatabase(driver) }
 
     /** Local installation identity, stable across launches (ADR-005). */
@@ -51,19 +58,37 @@ public class SharedFactory(
     public val containerRepository: ContainerRepository by lazy { ContainerRepository(database, config.dispatchers) }
 
     private val photoIds: MonotonicUlidGenerator by lazy { MonotonicUlidGenerator(config.clock, config.random) }
+    private val photoIdLock = Mutex()
     public val photoStore: PhotoStore by lazy {
-        PhotoStore(createFileStore(config.dataDirectory), config.imageCodec, photoIds::next)
+        PhotoStore(
+            files = createFileStore(config.dataDirectory),
+            codec = config.imageCodec,
+            newId = { photoIdLock.withLock { photoIds.next() } },
+            dispatcher = config.dispatchers.default,
+        )
     }
 
     /**
      * Opens the database and settles the device identity off the main thread, so the first capture does not
-     * pay the schema creation. Returns the device id; safe to call several times.
+     * pay the schema creation. Returns false (and logs the failure class, never a path) when the store cannot
+     * be opened: storage not ready, disk full, corrupt file. Safe to call several times.
      */
-    public suspend fun warmUp(): String = withContext(config.dispatchers.io) { deviceId }
+    public suspend fun warmUp(): Boolean = withContext(config.dispatchers.io) {
+        val attempt = runCatching { deviceId }
+        attempt.exceptionOrNull()?.let { failure ->
+            if (failure is CancellationException) throw failure
+            config.logger.log(LogLevel.ERROR, TAG, "storage unavailable: ${failure::class.simpleName}")
+        }
+        attempt.isSuccess
+    }
 
     /** Releases held resources (database connection, loaded models). */
     public fun close() {
         openedDriver?.close()
         openedDriver = null
+    }
+
+    private companion object {
+        const val TAG = "SharedFactory"
     }
 }

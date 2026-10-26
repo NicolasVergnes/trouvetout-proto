@@ -16,10 +16,15 @@ public fun interface DriverFactory {
     public fun create(): SqlDriver
 }
 
-/** Wraps an opened driver into the typed database and records the schema version. */
+/**
+ * Wraps an opened driver into the typed database. The recorded schema version only moves forward: a file
+ * already migrated by a newer build is never stamped back to an older version.
+ */
 public fun openDatabase(driver: SqlDriver): TrouveToutDb {
-    driver.execute(null, "PRAGMA foreign_keys = ON", 0)
     val database = TrouveToutDb(driver)
-    database.metaQueries.set(MetaKeys.SCHEMA_VERSION, SCHEMA_VERSION.toString())
+    val recorded = database.metaQueries.get(MetaKeys.SCHEMA_VERSION).executeAsOneOrNull()?.toLongOrNull() ?: 0L
+    if (recorded < SCHEMA_VERSION) {
+        database.metaQueries.set(MetaKeys.SCHEMA_VERSION, SCHEMA_VERSION.toString())
+    }
     return database
 }

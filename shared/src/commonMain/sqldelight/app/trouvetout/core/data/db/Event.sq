@@ -27,5 +27,13 @@ SELECT id, at, device_id, actor, type, payload, source, raw_input
 FROM event
 ORDER BY at, device_id, id;
 
-lastAt:
-SELECT MAX(at) AS last_at FROM event;
+-- Une page du journal dans l'ordre canonique (rejeu par morceaux, sans tout charger en mémoire).
+pageOrdered:
+SELECT id, at, device_id, actor, type, payload, source, raw_input
+FROM event
+ORDER BY at, device_id, id
+LIMIT ? OFFSET ?;
+
+-- Dernier événement dans l'ordre canonique (at, device_id, id) : la « tête » du journal.
+head:
+SELECT at, device_id, id FROM event ORDER BY at DESC, device_id DESC, id DESC LIMIT 1;

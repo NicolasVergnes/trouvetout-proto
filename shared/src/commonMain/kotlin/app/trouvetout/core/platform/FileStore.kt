@@ -29,11 +29,22 @@ public interface FileStore {
 
 public expect fun createFileStore(rootDirectory: String): FileStore
 
-/** Shared validation: relative, slash-separated, no parent segment. */
+/**
+ * Shared validation: relative, slash-separated, no `.`/`..` segment, no control character (a NUL would be
+ * truncated by C string APIs and turn `..\u0000` into `..`).
+ */
 internal fun requireSafeRelativePath(relativePath: String) {
     require(relativePath.isNotBlank()) { "Empty path" }
+    require(relativePath.none { it.code < MIN_PRINTABLE || it.code == DEL }) { "Control character in path" }
     require(!relativePath.startsWith("/") && !relativePath.contains('\\') && !relativePath.contains(':')) {
         "Not a relative path"
     }
-    require(relativePath.split('/').none { it == ".." || it.isEmpty() }) { "Path escapes the store" }
+    require(relativePath.split('/').none { it == ".." || it == "." || it.isEmpty() }) { "Path escapes the store" }
 }
+
+/** Names that [FileStore.list] reports: hidden files and temporary files of an interrupted write are skipped. */
+internal fun isListableName(name: String): Boolean = !name.startsWith(".") && !name.endsWith(TEMP_SUFFIX)
+
+internal const val TEMP_SUFFIX: String = ".tmp"
+private const val MIN_PRINTABLE = 0x20
+private const val DEL = 0x7F

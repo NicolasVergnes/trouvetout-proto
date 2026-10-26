@@ -1,31 +1,44 @@
+import ImageIO
 import Shared
 import UIKit
+import UniformTypeIdentifiers
 
-/// JPEG transcoding with UIKit for the photo store (A10). Decoding and redrawing drops every metadata
-/// (EXIF, GPS) and applies the orientation; the long side is bounded to `maxSide` pixels.
+/// JPEG transcoding for the photo store (A10), built on ImageIO.
+/// The source is decoded *subsampled* to at most `maxSide` pixels (`CGImageSourceCreateThumbnailAtIndex`), so a
+/// 100-megapixel photo or a decompression bomb never materialises at full size on a 2 GB phone. Redrawing on an
+/// opaque white canvas applies the orientation and drops every metadata (EXIF, GPS) by construction.
 final class UIImageCodec: NSDataImageCodec {
     override func transcode(source: Data, maxSide: Int32, quality: Int32) -> NSDataEncodedImage? {
-        guard let image = UIImage(data: source), image.size.width > 0, image.size.height > 0 else {
+        let sourceOptions: [CFString: Any] = [kCGImageSourceShouldCache: false]
+        guard let imageSource = CGImageSourceCreateWithData(source as CFData, sourceOptions as CFDictionary),
+              CGImageSourceGetCount(imageSource) > 0
+        else {
             return nil
         }
-        let pixelWidth = image.size.width * image.scale
-        let pixelHeight = image.size.height * image.scale
-        let ratio = min(1, CGFloat(maxSide) / max(pixelWidth, pixelHeight))
-        let target = CGSize(
-            width: max(1, (pixelWidth * ratio).rounded(.down)),
-            height: max(1, (pixelHeight * ratio).rounded(.down))
-        )
+        let thumbnailOptions: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true, // applies the EXIF orientation
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: Int(maxSide),
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, thumbnailOptions as CFDictionary) else {
+            return nil
+        }
+        let size = CGSize(width: cgImage.width, height: cgImage.height)
+        guard size.width >= 1, size.height >= 1 else {
+            return nil
+        }
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
         format.opaque = true
-        let rendered = UIGraphicsImageRenderer(size: target, format: format).image { context in
+        let rendered = UIGraphicsImageRenderer(size: size, format: format).image { context in
             UIColor.white.setFill()
-            context.fill(CGRect(origin: .zero, size: target))
-            image.draw(in: CGRect(origin: .zero, size: target))
+            context.fill(CGRect(origin: .zero, size: size))
+            UIImage(cgImage: cgImage).draw(in: CGRect(origin: .zero, size: size))
         }
         guard let jpeg = rendered.jpegData(compressionQuality: CGFloat(quality) / 100) else {
             return nil
         }
-        return NSDataEncodedImage(data: jpeg, width: Int32(target.width), height: Int32(target.height))
+        return NSDataEncodedImage(data: jpeg, width: Int32(size.width), height: Int32(size.height))
     }
 }

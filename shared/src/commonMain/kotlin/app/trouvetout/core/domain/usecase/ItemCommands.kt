@@ -20,6 +20,7 @@ public class ItemCommands internal constructor(
         rawInput: String? = null,
     ): CommandResult {
         val name = cleanName(draft.name) ?: return rejected(Rejection.BLANK_NAME)
+        if (!draft.quantity.isValidQuantity()) return rejected(Rejection.INVALID_QUANTITY)
         val locationRejection = location?.let { ctx.checkLocation(it) }
         if (locationRejection != null) return rejected(locationRejection)
         val itemId = ctx.newId()
@@ -33,34 +34,39 @@ public class ItemCommands internal constructor(
                 unit = draft.unit?.trim()?.ifEmpty { null },
                 sensitive = draft.sensitive,
             )
-        val events =
-            listOfNotNull(
-                ctx.event(created, source, rawInput),
-                location?.let { ctx.event(it.toStored(itemId), source, rawInput) },
-            )
+        val events = ArrayList<app.trouvetout.core.domain.model.Event>(2)
+        events += ctx.event(created, source, rawInput)
+        if (location != null) events += ctx.event(location.toStored(itemId), source, rawInput)
         return ctx.commit(events)
     }
 
+    /** Applies a field patch; a blank description clears it; a patch that changes nothing appends no event. */
     public suspend fun update(
         itemId: String,
         patch: ItemPatch,
         source: EventSource,
     ): CommandResult {
-        ctx.checkItem(itemId)?.let { return rejected(it) }
-        val name = patch.name?.let { cleanName(it) ?: return rejected(Rejection.BLANK_NAME) }
+        val name = patch.name?.let(::cleanName)
+        val rejection =
+            ctx.checkItem(itemId)
+                ?: Rejection.BLANK_NAME.takeIf { patch.name != null && name == null }
+                ?: Rejection.INVALID_QUANTITY.takeIf { !patch.quantity.isValidQuantity() }
+        if (rejection != null) return rejected(rejection)
+        val description = patch.description?.trim()
         val payload =
             EventPayload.ItemUpdated(
                 itemId = itemId,
                 name = name,
-                description = patch.description?.trim(),
-                clearDescription = patch.clearDescription,
+                description = description?.ifEmpty { null },
+                clearDescription = patch.clearDescription || description?.isEmpty() == true,
                 tags = patch.tags?.let(::cleanTags),
                 quantity = patch.quantity,
                 clearQuantity = patch.clearQuantity,
-                unit = patch.unit?.trim(),
+                unit = patch.unit?.trim()?.ifEmpty { null },
                 sensitive = patch.sensitive,
                 pinned = patch.pinned,
             )
+        if (payload.changesNothing()) return CommandResult.Done(emptyList())
         return ctx.commit(listOf(ctx.event(payload, source)))
     }
 
@@ -140,4 +146,17 @@ public class ItemCommands internal constructor(
         ctx.checkItem(itemId)?.let { return rejected(it) }
         return ctx.commit(listOf(ctx.event(payload, source, rawInput)))
     }
+
+    /** Absent, or a finite non-negative number (NaN/Infinity would break the JSON payload). */
+    private fun Double?.isValidQuantity(): Boolean = this == null || (isFinite() && this >= 0.0)
+
+    private fun EventPayload.ItemUpdated.changesNothing(): Boolean = name == null &&
+        description == null &&
+        !clearDescription &&
+        tags == null &&
+        quantity == null &&
+        !clearQuantity &&
+        unit == null &&
+        sensitive == null &&
+        pinned == null
 }

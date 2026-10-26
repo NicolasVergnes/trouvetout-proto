@@ -112,4 +112,35 @@ class EventStoreTest {
         store.rebuildProjection()
         assertEquals(incremental, db.snapshot())
     }
+
+    @Test
+    fun should_rebuild_when_a_same_millisecond_event_sorts_before_the_head() = runTest {
+        val clockA = TickingClock(1_700_000_000_000L)
+        val deviceA = EventFixtures("device-A", clockA, seed = 1)
+        val deviceZ = EventFixtures("device-Z", TickingClock(1_700_000_000_000L), seed = 2)
+        val created = deviceZ.event(EventPayload.ItemCreated("i1", "skis"))
+        val place1 = deviceZ.event(EventPayload.PlaceCreated("p1", "cave", kind = PlaceKind.ROOT))
+        val place2 = deviceZ.event(EventPayload.PlaceCreated("p2", "garage", kind = PlaceKind.ROOT))
+        val movedByZ = deviceZ.event(EventPayload.ItemMovedTo("i1", placeId = "p2"))
+        // Same millisecond as movedByZ but a smaller device id: canonically BEFORE it.
+        repeat(3) { clockA.tick() }
+        val storedByA = deviceA.event(EventPayload.ItemStored("i1", placeId = "p1"))
+        assertEquals(movedByZ.at, storedByA.at)
+        store.append(listOf(created, place1, place2, movedByZ))
+
+        val late = store.append(listOf(storedByA))
+
+        assertTrue(late.rebuilt, "same instant, earlier device id: must be replayed in canonical order")
+        assertEquals("p2", db.locationStateQueries.selectByItem("i1").executeAsOne().place_id)
+        assertEquals(listOf(created.id, place1.id, place2.id, storedByA.id, movedByZ.id), store.all().map { it.id })
+    }
+
+    @Test
+    fun should_stream_the_journal_page_by_page_in_order() = runTest {
+        val events = List(45) { fx.event(EventPayload.ItemCreated("i$it", "n$it")) }
+        store.append(events)
+        val seen = ArrayList<String>()
+        store.forEachInOrder(pageSize = 10) { seen += it.id }
+        assertEquals(events.map { it.id }, seen)
+    }
 }

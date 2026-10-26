@@ -1,103 +1,68 @@
 package app.trouvetout.core.platform
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
-import android.media.ExifInterface
-import java.io.ByteArrayInputStream
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.ImageDecoder
 import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.nio.ByteBuffer
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/** BitmapFactory-based transcoding; the EXIF orientation is applied, every other metadata is dropped. */
+/**
+ * ImageDecoder-based transcoding (API 28+, so unconditional at minSdk 29): the image is decoded directly at
+ * the target size (no full-resolution bitmap for a 100-megapixel source), the EXIF orientation is applied by
+ * the decoder, HEIC and the first frame of animated formats are handled, every other metadata is dropped and
+ * transparency is flattened on white (same result as the iOS and JVM codecs).
+ */
 public class AndroidImageCodec : ImageCodec {
     override fun transcodeJpeg(
         source: ByteArray,
         maxSide: Int,
         quality: Int,
     ): EncodedImage? {
-        val oriented = decode(source, maxSide) ?: return null
-        val scaled = scaleDown(oriented, maxSide)
+        val decoded = decode(source, maxSide) ?: return null
+        val flattened = flattenOnWhite(decoded)
         val out = ByteArrayOutputStream()
-        val written = scaled.compress(Bitmap.CompressFormat.JPEG, quality.coerceIn(0, MAX_QUALITY), out)
-        return if (written) EncodedImage(out.toByteArray(), scaled.width, scaled.height) else null
+        val written = flattened.compress(Bitmap.CompressFormat.JPEG, quality.coerceIn(0, MAX_QUALITY), out)
+        return if (written) EncodedImage(out.toByteArray(), flattened.width, flattened.height) else null
     }
 
-    /** Decodes with a power-of-two subsampling close to [maxSide], then applies the EXIF orientation. */
     private fun decode(
         source: ByteArray,
         maxSide: Int,
-    ): Bitmap? {
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeByteArray(source, 0, source.size, bounds)
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-        val options = BitmapFactory.Options().apply {
-            inSampleSize =
-                sampleSize(max(bounds.outWidth, bounds.outHeight), maxSide)
-        }
-        val decoded = BitmapFactory.decodeByteArray(source, 0, source.size, options)
-        return decoded?.let { applyOrientation(it, orientationOf(source)) }
-    }
-
-    private fun scaleDown(
-        bitmap: Bitmap,
-        maxSide: Int,
-    ): Bitmap {
-        val scale = min(1f, maxSide.toFloat() / max(bitmap.width, bitmap.height))
-        if (scale >= 1f) return bitmap
-        return Bitmap.createScaledBitmap(
-            bitmap,
-            max(1, (bitmap.width * scale).roundToInt()),
-            max(1, (bitmap.height * scale).roundToInt()),
-            true,
-        )
-    }
-
-    /** Largest power of two keeping the decoded long side at or above [maxSide] (then scaled precisely). */
-    private fun sampleSize(
-        longSide: Int,
-        maxSide: Int,
-    ): Int {
-        var sample = 1
-        while (longSide / (sample * 2) >= maxSide) sample *= 2
-        return sample
-    }
-
-    private fun orientationOf(source: ByteArray): Int = runCatching {
-        ExifInterface(
-            ByteArrayInputStream(source),
-        ).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
-    }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
-
-    private fun applyOrientation(
-        bitmap: Bitmap,
-        orientation: Int,
-    ): Bitmap {
-        val matrix = Matrix()
-        when (orientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(QUARTER_TURN)
-            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(HALF_TURN)
-            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(THREE_QUARTER_TURN)
-            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
-            ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
-            ExifInterface.ORIENTATION_TRANSPOSE -> {
-                matrix.postRotate(QUARTER_TURN)
-                matrix.preScale(-1f, 1f)
+    ): Bitmap? = try {
+        ImageDecoder.decodeBitmap(ImageDecoder.createSource(ByteBuffer.wrap(source))) { decoder, info, _ ->
+            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            decoder.isMutableRequired = false
+            // info.size is the oriented size; keep the aspect ratio, never upscale.
+            val scale = min(1.0, maxSide.toDouble() / max(info.size.width, info.size.height))
+            if (scale < 1.0) {
+                decoder.setTargetSize(
+                    max(1, (info.size.width * scale).roundToInt()),
+                    max(1, (info.size.height * scale).roundToInt()),
+                )
             }
-            ExifInterface.ORIENTATION_TRANSVERSE -> {
-                matrix.postRotate(THREE_QUARTER_TURN)
-                matrix.preScale(-1f, 1f)
-            }
-            else -> return bitmap
         }
-        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    } catch (_: IOException) {
+        // ImageDecoder.DecodeException (not an image, unsupported codec such as 10-bit HEIC on API 29).
+        null
+    }
+
+    private fun flattenOnWhite(bitmap: Bitmap): Bitmap {
+        if (!bitmap.hasAlpha()) return bitmap
+        val opaque = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        Canvas(opaque).apply {
+            drawColor(Color.WHITE)
+            drawBitmap(bitmap, 0f, 0f, null)
+        }
+        bitmap.recycle()
+        return opaque
     }
 
     private companion object {
         const val MAX_QUALITY = 100
-        const val QUARTER_TURN = 90f
-        const val HALF_TURN = 180f
-        const val THREE_QUARTER_TURN = 270f
     }
 }

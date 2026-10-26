@@ -231,4 +231,37 @@ class CommandsTest {
         assertEquals(0, db.reminderQueries.selectPending().executeAsList().size)
         assertEquals(Rejection.UNKNOWN_REMINDER, attachments.completeReminder("nope", EventSource.SYSTEM).reason())
     }
+
+    @Test
+    fun should_clear_a_description_patched_blank_and_skip_empty_patches() = runTest {
+        val cable = item("câble")
+        items.update(cable, ItemPatch(description = "blanc"), EventSource.TEXT).events()
+        assertEquals("blanc", db.itemQueries.selectById(cable).executeAsOne().description)
+
+        items.update(cable, ItemPatch(description = "   "), EventSource.TEXT).events()
+        assertEquals(null, db.itemQueries.selectById(cable).executeAsOne().description)
+
+        val before = store.count()
+        assertEquals(emptyList(), items.update(cable, ItemPatch(), EventSource.TEXT).events())
+        assertEquals(before, store.count(), "an empty patch appends nothing")
+    }
+
+    @Test
+    fun should_refuse_non_finite_or_negative_quantities() = runTest {
+        assertEquals(
+            Rejection.INVALID_QUANTITY,
+            items.create(ItemDraft("vis", quantity = Double.NaN), null, EventSource.TEXT).reason(),
+        )
+        assertEquals(
+            Rejection.INVALID_QUANTITY,
+            items.create(ItemDraft("vis", quantity = -1.0), null, EventSource.TEXT).reason(),
+        )
+        val screws = item("vis")
+        assertEquals(
+            Rejection.INVALID_QUANTITY,
+            items.update(screws, ItemPatch(quantity = Double.POSITIVE_INFINITY), EventSource.TEXT).reason(),
+        )
+        items.update(screws, ItemPatch(quantity = 12.0, unit = "pcs"), EventSource.TEXT).events()
+        assertEquals(12.0, db.itemQueries.selectById(screws).executeAsOne().quantity)
+    }
 }

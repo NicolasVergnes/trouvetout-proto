@@ -10,7 +10,8 @@ import app.trouvetout.core.domain.model.LocationStatus
  * Applies journal events to the projected tables (`item`, `place`, `container`, `location_state`, `photo`,
  * `reminder`). This is the only writer of those tables. Applying the whole journal in `(at, deviceId, id)`
  * order from an empty projection must give the same tables as applying events as they arrived: see the
- * replay tests. Unknown references are tolerated (the journal is the truth, the projection never fails).
+ * replay tests. Unknown references, retired records and unknown payloads are tolerated (the journal is the
+ * truth, the projection never fails).
  */
 internal class Projector(
     private val db: TrouveToutDb,
@@ -53,6 +54,7 @@ internal class Projector(
             is EventPayload.ReminderSet,
             is EventPayload.ReminderDone,
             -> applyAttachment(p, at)
+            is EventPayload.Unknown -> Unit
         }
     }
 
@@ -68,10 +70,8 @@ internal class Projector(
             is EventPayload.ItemTaken -> setStatus(p.itemId, LocationStatus.TAKEN, at)
             is EventPayload.ItemReturned -> setStatus(p.itemId, LocationStatus.STORED, at)
             is EventPayload.ItemLent -> setStatus(p.itemId, LocationStatus.LENT, at, lentTo = p.to)
-            is EventPayload.ItemArchived -> {
-                db.itemQueries.setArchived(p.archived, p.itemId)
-                setStatus(p.itemId, if (p.archived) LocationStatus.ARCHIVED else LocationStatus.STORED, at)
-            }
+            // Archiving is a flag on the item; the location state (and a loan in progress) is untouched.
+            is EventPayload.ItemArchived -> db.itemQueries.setArchived(p.archived, p.itemId)
             is EventPayload.ItemDeleted -> db.itemQueries.setDeletedAt(at, p.itemId)
             is EventPayload.ItemRestored -> db.itemQueries.setDeletedAt(null, p.itemId)
             else -> Unit
@@ -97,13 +97,8 @@ internal class Projector(
         at: Long,
     ) {
         when (p) {
-            is EventPayload.ContainerCreated -> db.containerQueries.insert(
-                p.containerId,
-                p.label,
-                p.number,
-                p.placeId,
-                at,
-            )
+            is EventPayload.ContainerCreated ->
+                db.containerQueries.insert(p.containerId, p.label, p.number, p.placeId, at)
             is EventPayload.ContainerMoved -> db.containerQueries.setPlace(p.placeId, p.containerId)
             is EventPayload.ContainerDeleted -> db.containerQueries.setDeletedAt(at, p.containerId)
             else -> Unit
@@ -128,12 +123,8 @@ internal class Projector(
                     at,
                 )
             is EventPayload.PhotoDetached -> db.photoQueries.setDetachedAt(at, p.photoId)
-            is EventPayload.ReminderSet -> db.reminderQueries.insert(
-                p.reminderId,
-                p.itemId,
-                p.fireAtEpochMillis,
-                p.kind.name,
-            )
+            is EventPayload.ReminderSet ->
+                db.reminderQueries.insert(p.reminderId, p.itemId, p.fireAtEpochMillis, p.kind.name)
             is EventPayload.ReminderDone -> db.reminderQueries.setDone(true, p.reminderId)
             else -> Unit
         }
@@ -194,7 +185,11 @@ internal class Projector(
         db.locationStateQueries.upsert(itemId, current?.place_id, current?.container_id, status.name, lentTo, at)
     }
 
-    /** D6: everything under the source place now belongs to the target; the source keeps its history. */
+    /**
+     * D6: everything under the source place now belongs to the target; the source keeps its history.
+     * Skipped when either place is already retired or when the target sits under the source (a replay of
+     * concurrent or late events must never create a cycle or retire both sides).
+     */
     private fun mergePlaces(
         p: EventPayload.PlaceMerged,
         at: Long,
@@ -202,15 +197,27 @@ internal class Projector(
         if (p.placeId == p.intoPlaceId) return
         val source = db.placeQueries.selectById(p.placeId).executeAsOneOrNull() ?: return
         val target = db.placeQueries.selectById(p.intoPlaceId).executeAsOneOrNull() ?: return
+        val retired = listOf(source, target).any { it.deleted_at != null || it.merged_into != null }
+        if (retired || isUnder(candidate = target.id, ancestor = source.id)) return
         db.placeQueries.reparentChildren(p.intoPlaceId, p.placeId)
         db.containerQueries.movePlace(p.intoPlaceId, p.placeId)
         db.locationStateQueries.movePlace(p.intoPlaceId, p.placeId)
-        val mergedAliases = (
-            JsonLists.decode(
-                target.aliases,
-            ) + source.name + JsonLists.decode(source.aliases)
-        ).distinct()
+        val mergedAliases =
+            (JsonLists.decode(target.aliases) + source.name + JsonLists.decode(source.aliases)).distinct()
         db.placeQueries.rename(target.name, JsonLists.encode(mergedAliases), p.intoPlaceId)
         db.placeQueries.setMergedInto(p.intoPlaceId, at, p.placeId)
+    }
+
+    private fun isUnder(
+        candidate: String,
+        ancestor: String,
+    ): Boolean {
+        val seen = HashSet<String>()
+        var current: String? = db.placeQueries.selectById(candidate).executeAsOneOrNull()?.parent_id
+        while (current != null && seen.add(current)) {
+            if (current == ancestor) return true
+            current = db.placeQueries.selectById(current).executeAsOneOrNull()?.parent_id
+        }
+        return false
     }
 }

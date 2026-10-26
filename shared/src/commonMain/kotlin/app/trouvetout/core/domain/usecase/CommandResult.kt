@@ -16,6 +16,7 @@ public sealed interface LocationRef {
 /** Business reasons for refusing a command; UI maps them to messages. */
 public enum class Rejection {
     BLANK_NAME,
+    INVALID_QUANTITY,
     UNKNOWN_ITEM,
     ITEM_DELETED,
     ITEM_NOT_DELETED,

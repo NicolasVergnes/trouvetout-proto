@@ -19,7 +19,7 @@ Un événement (`events.jsonl` : un objet JSON par ligne ; table `event` : une l
 | --- | --- | --- |
 | `id` | ULID (26 caractères Crockford) | identifiant unique, trié par temps de création |
 | `at` | entier | instant UTC en millisecondes depuis l'époque |
-| `deviceId` | ULID | identité locale de l'installation (générée au premier lancement) |
+| `deviceId` | ULID | identité de l'installation : nombre aléatoire généré sur l'appareil au premier lancement, **non dérivé** d'un identifiant matériel ou de compte (ni Android ID, ni IDFV), jamais transmis ; présent dans `manifest.json` et sur chaque ligne du journal ; comme tout ULID, ses 10 premiers caractères encodent la date de création à la milliseconde ; régénéré après une suppression totale (H6) |
 | `actor` | texte | `"me"` en v1 (réservé au foyer) |
 | `type` | texte | nom du type, égal au discriminant `type` du payload |
 | `payload` | objet | champs propres au type (voir §3) ; contient aussi `"type"` |
@@ -47,7 +47,7 @@ Les identifiants (`itemId`, `placeId`, `containerId`, `photoId`, `reminderId`) s
 | `ItemTaken` | `itemId` | état `TAKEN`, le dernier lieu connu est conservé |
 | `ItemReturned` | `itemId` | état `STORED` au dernier lieu connu ; fin d'un prêt |
 | `ItemLent` | `itemId`, `to` | état `LENT`, personne mémorisée |
-| `ItemArchived` | `itemId`, `archived` (défaut `true`) | état `ARCHIVED` ou retour à `STORED` |
+| `ItemArchived` | `itemId`, `archived` (défaut `true`) | drapeau `archived` de la fiche ; l'état de lieu (et un prêt en cours) est inchangé |
 | `ItemDeleted` | `itemId` | corbeille (`deleted_at`) ; lieu et historique conservés |
 | `ItemRestored` | `itemId` | sortie de corbeille |
 
@@ -70,8 +70,10 @@ Les identifiants (`itemId`, `placeId`, `containerId`, `photoId`, `reminderId`) s
 | `ReminderSet` | `reminderId`, `itemId`, `fireAtEpochMillis`, `kind` (`DATE`/`CHECK`) | programme un rappel |
 | `ReminderDone` | `reminderId` | clôt le rappel |
 
-Un lecteur v1 qui rencontre un type inconnu l'ignore (et le compte) si `formatVersion` de l'export est ≤ 1 ; il refuse
-l'import si `formatVersion` est supérieur à ce qu'il sait lire.
+Un lecteur qui rencontre un type inconnu (ou un payload qu'il ne sait pas décoder) **le conserve tel quel** dans son
+journal, l'ignore dans la projection et le réécrit à l'identique dans ses exports : rien n'est perdu en passant par une
+version plus ancienne. Une `source` inconnue est lue comme `SYSTEM`. L'import refuse un export dont `formatVersion`
+est supérieur à ce qu'il sait lire.
 
 ## 4. Schéma SQLite (version 1)
 
@@ -104,7 +106,7 @@ CREATE TABLE item (
 
 CREATE TABLE location_state (           -- exactement une ligne par objet
   item_id TEXT NOT NULL PRIMARY KEY, place_id TEXT, container_id TEXT,
-  state TEXT NOT NULL,                  -- STORED | TAKEN | LENT | ARCHIVED
+  state TEXT NOT NULL,                  -- STORED | TAKEN | LENT (l'archivage est le drapeau item.archived)
   lent_to TEXT, since INTEGER NOT NULL);
 
 CREATE TABLE photo (
@@ -132,7 +134,7 @@ manifest.json     { "formatVersion": 1, "appVersion": "...", "schemaVersion": 1,
                     "deviceId": "...", "counts": { "events": n, "items": n, "places": n, "containers": n, "photos": n } }
 events.jsonl      journal complet, un événement par ligne (§2), trié par (at, deviceId, id)
 snapshot.json     projection lisible : { "items": [...], "places": [...], "containers": [...], "locations": [...] } — jamais importé
-photos/<id>.jpg   originaux recompressés (côté long ≤ 2048 px, JPEG ~85, sans métadonnées EXIF)
+photos/<id>.jpg   originaux recompressés (côté long ≤ 2048 px, JPEG ~85, sans les métadonnées d'origine)
 photos/<id>_t.jpg miniatures 256 px
 ```
 
@@ -140,5 +142,21 @@ Lire ses données sans l'app : `events.jsonl` est du JSON Lines ; `snapshot.json
 
 ## 6. Photos (A10)
 
-Chaque photo est ré-encodée à l'enregistrement (donc débarrassée de ses métadonnées, dont le GPS), nommée par un ULID,
-stockée dans `<répertoire privé>/photos/` hors des sauvegardes système, avec sa miniature et son empreinte SHA-256.
+Chaque photo est ré-encodée à l'enregistrement : les métadonnées d'origine (position GPS, appareil, date de prise de
+vue, vignette intégrée) disparaissent ; seul un en-tête technique minimal (dimensions, orientation normale, profil
+couleur) peut subsister selon la plateforme. Le fichier est nommé par un ULID, stocké dans `<répertoire privé>/photos/`
+hors des sauvegardes système, avec sa miniature et son empreinte SHA-256.
+
+## 7. Quelles données personnelles contient un export
+
+Tout ce qui s'y trouve a été saisi par l'utilisateur ou dérivé de sa saisie ; rien ne provient d'un capteur, d'un compte,
+d'un contact ou d'un identifiant système :
+
+- le texte libre tapé ou dicté : `name`, `description`, `tags`, noms et alias de lieux, libellés de contenants, et la
+  phrase complète `rawInput` **telle quelle** (elle peut contenir tout ce que l'utilisateur a dit) ;
+- les prénoms ou noms de tiers saisis lors d'un prêt (`ItemLent.to`, `location_state.lent_to`) ;
+- les horodatages d'activité (`at`, `since`, `created_at`, `fire_at`, en millisecondes UTC) ;
+- les photos ré-encodées (§6) ;
+- le `deviceId` (§2).
+
+Le droit d'accès et la portabilité sont satisfaits par l'export lui-même ; l'effacement par la suppression totale (H6).

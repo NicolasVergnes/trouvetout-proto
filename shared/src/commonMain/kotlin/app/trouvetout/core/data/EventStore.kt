@@ -21,8 +21,9 @@ public data class AppendResult(
 /**
  * The journal (A4). `append` is the only way data changes: it inserts the events, indexes their subjects and
  * updates the projection in one transaction. Events already known by id are ignored, which makes imports a
- * natural merge (A8). Events that arrive out of order (another device's history) trigger a full replay so
- * the projection always equals `replay(all events sorted by at, deviceId, id)`.
+ * natural merge (A8). An event that sorts before the current head in the canonical `(at, deviceId, id)`
+ * order (another device's history) triggers a full replay, so the projection always equals
+ * `replay(all events sorted by at, deviceId, id)`. Importers append in large batches: one rebuild per batch.
  */
 public class EventStore internal constructor(
     private val db: TrouveToutDb,
@@ -31,7 +32,7 @@ public class EventStore internal constructor(
 ) {
     public suspend fun append(events: List<Event>): AppendResult = withContext(dispatcher) {
         db.transactionWithResult {
-            val headAt = db.eventQueries.lastAt().executeAsOneOrNull()?.last_at ?: Long.MIN_VALUE
+            val head = db.eventQueries.head().executeAsOneOrNull()?.let { JournalKey(it.at, it.device_id, it.id) }
             val fresh = ArrayList<Event>(events.size)
             var skipped = 0
             var outOfOrder = false
@@ -42,7 +43,7 @@ public class EventStore internal constructor(
                 }
                 insert(event)
                 fresh += event
-                if (event.at.toEpochMilliseconds() < headAt) outOfOrder = true
+                if (head != null && JournalKey.of(event) < head) outOfOrder = true
             }
             if (outOfOrder) {
                 replayAll()
@@ -58,9 +59,15 @@ public class EventStore internal constructor(
         withContext(dispatcher) { db.transaction { replayAll() } }
     }
 
-    public suspend fun all(): List<Event> = withContext(dispatcher) {
-        db.eventQueries.allOrdered().executeAsList().map { it.toEvent() }
-    }
+    /** The whole journal in canonical order; prefer [forEachInOrder] for large journals (export). */
+    public suspend fun all(): List<Event> =
+        withContext(dispatcher) { db.eventQueries.allOrdered().executeAsList().map { it.toEvent() } }
+
+    /** Streams the journal in canonical order, one page at a time, without loading it whole. */
+    public suspend fun forEachInOrder(
+        pageSize: Int = REPLAY_PAGE,
+        action: (Event) -> Unit,
+    ): Unit = withContext(dispatcher) { pages(pageSize, action) }
 
     public suspend fun count(): Long = withContext(dispatcher) { db.eventQueries.count().executeAsOne() }
 
@@ -89,10 +96,38 @@ public class EventStore internal constructor(
 
     private fun replayAll() {
         projector.reset()
-        db.eventQueries.allOrdered().executeAsList().forEach { projector.apply(it.toEvent()) }
+        pages(REPLAY_PAGE, projector::apply)
+    }
+
+    private fun pages(
+        pageSize: Int,
+        action: (Event) -> Unit,
+    ) {
+        var offset = 0L
+        while (true) {
+            val page = db.eventQueries.pageOrdered(pageSize.toLong(), offset).executeAsList()
+            page.forEach { action(it.toEvent()) }
+            if (page.size < pageSize) break
+            offset += page.size
+        }
+    }
+
+    /** Canonical journal position of an event. */
+    private data class JournalKey(
+        val at: Long,
+        val deviceId: String,
+        val id: String,
+    ) : Comparable<JournalKey> {
+        override fun compareTo(other: JournalKey): Int =
+            compareValuesBy(this, other, { it.at }, { it.deviceId }, { it.id })
+
+        companion object {
+            fun of(event: Event) = JournalKey(event.at.toEpochMilliseconds(), event.deviceId, event.id)
+        }
     }
 
     private companion object {
+        const val REPLAY_PAGE = 2_000
         val journalOrder: Comparator<Event> = compareBy<Event>({ it.at }, { it.deviceId }, { it.id })
     }
 }

@@ -3,6 +3,7 @@ package app.trouvetout.core.data.photo
 import app.trouvetout.core.platform.EncodedImage
 import app.trouvetout.core.platform.FileStore
 import app.trouvetout.core.platform.ImageCodec
+import app.trouvetout.core.platform.isListableName
 import app.trouvetout.core.platform.requireSafeRelativePath
 import kotlin.math.max
 import kotlin.math.min
@@ -35,6 +36,9 @@ class InMemoryFileStore : FileStore {
     val files = LinkedHashMap<String, ByteArray>()
     override val rootDirectory: String = "/mem"
 
+    /** When set, writes whose path contains this text throw (simulates a disk failure). */
+    var failWritesContaining: String? = null
+
     override fun absolutePath(relativePath: String): String {
         requireSafeRelativePath(relativePath)
         return "$rootDirectory/$relativePath"
@@ -45,6 +49,7 @@ class InMemoryFileStore : FileStore {
         bytes: ByteArray,
     ) {
         requireSafeRelativePath(relativePath)
+        failWritesContaining?.let { check(it !in relativePath) { "write failed" } }
         files[relativePath] = bytes.copyOf()
     }
 
@@ -54,10 +59,9 @@ class InMemoryFileStore : FileStore {
 
     override fun exists(relativePath: String): Boolean = relativePath in files
 
-    override fun list(relativeDirectory: String): List<String> = files.keys.filter {
-        it.startsWith("$relativeDirectory/")
-    }.map { it.removePrefix("$relativeDirectory/") }.filter {
-        '/' !in
-            it
-    }.sorted()
+    override fun list(relativeDirectory: String): List<String> = files.keys
+        .filter { it.startsWith("$relativeDirectory/") }
+        .map { it.removePrefix("$relativeDirectory/") }
+        .filter { '/' !in it && isListableName(it) }
+        .sorted()
 }

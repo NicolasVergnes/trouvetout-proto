@@ -5,7 +5,20 @@ import kotlinx.serialization.Serializable
 import kotlin.time.Instant
 
 /** How an event entered the system; kept for the corpus and for re-indexing. */
-public enum class EventSource { VOICE, TEXT, PHOTO, WIDGET, IMPORT, SYSTEM }
+public enum class EventSource {
+    VOICE,
+    TEXT,
+    PHOTO,
+    WIDGET,
+    IMPORT,
+    SYSTEM,
+    ;
+
+    public companion object {
+        /** Tolerant parse: a source written by a newer version maps to [SYSTEM] instead of failing (N9). */
+        public fun parse(name: String): EventSource = entries.firstOrNull { it.name == name } ?: SYSTEM
+    }
+}
 
 /** What an event is about; indexed in `event_subject` for per-record history (A5). */
 public data class EventSubject(
@@ -31,6 +44,9 @@ public data class Event(
 ) {
     /** Stable type name, also the JSON discriminator of [payload]. */
     val type: String get() = payload.typeName
+
+    /** Identifiers only: an event interpolated in a log or an assertion must not leak names or phrases. */
+    override fun toString(): String = "Event(id=$id, type=$type, at=$at, deviceId=$deviceId, source=$source)"
 
     public companion object {
         public const val DEFAULT_ACTOR: String = "me"
@@ -304,6 +320,24 @@ public sealed interface EventPayload {
         override val subjects: List<EventSubject> get() = listOf(
             EventSubject(EventSubject.SubjectType.REMINDER, reminderId),
         )
+    }
+
+    /**
+     * A payload this version cannot read (type written by a newer version, or undecodable JSON). Kept in the
+     * journal with its raw JSON so an export preserves it; the projection ignores it. Never produced by commands.
+     */
+    @Serializable
+    @SerialName("Unknown")
+    public data class Unknown(
+        override val typeName: String,
+        val rawJson: String,
+    ) : EventPayload {
+        override val subjects: List<EventSubject> get() = emptyList()
+
+        public companion object {
+            /** [typeName] of a payload that is not even a JSON object with a `type`. */
+            public const val UNREADABLE: String = "?"
+        }
     }
 
     public companion object {

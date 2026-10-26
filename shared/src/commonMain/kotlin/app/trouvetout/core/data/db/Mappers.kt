@@ -83,7 +83,7 @@ internal fun LocationRow.toLocationState(): LocationState = LocationState(
 
 internal fun PhotoRow.toPhoto(): Photo = Photo(
     id = id,
-    ownerType = PhotoOwnerType.valueOf(owner_type),
+    ownerType = PhotoOwnerType.entries.firstOrNull { it.name == owner_type } ?: PhotoOwnerType.ITEM,
     ownerId = owner_id,
     fileName = file_name,
     thumbName = thumb_name,

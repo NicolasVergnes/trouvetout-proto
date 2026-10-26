@@ -87,4 +87,46 @@ class EventJsonTest {
         val merged = EventPayload.PlaceMerged("p1", "p2")
         assertEquals(2, merged.subjects.size)
     }
+
+    @Test
+    fun should_turn_an_unknown_type_into_an_unknown_payload_that_round_trips_untouched() {
+        val json = """{"type":"ItemTeleported","itemId":"i1","to":"Mars"}"""
+        val payload = EventJson.decodePayload(json)
+        assertEquals(EventPayload.Unknown("ItemTeleported", json), payload)
+        assertEquals(json, EventJson.encodePayload(payload))
+        assertTrue(payload.subjects.isEmpty())
+    }
+
+    @Test
+    fun should_not_throw_on_malformed_or_non_object_payloads() {
+        assertEquals(EventPayload.Unknown.UNREADABLE, EventJson.decodePayload("not json").typeName)
+        assertEquals(EventPayload.Unknown.UNREADABLE, EventJson.decodePayload("[1,2]").typeName)
+        // Known type, missing required field: kept, not crashed on.
+        val broken = EventJson.decodePayload("""{"type":"ItemStored"}""")
+        assertEquals("ItemStored", broken.typeName)
+        assertTrue(broken is EventPayload.Unknown)
+    }
+
+    @Test
+    fun should_parse_unknown_sources_as_system() {
+        assertEquals(EventSource.VOICE, EventSource.parse("VOICE"))
+        assertEquals(EventSource.SYSTEM, EventSource.parse("TELEPATHY"))
+    }
+
+    @Test
+    fun should_keep_business_data_out_of_event_toString() {
+        val event =
+            Event(
+                "01E",
+                kotlin.time.Instant.fromEpochMilliseconds(0),
+                "dev",
+                payload = EventPayload.ItemCreated("i1", "passeport"),
+                source = EventSource.VOICE,
+                rawInput = "passeport dans la commode",
+            )
+        val text = event.toString()
+        assertTrue("passeport" !in text, text)
+        assertTrue("commode" !in text, text)
+        assertTrue("ItemCreated" in text && "01E" in text, text)
+    }
 }

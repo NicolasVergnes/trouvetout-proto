@@ -41,7 +41,8 @@ public data class Item(
     val deletedAt: Instant?,
 )
 
-public enum class LocationStatus { STORED, TAKEN, LENT, ARCHIVED }
+/** Where the item is relative to its place: there, taken out, or lent. Archiving is a flag on the item. */
+public enum class LocationStatus { STORED, TAKEN, LENT }
 
 /**
  * Current location of an item, projected from the journal. Exactly one row per item.

@@ -7,9 +7,10 @@ final class ImageCodecTests: XCTestCase {
     private func pngData(width: CGFloat, height: CGFloat) -> Data {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
-        let image = UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format).image { context in
+        let size = CGSize(width: width, height: height)
+        let image = UIGraphicsImageRenderer(size: size, format: format).image { context in
             UIColor.systemTeal.setFill()
-            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+            context.fill(CGRect(origin: .zero, size: size))
         }
         return image.pngData() ?? Data()
     }
@@ -28,7 +29,8 @@ final class ImageCodecTests: XCTestCase {
     }
 
     func testSmallImagesAreNotUpscaled() throws {
-        let encoded = try XCTUnwrap(UIImageCodec().transcode(source: pngData(width: 300, height: 200), maxSide: 2048, quality: 85))
+        let source = pngData(width: 300, height: 200)
+        let encoded = try XCTUnwrap(UIImageCodec().transcode(source: source, maxSide: 2048, quality: 85))
         XCTAssertEqual(encoded.width, 300)
         XCTAssertEqual(encoded.height, 200)
     }

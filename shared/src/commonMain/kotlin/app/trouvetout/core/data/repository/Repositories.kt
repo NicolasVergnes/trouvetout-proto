@@ -3,6 +3,7 @@ package app.trouvetout.core.data.repository
 import app.cash.sqldelight.Query
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import app.trouvetout.core.data.db.TrouveToutDb
 import app.trouvetout.core.data.db.toContainer
 import app.trouvetout.core.data.db.toItem
@@ -28,7 +29,10 @@ public data class ItemView(
     val path: LocationPath,
 )
 
-/** Read side over the projected tables; everything is a `Flow` that re-emits after each append. */
+/**
+ * Read side over the projected tables; everything is a `Flow` that re-emits after each append. Each flow
+ * combines several table flows, so a screen may see one intermediate emission right after a write.
+ */
 public class ItemRepository internal constructor(
     private val db: TrouveToutDb,
     private val dispatchers: CoroutineDispatchers,
@@ -36,14 +40,22 @@ public class ItemRepository internal constructor(
     public fun observeActive(): Flow<List<ItemView>> = views(items(db.itemQueries.selectActive()))
 
     /** Items in the bin (A13), most recently deleted first. */
-    public fun observeDeleted(): Flow<List<ItemView>> = views(
-        db.itemQueries.selectDeleted().asFlow().mapToList(dispatchers.io).map { rows ->
-            rows.map { it.toItem() }
-        },
-    )
+    public fun observeDeleted(): Flow<List<ItemView>> {
+        val deleted = db.itemQueries.selectDeleted().asFlow().mapToList(dispatchers.io)
+        return views(deleted.map { rows -> rows.map { it.toItem() } })
+    }
 
-    public fun observeItem(itemId: String): Flow<ItemView?> =
-        views(items(db.itemQueries.selectById(itemId))).map { it.firstOrNull() }
+    /** One item: only its own rows are re-read on change (plus the small place/container tables). */
+    public fun observeItem(itemId: String): Flow<ItemView?> = combine(
+        db.itemQueries.selectById(itemId).asFlow().mapToOneOrNull(dispatchers.io),
+        db.locationStateQueries.selectByItem(itemId).asFlow().mapToOneOrNull(dispatchers.io),
+        resolvers(db, dispatchers),
+    ) { row, locationRow, resolver ->
+        row?.toItem()?.let { item ->
+            val location = locationRow?.toLocationState() ?: unknownLocation(item)
+            ItemView(item, location, resolver.resolve(location))
+        }
+    }
 
     private fun items(query: Query<ItemRow>): Flow<List<Item>> =
         query.asFlow().mapToList(dispatchers.io).map { rows -> rows.map { it.toItem() } }
@@ -52,15 +64,16 @@ public class ItemRepository internal constructor(
         items,
         db.locationStateQueries.selectAll().asFlow().mapToList(dispatchers.io),
         resolvers(db, dispatchers),
-    ) { items, locationRows, resolver ->
+    ) { list, locationRows, resolver ->
         val locations = locationRows.associate { it.item_id to it.toLocationState() }
-        items.map { item ->
-            val location =
-                locations[item.id]
-                    ?: LocationState(item.id, null, null, LocationStatus.STORED, null, item.createdAt)
+        list.map { item ->
+            val location = locations[item.id] ?: unknownLocation(item)
             ItemView(item, location, resolver.resolve(location))
         }
     }
+
+    private fun unknownLocation(item: Item) =
+        LocationState(item.id, null, null, LocationStatus.STORED, null, item.createdAt)
 }
 
 public class PlaceRepository internal constructor(

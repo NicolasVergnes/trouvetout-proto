@@ -77,6 +77,8 @@ kotlin {
         getByName("androidHostTest").dependsOn(getByName("jvmCommonTest"))
         androidMain.dependencies {
             implementation(libs.sqldelight.android.driver)
+            // Dispatchers.Main for CoroutineDispatchers' default on Android.
+            implementation(libs.kotlinx.coroutines.android)
         }
         jvmMain.dependencies {
             implementation(libs.sqldelight.sqlite.driver)
