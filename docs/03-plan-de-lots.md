@@ -27,7 +27,7 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 - Critères : export → suppression totale → import = état identique (test automatisé sur les deux plateformes) ; un export v1 fabriqué à la main avec des champs inconnus s'importe (N9).
 - Suites consignées par les revues du lot : (a) inflater `events.jsonl` ligne à ligne au lieu d'une entrée en mémoire (plafond 64 Mio en attendant) ; (b) ZIP64 ou export multi-volumes avant le lot 7 (les photos pleine taille peuvent dépasser 4 Gio) ; (c) tests Compose de l'écran Réglages (`busy`, confirmation d'effacement, textes de refus) et aller-retour export → effacement → import sur appareil Android (avec les tests de plateforme du lot 4) ; (d) tests manquants : `EVENTS_TOO_LARGE`, `TOO_MANY_EVENTS`, photo > 48 Mio, ligne > 64 Kio ; (e) `viewModel {}` hors NavHost : le NavHost du lot 3 doit porter le ViewModel des réglages (état consommé en événement unique).
 
-## Lot 3 — Capture texte et parseur (B4, B7, B11, B12, B14, A14, I4) ☐
+## Lot 3 — Capture texte et parseur (B4, B7, B11, B12, B14, A14, I4) ◐
 - `shared/capture` : normalisation, intents FR/EN, extraction objet/lieu/quantité/personne, résolution de lieu par similarité (distance d'édition d'abord ; embeddings branchés au lot 6), alias, multi-objets.
 - Détection de doublons à la saisie (A14) par similarité de nom.
 - UI minimale de capture texte (Compose + SwiftUI) avec autocomplétion des lieux et carte de confirmation (B6) ; désambiguïsation (B7).
