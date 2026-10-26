@@ -41,7 +41,9 @@ jobs:
           validate-wrappers: true
       - run: chmod +x gradlew
       - name: Write metadata (merges into the committed file)
-        run: ./gradlew --write-verification-metadata sha256 --dependency-verification off $GRADLE_TASKS --dry-run
+        run: |
+          ./gradlew --write-verification-metadata sha256 --dependency-verification off $GRADLE_TASKS --dry-run
+          mv gradle/verification-metadata.dryrun.xml gradle/verification-metadata.xml
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: verification-metadata-linux
@@ -75,7 +77,9 @@ jobs:
           TARGET_BUILD_DIR: ${{ github.workspace }}/build/ios
           FRAMEWORKS_FOLDER_PATH: Frameworks
           BUILT_PRODUCTS_DIR: ${{ github.workspace }}/build/ios
-        run: ./gradlew --write-verification-metadata sha256 --dependency-verification off $GRADLE_TASKS --dry-run
+        run: |
+          ./gradlew --write-verification-metadata sha256 --dependency-verification off $GRADLE_TASKS --dry-run
+          mv gradle/verification-metadata.dryrun.xml gradle/verification-metadata.xml
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: verification-metadata

@@ -5,11 +5,12 @@
 
     <string name="action_ok">OK</string>
     <string name="action_cancel">Cancel</string>
-    <string name="action_back_glyph" translatable="false">‹</string>
+    <string name="action_back">Back</string>
 
+    <string name="settings_busy">Working…</string>
     <string name="settings_title">Settings</string>
     <string name="settings_data_section">Your data</string>
-    <string name="settings_export_hint">Export everything (objects, places, photos) as a ZIP file you can read without the app, and share it where you like. Nothing is sent anywhere by itself.</string>
+    <string name="settings_export_hint">Export everything (objects, places, photos) as a ZIP file you can read without the app, and share it where you like. Nothing is sent anywhere by itself. The file is not encrypted and contains everything, including items marked sensitive and photos: share it with care.</string>
     <string name="settings_export">Export</string>
     <string name="settings_import_hint">Restore or merge an export: known entries are skipped, nothing is overwritten.</string>
     <string name="settings_import">Import an export</string>

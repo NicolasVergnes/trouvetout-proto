@@ -127,15 +127,15 @@ La table de recherche plein texte (`item_fts`) arrive au lot 6 par migration add
 
 ## 5. Export ZIP (lot 2)
 
-`trouvetout-export-AAAAMMJJ.zip` :
+`trouvetout-export-AAAAMMJJ-HHMMSS.zip` (heure UTC) :
 
 ```
 manifest.json     { "formatVersion": 1, "appVersion": "...", "schemaVersion": 1, "exportedAt": <ms UTC>,
                     "deviceId": "...", "counts": { "events": n, "items": n, "places": n, "containers": n, "photos": n } }
 events.jsonl      journal complet, un événement par ligne (§2), trié par (at, deviceId, id)
-snapshot.json     projection lisible : { "items": [...], "places": [...], "containers": [...], "locations": [...] } — jamais importé
-photos/<id>.jpg   originaux recompressés (côté long ≤ 2048 px, JPEG ~85, sans les métadonnées d'origine)
-photos/<id>_t.jpg miniatures 256 px
+snapshot.json     projection lisible : { "items", "places", "containers", "locations", "photos" } — jamais importé
+photos/<id>.jpg   originaux recompressés (côté long ≤ 2048 px, JPEG ~85, sans les métadonnées d'origine) ;
+                  les miniatures ne sont pas exportées, l'app les régénère à l'import
 ```
 
 Lire ses données sans l'app : `events.jsonl` est du JSON Lines ; `snapshot.json` donne l'état courant en un coup d'œil.
@@ -149,9 +149,11 @@ Lire ses données sans l'app : `events.jsonl` est du JSON Lines ; `snapshot.json
 - Les événements sont rejoués dans l'ordre `(at, deviceId, id)` ; un événement dont l'`id` est déjà dans le journal est
   ignoré (fusion naturelle) ; un `type` inconnu est conservé tel quel ; une ligne illisible est comptée et ignorée.
 - Les photos sont ré-encodées par l'app (jamais copiées telles quelles) et les miniatures régénérées ; un nom hors du
-  motif `<ULID>.jpg` / `<ULID>_t.jpg` ou une image indécodable est ignoré.
-- Limites : 200 000 entrées, manifeste ≤ 1 Mio, `events.jsonl` ≤ 512 Mio et ≤ 2 000 000 lignes de ≤ 64 Kio,
-  photo ≤ 48 Mio. Au-delà, l'archive est refusée entière (`EVENTS_TOO_LARGE`, `TOO_MANY_EVENTS`).
+  motif `<ULID>.jpg` / `<ULID>_t.jpg` (dans l'archive comme dans un événement `PhotoAttached`) ou une image
+  indécodable est ignoré.
+- Limites : archive ≤ 1 Gio, 200 000 entrées, manifeste ≤ 1 Mio, `events.jsonl` ≤ 64 Mio et ≤ 1 000 000 lignes de
+  ≤ 64 Kio, photo ≤ 48 Mio. Au-delà, l'archive est refusée entière (`EVENTS_TOO_LARGE`, `TOO_MANY_EVENTS`) ; une
+  entrée `events.jsonl` abîmée (somme de contrôle) aussi (`EVENTS_CORRUPT`).
 - Le rapport affiché compte : événements ajoutés, déjà connus, ignorés ; photos ajoutées, ignorées.
 
 ## 6. Photos (A10)

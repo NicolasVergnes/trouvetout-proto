@@ -41,12 +41,10 @@ final class SettingsViewModel: ObservableObject {
             let target = URL(fileURLWithPath: shared.config.dataDirectory).appendingPathComponent(relativePath)
             let fileManager = FileManager.default
             try fileManager.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
-            let scoped = picked.startAccessingSecurityScopedResource()
             defer {
-                if scoped { picked.stopAccessingSecurityScopedResource() }
                 try? fileManager.removeItem(at: target)
             }
-            try fileManager.copyItem(at: picked, to: target)
+            try await copyBounded(picked, to: target)
             let result = try await shared.importService.import(relativePath: relativePath)
             if let done = result as? ImportResultDone {
                 let report = done.report
@@ -54,7 +52,7 @@ final class SettingsViewModel: ObservableObject {
                     appended: report.eventsAppended,
                     skipped: report.eventsSkipped,
                     photos: report.photosImported,
-                    ignored: report.unknownPayloads + report.invalidLines + report.photosRejected
+                    ignored: report.dropped
                 )
             } else if let rejected = result as? ImportResultRejected {
                 message = .importRefused(reason: rejected.reason)
@@ -64,10 +62,32 @@ final class SettingsViewModel: ObservableObject {
 
     func wipeAll() {
         perform { [self] in
+            defer {
+                // Whatever happened, the spent factory is replaced and the stale share link dropped.
+                container.recreateShared()
+                exportURL = nil
+            }
             _ = try await container.shared.wipeAllData()
-            container.recreateShared()
             message = .wiped
         }
+    }
+
+    /// Copies a picked document into the private container off the main actor, refusing oversized files; the
+    /// security scope is held only for the copy.
+    private nonisolated func copyBounded(_ picked: URL, to target: URL) async throws {
+        try await Task.detached(priority: .userInitiated) {
+            let scoped = picked.startAccessingSecurityScopedResource()
+            defer {
+                if scoped {
+                    picked.stopAccessingSecurityScopedResource()
+                }
+            }
+            let size = try picked.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            guard Int64(size) <= ExportFormatKt.MAX_ARCHIVE_BYTES else {
+                throw CocoaError(.fileReadTooLarge)
+            }
+            try FileManager.default.copyItem(at: picked, to: target)
+        }.value
     }
 
     private func perform(_ work: @escaping @MainActor () async throws -> Void) {

@@ -5,9 +5,11 @@
     <string name="action_ok">OK</string>
     <string name="action_cancel">Annuler</string>
 
+    <string name="settings_busy">En cours…</string>
+    <string name="action_back">Retour</string>
     <string name="settings_title">Réglages</string>
     <string name="settings_data_section">Vos données</string>
-    <string name="settings_export_hint">Exporter tout (objets, lieux, photos) dans un fichier ZIP lisible sans l\'app, et le partager où vous voulez. Rien n\'est envoyé tout seul.</string>
+    <string name="settings_export_hint">Exporter tout (objets, lieux, photos) dans un fichier ZIP lisible sans l\'app, et le partager où vous voulez. Rien n\'est envoyé tout seul. Le fichier n\'est pas chiffré et contient tout, y compris les objets marqués sensibles et les photos : partagez-le avec soin.</string>
     <string name="settings_export">Exporter</string>
     <string name="settings_import_hint">Restaurer ou fusionner un export : ce qui est déjà connu est ignoré, rien n\'est écrasé.</string>
     <string name="settings_import">Importer un export</string>

@@ -56,7 +56,9 @@ final class AppContainer: ObservableObject {
         // The container lives as long as the process: a strong capture is intended.
         Task.detached(priority: .utility) { [self] in
             let ready = await (try? factory.warmUp())?.boolValue ?? false
-            if !ready {
+            if ready {
+                _ = try? await factory.housekeeping()
+            } else {
                 await recordStoreUnavailable()
             }
         }

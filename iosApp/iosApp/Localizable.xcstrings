@@ -19,6 +19,12 @@
         "fr" : { "stringUnit" : { "state" : "translated", "value" : "Rien pour l'instant" } }
       }
     },
+    "settings_busy" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Working…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "En cours…" } }
+      }
+    },
     "settings_data_section" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Your data" } },
@@ -33,8 +39,8 @@
     },
     "settings_export_done_text" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d entries and %d photos. Use Share to send the file where you like." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "%d entrées et %d photos. Utilisez Partager pour envoyer le fichier où vous voulez." } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%ld entries and %ld photos. Use Share to send the file where you like." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "%ld entrées et %ld photos. Utilisez Partager pour envoyer le fichier où vous voulez." } }
       }
     },
     "settings_export_done_title" : {
@@ -45,8 +51,8 @@
     },
     "settings_export_hint" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export everything (objects, places, photos) as a ZIP file you can read without the app, and share it where you like. Nothing is sent anywhere by itself." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Exporter tout (objets, lieux, photos) dans un fichier ZIP lisible sans l'app, et le partager où vous voulez. Rien n'est envoyé tout seul." } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export everything (objects, places, photos) as a ZIP file you can read without the app, and share it where you like. Nothing is sent anywhere by itself. The file is not encrypted and contains everything, including items marked sensitive and photos: share it with care." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Exporter tout (objets, lieux, photos) dans un fichier ZIP lisible sans l'app, et le partager où vous voulez. Rien n'est envoyé tout seul. Le fichier n'est pas chiffré et contient tout, y compris les objets marqués sensibles et les photos : partagez-le avec soin." } }
       }
     },
     "settings_export_share" : {
@@ -75,8 +81,8 @@
     },
     "settings_import_done_text" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d entries added, %d already known, %d photos added, %d entries ignored." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "%d entrées ajoutées, %d déjà connues, %d photos ajoutées, %d entrées ignorées." } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%ld entries added, %ld already known, %ld photos added, %ld entries ignored." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "%ld entrées ajoutées, %ld déjà connues, %ld photos ajoutées, %ld entrées ignorées." } }
       }
     },
     "settings_import_done_title" : {

@@ -40,7 +40,8 @@ final class SharedBridgeTests: XCTestCase {
             ),
             imageCodec: UIImageCodec(),
             logger: NoopLogger.shared,
-            storageReady: storageReady
+            storageReady: storageReady,
+            appVersion: "test"
         )
         return SharedFactory(config: config)
     }

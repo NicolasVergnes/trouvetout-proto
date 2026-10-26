@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -30,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,11 +56,11 @@ fun SettingsRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val picker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri != null) viewModel.import(uri, context.contentResolver)
+            if (uri != null) viewModel.import(uri)
         }
     LaunchedEffect(state.exportToShare) {
-        state.exportToShare?.let { path ->
-            ExportSharing.share(context, path)
+        state.exportToShare?.let { uri ->
+            ExportSharing.launch(context, uri)
             viewModel.exportShared()
         }
     }
@@ -63,7 +68,9 @@ fun SettingsRoute(
         state = state,
         onBack = onBack,
         onExport = viewModel::export,
-        onImport = { picker.launch(arrayOf("application/zip", "application/octet-stream")) },
+        onImport = {
+            picker.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
+        },
         onWipe = viewModel::wipeAll,
         onDismissMessage = viewModel::dismissMessage,
         modifier = modifier,
@@ -88,7 +95,12 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Text(stringResource(R.string.action_back_glyph)) }
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
+                    }
                 },
             )
         },
@@ -119,7 +131,10 @@ fun SettingsScreen(
             ) {
                 Text(stringResource(R.string.settings_wipe), color = MaterialTheme.colorScheme.error)
             }
-            if (state.busy) CircularProgressIndicator()
+            if (state.busy) {
+                val busyLabel = stringResource(R.string.settings_busy)
+                CircularProgressIndicator(Modifier.semantics { contentDescription = busyLabel })
+            }
         }
     }
     if (confirmWipe) {
@@ -174,7 +189,7 @@ private fun SettingsMessage.describe(): String = when (this) {
             pluralStringResource(R.plurals.count_events, report.eventsAppended, report.eventsAppended),
             report.eventsSkipped,
             pluralStringResource(R.plurals.count_photos, report.photosImported, report.photosImported),
-            report.unknownPayloads + report.invalidLines + report.photosRejected,
+            report.dropped,
         )
     is SettingsMessage.ImportRefused ->
         stringResource(

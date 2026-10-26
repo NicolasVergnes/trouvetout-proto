@@ -40,7 +40,7 @@ struct SettingsView: View {
                     .disabled(viewModel.busy)
             }
             if viewModel.busy {
-                ProgressView()
+                ProgressView("settings_busy")
                     .frame(maxWidth: .infinity)
             }
         }
@@ -64,7 +64,14 @@ struct SettingsView: View {
     }
 
     private var messagePresented: Binding<Bool> {
-        Binding(get: { viewModel.message != nil }, set: { if !$0 { viewModel.message = nil } })
+        Binding(
+            get: { viewModel.message != nil },
+            set: { presented in
+                if !presented {
+                    viewModel.message = nil
+                }
+            }
+        )
     }
 
     private var messageTitle: LocalizedStringKey {
@@ -84,7 +91,10 @@ struct SettingsView: View {
         case let .imported(appended, skipped, photos, ignored):
             String(
                 format: localized("settings_import_done_text"),
-                Int(appended), Int(skipped), Int(photos), Int(ignored)
+                Int(appended),
+                Int(skipped),
+                Int(photos),
+                Int(ignored)
             )
         case let .importRefused(reason):
             localized(refusalKey(reason))

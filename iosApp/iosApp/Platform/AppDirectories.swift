@@ -19,7 +19,9 @@ enum AppDirectories {
         let failure: Error?
 
         /// `<url>/db`, where the SQLite files live (same layout as Android, wiped as one directory).
-        var databaseDirectory: URL { url.appendingPathComponent("db", isDirectory: true) }
+        var databaseDirectory: URL {
+            url.appendingPathComponent("db", isDirectory: true)
+        }
     }
 
     static func prepareDataDirectory() -> Prepared {
@@ -36,10 +38,25 @@ enum AppDirectories {
                 withIntermediateDirectories: true,
                 attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
             )
+            try migrateLegacyDatabase(in: url)
         } catch {
             return Prepared(url: url, failure: error)
         }
         return Prepared(url: url, failure: nil)
+    }
+
+    /// Lot 1 kept the database at the root of the data directory; since lot 2 it lives under `db/` (wiped as one
+    /// unit). Files left at the old place are moved, never dropped.
+    private static func migrateLegacyDatabase(in url: URL) throws {
+        let fileManager = FileManager.default
+        let database = url.appendingPathComponent("db", isDirectory: true)
+        for suffix in ["", "-wal", "-shm"] {
+            let legacy = url.appendingPathComponent("trouvetout.db" + suffix)
+            let target = database.appendingPathComponent("trouvetout.db" + suffix)
+            if fileManager.fileExists(atPath: legacy.path), !fileManager.fileExists(atPath: target.path) {
+                try fileManager.moveItem(at: legacy, to: target)
+            }
+        }
     }
 
     /// Throwing convenience for callers that cannot work without a verified directory (tests, tools).
