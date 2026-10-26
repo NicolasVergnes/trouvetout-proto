@@ -1,20 +1,166 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "action_cancel" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Annuler" } }
+      }
+    },
+    "action_ok" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "OK" } }
+      }
+    },
     "home_empty_title" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing here yet"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien pour l'instant"
-          }
-        }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nothing here yet" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Rien pour l'instant" } }
+      }
+    },
+    "settings_data_section" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your data" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vos données" } }
+      }
+    },
+    "settings_export" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Exporter" } }
+      }
+    },
+    "settings_export_done_text" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d entries and %d photos. Use Share to send the file where you like." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "%d entrées et %d photos. Utilisez Partager pour envoyer le fichier où vous voulez." } }
+      }
+    },
+    "settings_export_done_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export ready" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Export prêt" } }
+      }
+    },
+    "settings_export_hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export everything (objects, places, photos) as a ZIP file you can read without the app, and share it where you like. Nothing is sent anywhere by itself." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Exporter tout (objets, lieux, photos) dans un fichier ZIP lisible sans l'app, et le partager où vous voulez. Rien n'est envoyé tout seul." } }
+      }
+    },
+    "settings_export_share" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share the last export" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Partager le dernier export" } }
+      }
+    },
+    "settings_failed_text" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The operation could not be completed. Check the free space on the phone and try again." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "L'opération n'a pas pu aboutir. Vérifiez l'espace libre du téléphone et réessayez." } }
+      }
+    },
+    "settings_failed_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Something went wrong" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Quelque chose s'est mal passé" } }
+      }
+    },
+    "settings_import" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import an export" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Importer un export" } }
+      }
+    },
+    "settings_import_done_text" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d entries added, %d already known, %d photos added, %d entries ignored." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "%d entrées ajoutées, %d déjà connues, %d photos ajoutées, %d entrées ignorées." } }
+      }
+    },
+    "settings_import_done_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import finished" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Import terminé" } }
+      }
+    },
+    "settings_import_hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore or merge an export: known entries are skipped, nothing is overwritten." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Restaurer ou fusionner un export : ce qui est déjà connu est ignoré, rien n'est écrasé." } }
+      }
+    },
+    "settings_import_refused_invalid" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This export is damaged or incomplete." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Cet export est abîmé ou incomplet." } }
+      }
+    },
+    "settings_import_refused_newer" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This export comes from a newer version of the app. Update the app, then try again." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Cet export vient d'une version plus récente de l'app. Mettez l'app à jour puis réessayez." } }
+      }
+    },
+    "settings_import_refused_not_archive" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This file is not a TrouveTout export." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ce fichier n'est pas un export TrouveTout." } }
+      }
+    },
+    "settings_import_refused_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import refused" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Import refusé" } }
+      }
+    },
+    "settings_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Réglages" } }
+      }
+    },
+    "settings_wipe" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Erase all data" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tout effacer" } }
+      }
+    },
+    "settings_wipe_confirm_button" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Erase" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Effacer" } }
+      }
+    },
+    "settings_wipe_confirm_text" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Objects, places, photos and history will be deleted from this phone. Export first if you want to keep them. This cannot be undone." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d'abord si vous voulez les garder. Cette action est irréversible." } }
+      }
+    },
+    "settings_wipe_confirm_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Erase all data?" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tout effacer ?" } }
+      }
+    },
+    "settings_wipe_done_text" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The app starts from scratch." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "L'app repart de zéro." } }
+      }
+    },
+    "settings_wipe_done_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Data erased" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Données effacées" } }
+      }
+    },
+    "settings_wipe_hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Erase every piece of data stored by the app on this phone." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Effacer toutes les données enregistrées par l'app sur ce téléphone." } }
       }
     }
   },

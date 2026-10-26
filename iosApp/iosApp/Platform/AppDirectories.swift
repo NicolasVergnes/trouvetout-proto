@@ -17,6 +17,9 @@ enum AppDirectories {
     struct Prepared {
         let url: URL
         let failure: Error?
+
+        /// `<url>/db`, where the SQLite files live (same layout as Android, wiped as one directory).
+        var databaseDirectory: URL { url.appendingPathComponent("db", isDirectory: true) }
     }
 
     static func prepareDataDirectory() -> Prepared {
@@ -28,6 +31,11 @@ enum AppDirectories {
         }
         do {
             try excludeFromBackup(url)
+            try FileManager.default.createDirectory(
+                at: url.appendingPathComponent("db", isDirectory: true),
+                withIntermediateDirectories: true,
+                attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
+            )
         } catch {
             return Prepared(url: url, failure: error)
         }

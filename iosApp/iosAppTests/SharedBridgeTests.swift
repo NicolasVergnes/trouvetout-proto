@@ -25,7 +25,8 @@ final class SharedBridgeTests: XCTestCase {
     private func temporaryDirectory() -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("tt-\(UUID().uuidString)", isDirectory: true)
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let database = directory.appendingPathComponent("db", isDirectory: true)
+        try? FileManager.default.createDirectory(at: database, withIntermediateDirectories: true)
         return directory
     }
 
@@ -33,7 +34,10 @@ final class SharedBridgeTests: XCTestCase {
         let config = SharedConfig(
             dataDirectory: directory.path,
             deviceInfo: IosDeviceInfo(),
-            driverFactory: IosDriverFactory(directory: directory.path, fileName: "test.db"),
+            driverFactory: IosDriverFactory(
+                directory: directory.appendingPathComponent("db").path,
+                fileName: "test.db"
+            ),
             imageCodec: UIImageCodec(),
             logger: NoopLogger.shared,
             storageReady: storageReady
@@ -50,7 +54,7 @@ final class SharedBridgeTests: XCTestCase {
         XCTAssertTrue(ready.boolValue)
         let deviceId = first.deviceId
         XCTAssertEqual(deviceId.count, 26)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: directory.appendingPathComponent("test.db").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: directory.appendingPathComponent("db/test.db").path))
         first.close()
 
         let second = factory(in: directory)
@@ -66,8 +70,38 @@ final class SharedBridgeTests: XCTestCase {
         let ready = try await factory.warmUp()
 
         XCTAssertFalse(ready.boolValue)
-        XCTAssertFalse(FileManager.default.fileExists(atPath: directory.appendingPathComponent("test.db").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: directory.appendingPathComponent("db/test.db").path))
         factory.close()
+    }
+
+    func testExportWipeImportRoundTrip() async throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let first = factory(in: directory)
+        let draft = ItemDraft(name: "item-a", description: nil, tags: [], quantity: nil, unit: nil, sensitive: false)
+        let created = try await first.itemCommands.create(draft: draft, location: nil, source: .text, rawInput: nil)
+        XCTAssertTrue(created is CommandResultDone)
+        let export = try await first.exportService.export()
+        XCTAssertEqual(export.counts.items, 1)
+        let archive = try Data(contentsOf: URL(fileURLWithPath: export.absolutePath))
+
+        let removed = try await first.wipeAllData()
+        XCTAssertTrue(removed.contains("db"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: directory.appendingPathComponent("db/test.db").path))
+
+        let second = factory(in: directory)
+        let imports = directory.appendingPathComponent(SharedFactory.companion.IMPORT_DIRECTORY, isDirectory: true)
+        try FileManager.default.createDirectory(at: imports, withIntermediateDirectories: true)
+        try archive.write(to: imports.appendingPathComponent("a.zip"))
+        let importPath = "\(SharedFactory.companion.IMPORT_DIRECTORY)/a.zip"
+        let result = try await second.importService.import(relativePath: importPath)
+        let done = try XCTUnwrap(result as? ImportResultDone)
+        XCTAssertEqual(done.report.eventsAppended, Int32(export.counts.events))
+        let again = try await second.exportService.export()
+        XCTAssertEqual(again.counts.items, 1)
+        XCTAssertEqual(again.counts.events, export.counts.events)
+        second.close()
     }
 
     // MARK: - Flow bridge
