@@ -19,7 +19,7 @@ final class UIImageCodec: NSDataImageCodec {
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true, // applies the EXIF orientation
             kCGImageSourceShouldCacheImmediately: true,
-            kCGImageSourceThumbnailMaxPixelSize: Int(maxSide),
+            kCGImageSourceThumbnailMaxPixelSize: Int(maxSide)
         ]
         guard let cgImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, thumbnailOptions as CFDictionary) else {
             return nil
