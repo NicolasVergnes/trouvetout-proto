@@ -1,4 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home_empty_title">Rien pour l\'instant</string>
+
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Annuler</string>
+
+    <string name="settings_title">Réglages</string>
+    <string name="settings_data_section">Vos données</string>
+    <string name="settings_export_hint">Exporter tout (objets, lieux, photos) dans un fichier ZIP lisible sans l\'app, et le partager où vous voulez. Rien n\'est envoyé tout seul.</string>
+    <string name="settings_export">Exporter</string>
+    <string name="settings_import_hint">Restaurer ou fusionner un export : ce qui est déjà connu est ignoré, rien n\'est écrasé.</string>
+    <string name="settings_import">Importer un export</string>
+    <string name="settings_wipe_hint">Effacer toutes les données enregistrées par l\'app sur ce téléphone.</string>
+    <string name="settings_wipe">Tout effacer</string>
+    <string name="settings_wipe_confirm_title">Tout effacer ?</string>
+    <string name="settings_wipe_confirm_text">Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d\'abord si vous voulez les garder. Cette action est irréversible.</string>
+    <string name="settings_wipe_confirm_button">Effacer</string>
+    <string name="settings_wipe_done_title">Données effacées</string>
+    <string name="settings_wipe_done_text">L\'app repart de zéro.</string>
+    <string name="settings_export_done_title">Export prêt</string>
+    <string name="settings_export_done_text">%1$s et %2$s. Choisissez où envoyer le fichier.</string>
+    <string name="settings_import_done_title">Import terminé</string>
+    <string name="settings_import_done_text">Ajouté : %1$s et %3$s. Déjà connu : %2$d. Ignoré : %4$d.</string>
+    <string name="settings_import_refused_title">Import refusé</string>
+    <string name="settings_import_refused_newer">Cet export vient d\'une version plus récente de l\'app. Mettez l\'app à jour puis réessayez.</string>
+    <string name="settings_import_refused_not_archive">Ce fichier n\'est pas un export TrouveTout.</string>
+    <string name="settings_import_refused_invalid">Cet export est abîmé ou incomplet.</string>
+    <string name="settings_failed_title">Quelque chose s\'est mal passé</string>
+    <string name="settings_failed_text">L\'opération n\'a pas pu aboutir. Vérifiez l\'espace libre du téléphone et réessayez.</string>
+
+    <plurals name="count_events">
+        <item quantity="one">%d entrée</item>
+        <item quantity="many">%d entrées</item>
+        <item quantity="other">%d entrées</item>
+    </plurals>
+    <plurals name="count_photos">
+        <item quantity="one">%d photo</item>
+        <item quantity="many">%d photos</item>
+        <item quantity="other">%d photos</item>
+    </plurals>
 </resources>
