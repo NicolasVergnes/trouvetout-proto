@@ -161,7 +161,10 @@ public class SharedFactory(
         DATA_DIRECTORIES.filter { files.deleteDirectory(it) }
     }
 
-    /** Scope for the host's flow watchers (Swift bridge): callbacks arrive on the main dispatcher; cancelled by [close]. */
+    /**
+     * Scope for the host's flow watchers (Swift bridge): callbacks arrive on the main dispatcher; cancelled by
+     * [close].
+     */
     public val uiScope: CoroutineScope = CoroutineScope(SupervisorJob() + config.dispatchers.main)
 
     /** Releases held resources (database connection, loaded models). */
