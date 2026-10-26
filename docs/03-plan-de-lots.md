@@ -22,7 +22,7 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 ## Lot 2 — Export / import (A7, A8, A13 corbeille, H6 suppression) ◐
 - ZIP `manifest + events.jsonl + snapshot.json + photos/`, feuille de partage système ; import en flux avec validations (taille, chemins, zip bomb) ; fusion par `id` d'événement.
 - Corbeille 30 jours (purge des photos), annulation de la dernière action (événement inverse).
-- Suppression totale : fichiers (base + `-wal`/`-shm`, `photos/` y compris d'éventuels fichiers temporaires), clés, préférences, notifications ; `SharedFactory` doit pouvoir être recréée après fermeture (aujourd'hui `close()` ne permet pas la réouverture).
+- Suppression totale : fichiers (base + `-wal`/`-shm`, `photos/`, `exports/`, `imports/`) ; l'instance `SharedFactory` est épuisée après `wipeAllData()` et l'hôte en recrée une. Clés (lot 8), préférences et notifications (lot 9) s'ajouteront à la procédure quand ils existeront.
 - Vérification des sommes des dépendances Gradle (`gradle/verification-metadata.xml`) générée par la CI Linux, stricte sur Linux, `lenient` sur macOS — voir la question ouverte de `docs/04-decisions.md`.
 - Critères : export → suppression totale → import = état identique (test automatisé sur les deux plateformes) ; un export v1 fabriqué à la main avec des champs inconnus s'importe (N9).
 

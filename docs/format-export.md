@@ -140,6 +140,20 @@ photos/<id>_t.jpg miniatures 256 px
 
 Lire ses données sans l'app : `events.jsonl` est du JSON Lines ; `snapshot.json` donne l'état courant en un coup d'œil.
 
+### Import (A8) — ce que l'app accepte
+
+- Seuls `manifest.json`, `events.jsonl` et `photos/*.jpg` sont lus ; toute autre entrée est ignorée (un lecteur v1
+  tolère les ajouts des versions suivantes). `snapshot.json` n'est jamais importé.
+- `manifest.json` doit être présent et valide ; un `formatVersion` supérieur à celui de l'app est refusé avec un message
+  clair (mettre l'app à jour). Les champs inconnus du manifeste et des événements sont ignorés.
+- Les événements sont rejoués dans l'ordre `(at, deviceId, id)` ; un événement dont l'`id` est déjà dans le journal est
+  ignoré (fusion naturelle) ; un `type` inconnu est conservé tel quel ; une ligne illisible est comptée et ignorée.
+- Les photos sont ré-encodées par l'app (jamais copiées telles quelles) et les miniatures régénérées ; un nom hors du
+  motif `<ULID>.jpg` / `<ULID>_t.jpg` ou une image indécodable est ignoré.
+- Limites : 200 000 entrées, manifeste ≤ 1 Mio, `events.jsonl` ≤ 512 Mio et ≤ 2 000 000 lignes de ≤ 64 Kio,
+  photo ≤ 48 Mio. Au-delà, l'archive est refusée entière (`EVENTS_TOO_LARGE`, `TOO_MANY_EVENTS`).
+- Le rapport affiché compte : événements ajoutés, déjà connus, ignorés ; photos ajoutées, ignorées.
+
 ## 6. Photos (A10)
 
 Chaque photo est ré-encodée à l'enregistrement : les métadonnées d'origine (position GPS, appareil, date de prise de
