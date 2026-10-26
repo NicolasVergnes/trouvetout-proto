@@ -1,12 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="home_empty_title">Rien pour l\'instant</string>
 
     <string name="action_ok">OK</string>
     <string name="action_cancel">Annuler</string>
 
     <string name="settings_busy">En cours…</string>
     <string name="action_back">Retour</string>
+    <string name="action_undo">Défaire</string>
+    <string name="action_close">Fermer</string>
+
+    <string name="capture_hint">objet @ lieu</string>
+    <string name="capture_card_edit">Corriger la dernière saisie</string>
+    <string name="capture_problem_too_long">Cette phrase est trop longue : quelques mots suffisent.</string>
+    <string name="capture_send">Enregistrer</string>
+    <string name="capture_empty">Dites où vous posez un objet, par exemple « passeport dans le tiroir du haut ». Une question comme « où sont les clés » cherche.</string>
+    <string name="capture_card_stored">→ %1$s</string>
+    <string name="capture_card_no_place">Enregistré, sans lieu pour l\'instant</string>
+    <string name="capture_card_taken">Sorti</string>
+    <string name="capture_card_put_back">Remis en place</string>
+    <string name="capture_card_lent">Prêté à %1$s</string>
+    <string name="capture_card_returned_from_lend">Revenu de prêt</string>
+    <string name="capture_search_title">Résultats pour « %1$s »</string>
+    <string name="capture_search_empty">Rien ne correspond.</string>
+    <string name="capture_place_title">Lieu inconnu : « %1$s »</string>
+    <string name="capture_place_attach">Rattacher à « %1$s »</string>
+    <string name="capture_place_create">Créer « %1$s »</string>
+    <string name="capture_place_under">Sera créé sous « %1$s ».</string>
+    <string name="capture_item_exists">« %1$s » existe déjà</string>
+    <string name="capture_item_which">Quel « %1$s » ?</string>
+    <string name="capture_item_move_existing">Déplacer « %1$s »</string>
+    <string name="capture_item_use">« %1$s »</string>
+    <string name="capture_item_create_new">Créer un nouvel objet</string>
+    <string name="capture_item_none">Aucun objet ne correspond.</string>
+    <string name="capture_problem_nothing">Je n\'ai pas compris. Essayez « objet @ lieu ».</string>
+    <string name="capture_problem_place">Choisissez d\'abord un lieu.</string>
+    <string name="capture_problem_item">Aucun objet de ce nom.</string>
+    <string name="capture_problem_person">Dites à qui vous l\'avez prêté.</string>
+    <string name="capture_problem_rejected">Impossible d\'enregistrer.</string>
+    <string name="state_taken">Sorti</string>
+    <string name="state_lent">Prêté à %1$s</string>
+    <string name="state_unknown_place">Sans lieu pour l\'instant</string>
     <string name="settings_title">Réglages</string>
     <string name="settings_data_section">Vos données</string>
     <string name="settings_export_hint">Exporter tout (objets, lieux, photos) dans un fichier ZIP lisible sans l\'app, et le partager où vous voulez. Rien n\'est envoyé tout seul. Le fichier n\'est pas chiffré et contient tout, y compris les objets marqués sensibles et les photos : partagez-le avec soin.</string>

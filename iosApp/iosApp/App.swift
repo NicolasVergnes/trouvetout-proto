@@ -21,6 +21,8 @@ final class AppContainer: ObservableObject {
     /// with `storageReady = false`: it refuses to open the store (nothing is written to a backed-up or
     /// purgeable location) and the UI explains it (lot 3).
     @Published private(set) var storageFailure: Error?
+    /// True once the current core opened its store; screens observe flows only then.
+    @Published private(set) var ready = false
 
     init() {
         let prepared = AppDirectories.prepareDataDirectory()
@@ -31,6 +33,7 @@ final class AppContainer: ObservableObject {
 
     /// After a total wipe (H6) the spent factory is replaced by a fresh one over an empty directory.
     func recreateShared() {
+        ready = false
         shared.close()
         let prepared = AppDirectories.prepareDataDirectory()
         storageFailure = prepared.failure
@@ -46,7 +49,8 @@ final class AppContainer: ObservableObject {
             imageCodec: UIImageCodec(),
             logger: NoopLogger.shared,
             storageReady: prepared.failure == nil,
-            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0",
+            captureLang: Locale.current.language.languageCode?.identifier == "fr" ? .fr : .en
         )
         return SharedFactory(config: config)
     }
@@ -57,10 +61,17 @@ final class AppContainer: ObservableObject {
         Task.detached(priority: .utility) { [self] in
             let ready = await (try? factory.warmUp())?.boolValue ?? false
             if ready {
+                await markReady(factory)
                 _ = try? await factory.housekeeping()
             } else {
                 await recordStoreUnavailable()
             }
+        }
+    }
+
+    private func markReady(_ factory: SharedFactory) {
+        if factory === shared {
+            ready = true
         }
     }
 

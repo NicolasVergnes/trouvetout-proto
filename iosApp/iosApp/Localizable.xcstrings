@@ -1,174 +1,1014 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "action_cancel" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Annuler" } }
+  "sourceLanguage": "en",
+  "strings": {
+    "action_cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler"
+          }
+        }
       }
     },
-    "action_ok" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "OK" } }
+    "action_close": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermer"
+          }
+        }
       }
     },
-    "home_empty_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nothing here yet" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Rien pour l'instant" } }
+    "action_ok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
       }
     },
-    "settings_busy" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Working…" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "En cours…" } }
+    "action_undo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Défaire"
+          }
+        }
       }
     },
-    "settings_data_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your data" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vos données" } }
+    "capture_card_edit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Correct the last entry"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corriger la dernière saisie"
+          }
+        }
       }
     },
-    "settings_export" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Exporter" } }
+    "capture_card_lent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lent to %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prêté à %@"
+          }
+        }
       }
     },
-    "settings_export_done_text" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%ld entries and %ld photos. Use Share to send the file where you like." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "%ld entrées et %ld photos. Utilisez Partager pour envoyer le fichier où vous voulez." } }
+    "capture_card_no_place": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded, no place yet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistré, sans lieu pour l'instant"
+          }
+        }
       }
     },
-    "settings_export_done_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export ready" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Export prêt" } }
+    "capture_card_put_back": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Put back"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remis en place"
+          }
+        }
       }
     },
-    "settings_export_hint" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export everything (objects, places, photos) as a ZIP file you can read without the app, and share it where you like. Nothing is sent anywhere by itself. The file is not encrypted and contains everything, including items marked sensitive and photos: share it with care." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Exporter tout (objets, lieux, photos) dans un fichier ZIP lisible sans l'app, et le partager où vous voulez. Rien n'est envoyé tout seul. Le fichier n'est pas chiffré et contient tout, y compris les objets marqués sensibles et les photos : partagez-le avec soin." } }
+    "capture_card_returned_from_lend": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back from the loan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revenu de prêt"
+          }
+        }
       }
     },
-    "settings_export_share" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share the last export" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Partager le dernier export" } }
+    "capture_card_stored": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "→ %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "→ %@"
+          }
+        }
       }
     },
-    "settings_failed_text" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The operation could not be completed. Check the free space on the phone and try again." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "L'opération n'a pas pu aboutir. Vérifiez l'espace libre du téléphone et réessayez." } }
+    "capture_card_stored_spoken": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stored in %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rangé dans %@"
+          }
+        }
       }
     },
-    "settings_failed_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Something went wrong" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Quelque chose s'est mal passé" } }
+    "capture_card_taken": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taken out"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sorti"
+          }
+        }
       }
     },
-    "settings_import" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import an export" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Importer un export" } }
+    "capture_empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Say where you put something, for example \"passport in the top drawer\". A question like \"where are the keys\" searches."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dites où vous posez un objet, par exemple « passeport dans le tiroir du haut ». Une question comme « où sont les clés » cherche."
+          }
+        }
       }
     },
-    "settings_import_done_text" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%ld entries added, %ld already known, %ld photos added, %ld entries ignored." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "%ld entrées ajoutées, %ld déjà connues, %ld photos ajoutées, %ld entrées ignorées." } }
+    "capture_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "object @ place"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "objet @ lieu"
+          }
+        }
       }
     },
-    "settings_import_done_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import finished" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Import terminé" } }
+    "capture_item_create_new": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new object"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer un nouvel objet"
+          }
+        }
       }
     },
-    "settings_import_hint" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore or merge an export: known entries are skipped, nothing is overwritten." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Restaurer ou fusionner un export : ce qui est déjà connu est ignoré, rien n'est écrasé." } }
+    "capture_item_exists": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" already exists"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "« %@ » existe déjà"
+          }
+        }
       }
     },
-    "settings_import_refused_invalid" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This export is damaged or incomplete." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Cet export est abîmé ou incomplet." } }
+    "capture_item_move_existing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move \"%@\""
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacer « %@ »"
+          }
+        }
       }
     },
-    "settings_import_refused_newer" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This export comes from a newer version of the app. Update the app, then try again." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Cet export vient d'une version plus récente de l'app. Mettez l'app à jour puis réessayez." } }
+    "capture_item_none": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No object matches."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun objet ne correspond."
+          }
+        }
       }
     },
-    "settings_import_refused_not_archive" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This file is not a TrouveTout export." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ce fichier n'est pas un export TrouveTout." } }
+    "capture_item_use": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\""
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "« %@ »"
+          }
+        }
       }
     },
-    "settings_import_refused_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import refused" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Import refusé" } }
+    "capture_item_which": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which \"%@\"?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quel « %@ » ?"
+          }
+        }
       }
     },
-    "settings_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Réglages" } }
+    "capture_place_attach": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attach to \"%@\""
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rattacher à « %@ »"
+          }
+        }
       }
     },
-    "settings_wipe" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Erase all data" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tout effacer" } }
+    "capture_place_create": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create \"%@\""
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer « %@ »"
+          }
+        }
       }
     },
-    "settings_wipe_confirm_button" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Erase" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Effacer" } }
+    "capture_place_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown place: \"%@\""
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lieu inconnu : « %@ »"
+          }
+        }
       }
     },
-    "settings_wipe_confirm_text" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Objects, places, photos and history will be deleted from this phone. Export first if you want to keep them. This cannot be undone." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d'abord si vous voulez les garder. Cette action est irréversible." } }
+    "capture_place_under": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Will be created under \"%@\"."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sera créé sous « %@ »."
+          }
+        }
       }
     },
-    "settings_wipe_confirm_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Erase all data?" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tout effacer ?" } }
+    "capture_problem_item": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No object with that name."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun objet de ce nom."
+          }
+        }
       }
     },
-    "settings_wipe_done_text" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The app starts from scratch." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "L'app repart de zéro." } }
+    "capture_problem_nothing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I did not understand. Try \"object @ place\"."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je n'ai pas compris. Essayez « objet @ lieu »."
+          }
+        }
       }
     },
-    "settings_wipe_done_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Data erased" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Données effacées" } }
+    "capture_problem_person": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Say who you lent it to."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dites à qui vous l'avez prêté."
+          }
+        }
       }
     },
-    "settings_wipe_hint" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Erase every piece of data stored by the app on this phone." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Effacer toutes les données enregistrées par l'app sur ce téléphone." } }
+    "capture_problem_place": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a place first."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez d'abord un lieu."
+          }
+        }
+      }
+    },
+    "capture_problem_rejected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That could not be recorded."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d'enregistrer."
+          }
+        }
+      }
+    },
+    "capture_problem_too_long": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That sentence is too long: a few words are enough."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette phrase est trop longue : quelques mots suffisent."
+          }
+        }
+      }
+    },
+    "capture_search_empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing matches."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien ne correspond."
+          }
+        }
+      }
+    },
+    "capture_search_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Results for \"%@\""
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Résultats pour « %@ »"
+          }
+        }
+      }
+    },
+    "capture_send": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer"
+          }
+        }
+      }
+    },
+    "settings_busy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Working…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En cours…"
+          }
+        }
+      }
+    },
+    "settings_data_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos données"
+          }
+        }
+      }
+    },
+    "settings_export": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter"
+          }
+        }
+      }
+    },
+    "settings_export_done_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%ld entries and %ld photos. Use Share to send the file where you like."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%ld entrées et %ld photos. Utilisez Partager pour envoyer le fichier où vous voulez."
+          }
+        }
+      }
+    },
+    "settings_export_done_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export ready"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export prêt"
+          }
+        }
+      }
+    },
+    "settings_export_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export everything (objects, places, photos) as a ZIP file you can read without the app, and share it where you like. Nothing is sent anywhere by itself. The file is not encrypted and contains everything, including items marked sensitive and photos: share it with care."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter tout (objets, lieux, photos) dans un fichier ZIP lisible sans l'app, et le partager où vous voulez. Rien n'est envoyé tout seul. Le fichier n'est pas chiffré et contient tout, y compris les objets marqués sensibles et les photos : partagez-le avec soin."
+          }
+        }
+      }
+    },
+    "settings_export_share": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share the last export"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partager le dernier export"
+          }
+        }
+      }
+    },
+    "settings_failed_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The operation could not be completed. Check the free space on the phone and try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'opération n'a pas pu aboutir. Vérifiez l'espace libre du téléphone et réessayez."
+          }
+        }
+      }
+    },
+    "settings_failed_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quelque chose s'est mal passé"
+          }
+        }
+      }
+    },
+    "settings_import": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import an export"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importer un export"
+          }
+        }
+      }
+    },
+    "settings_import_done_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%ld entries added, %ld already known, %ld photos added, %ld entries ignored."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%ld entrées ajoutées, %ld déjà connues, %ld photos ajoutées, %ld entrées ignorées."
+          }
+        }
+      }
+    },
+    "settings_import_done_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import finished"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import terminé"
+          }
+        }
+      }
+    },
+    "settings_import_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore or merge an export: known entries are skipped, nothing is overwritten."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurer ou fusionner un export : ce qui est déjà connu est ignoré, rien n'est écrasé."
+          }
+        }
+      }
+    },
+    "settings_import_refused_invalid": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This export is damaged or incomplete."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet export est abîmé ou incomplet."
+          }
+        }
+      }
+    },
+    "settings_import_refused_newer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This export comes from a newer version of the app. Update the app, then try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet export vient d'une version plus récente de l'app. Mettez l'app à jour puis réessayez."
+          }
+        }
+      }
+    },
+    "settings_import_refused_not_archive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file is not a TrouveTout export."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce fichier n'est pas un export TrouveTout."
+          }
+        }
+      }
+    },
+    "settings_import_refused_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import refused"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import refusé"
+          }
+        }
+      }
+    },
+    "settings_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglages"
+          }
+        }
+      }
+    },
+    "settings_wipe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase all data"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout effacer"
+          }
+        }
+      }
+    },
+    "settings_wipe_confirm_button": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer"
+          }
+        }
+      }
+    },
+    "settings_wipe_confirm_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objects, places, photos and history will be deleted from this phone. Export first if you want to keep them. This cannot be undone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d'abord si vous voulez les garder. Cette action est irréversible."
+          }
+        }
+      }
+    },
+    "settings_wipe_confirm_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase all data?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout effacer ?"
+          }
+        }
+      }
+    },
+    "settings_wipe_done_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app starts from scratch."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'app repart de zéro."
+          }
+        }
+      }
+    },
+    "settings_wipe_done_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data erased"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Données effacées"
+          }
+        }
+      }
+    },
+    "settings_wipe_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase every piece of data stored by the app on this phone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer toutes les données enregistrées par l'app sur ce téléphone."
+          }
+        }
+      }
+    },
+    "state_lent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lent to %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prêté à %@"
+          }
+        }
+      }
+    },
+    "state_taken": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taken out"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sorti"
+          }
+        }
+      }
+    },
+    "state_unknown_place": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No place yet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sans lieu pour l'instant"
+          }
+        }
+      }
+    },
+    "storage_unavailable_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app could not prepare its private storage on this phone. Free some space or restart the phone, then open the app again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'app n'a pas pu préparer son espace privé sur ce téléphone. Libérez de la place ou redémarrez le téléphone, puis rouvrez l'app."
+          }
+        }
+      }
+    },
+    "storage_unavailable_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage unavailable"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stockage indisponible"
+          }
+        }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

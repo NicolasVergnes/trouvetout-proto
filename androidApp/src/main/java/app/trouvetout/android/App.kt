@@ -1,6 +1,8 @@
 package app.trouvetout.android
 
 import android.app.Application
+import app.trouvetout.android.ui.settings.ExportSharing
+import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.data.db.AndroidDriverFactory
 import app.trouvetout.core.di.SharedConfig
 import app.trouvetout.core.di.SharedFactory
@@ -11,13 +13,25 @@ import app.trouvetout.core.platform.AndroidImageCodec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.Locale
 
 class App : Application() {
     @Volatile
     lateinit var shared: SharedFactory
         private set
+
+    private val readyState = MutableStateFlow<SharedFactory?>(null)
+
+    /**
+     * The cores whose store opened, in order: screens observe their flows through this (never through [shared]
+     * directly), so a core replaced by a total wipe (H6) or a store that cannot open never reaches a collector.
+     */
+    val readyShared: Flow<SharedFactory> get() = readyState.filterNotNull()
 
     /** Process-wide scope for work that must not die with an Activity (warm-up, later: reindexing). */
     val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -27,13 +41,28 @@ class App : Application() {
         shared = createShared()
         // Opens the database off the main thread so the first capture (lot 3) is instant; every entry point
         // (activity, widget, tile, reminder receiver) benefits. warmUp() never throws.
-        appScope.launch { shared.warmUp() }
+        appScope.launch {
+            ExportSharing.clear(this@App)
+            warmUp(shared)
+        }
     }
 
     /** After a total wipe (H6) the spent factory is replaced by a fresh one over an empty directory. */
     fun recreateShared(): SharedFactory {
         shared.close()
-        return createShared().also { shared = it }
+        readyState.value = null
+        return createShared().also { fresh ->
+            shared = fresh
+            appScope.launch { warmUp(fresh) }
+        }
+    }
+
+    /** Opens the store off the main thread, then runs the lot 2 housekeeping (bin, old exports, imports). */
+    private suspend fun warmUp(factory: SharedFactory) {
+        if (factory.warmUp()) {
+            readyState.value = factory
+            factory.housekeeping()
+        }
     }
 
     private fun createShared(): SharedFactory {
@@ -52,6 +81,7 @@ class App : Application() {
                 logger = if (BuildConfig.DEBUG) LogcatLogger else NoopLogger,
                 storageReady = databaseDirectory.isDirectory || databaseDirectory.mkdirs(),
                 appVersion = BuildConfig.VERSION_NAME,
+                captureLang = if (Locale.getDefault().language == "fr") Lang.FR else Lang.EN,
             ),
         )
     }

@@ -27,14 +27,15 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 - Critères : export → suppression totale → import = état identique (test automatisé sur les deux plateformes) ; un export v1 fabriqué à la main avec des champs inconnus s'importe (N9).
 - Suites consignées par les revues du lot : (a) inflater `events.jsonl` ligne à ligne au lieu d'une entrée en mémoire (plafond 64 Mio en attendant) ; (b) ZIP64 ou export multi-volumes avant le lot 7 (les photos pleine taille peuvent dépasser 4 Gio) ; (c) tests Compose de l'écran Réglages (`busy`, confirmation d'effacement, textes de refus) et aller-retour export → effacement → import sur appareil Android (avec les tests de plateforme du lot 4) ; (d) tests manquants : `EVENTS_TOO_LARGE`, `TOO_MANY_EVENTS`, photo > 48 Mio, ligne > 64 Kio ; (e) `viewModel {}` hors NavHost : le NavHost du lot 3 doit porter le ViewModel des réglages (état consommé en événement unique).
 
-## Lot 3 — Capture texte et parseur (B4, B7, B11, B12, B14, A14, I4) ☐
+## Lot 3 — Capture texte et parseur (B4, B7, B11, B12, B14, A14, I4) ☑
 - `shared/capture` : normalisation, intents FR/EN, extraction objet/lieu/quantité/personne, résolution de lieu par similarité (distance d'édition d'abord ; embeddings branchés au lot 6), alias, multi-objets.
 - Détection de doublons à la saisie (A14) par similarité de nom.
 - UI minimale de capture texte (Compose + SwiftUI) avec autocomplétion des lieux et carte de confirmation (B6) ; désambiguïsation (B7).
-- Corpus `corpus/parser.jsonl` (≥ 150 phrases FR, ≥ 60 EN) et test de non-régression : ≥ 95 % d'intents corrects, ≥ 90 % de découpe objet/lieu exacte.
+- Corpus `corpus/parser.jsonl` (≥ 150 phrases FR, ≥ 60 EN) et test de non-régression : ≥ 95 % d'intents corrects, ≥ 90 % de découpe objet/lieu exacte. État : 159 FR + 77 EN, 100 % / 100 % (`./gradlew :tools:evalParser`).
 - Critères : U1 en texte, U5, U6 passent ; seuils du corpus atteints.
+- Suites consignées : (a) recherche réelle derrière les questions au lot 6 (aujourd'hui filtre sur le nom) ; (b) écran de capture = écran d'accueil sans NavHost, à poser avec les écrans de lieux du lot 4 ; (c) H3 (`FLAG_SECURE`, vue floutée) et le masquage des objets sensibles dans la liste d'accueil arrivent au lot 8 ; question ouverte sur l'apprentissage du clavier dans `docs/04-decisions.md` ; Android n'explique pas encore un stockage indisponible (iOS le fait) ; (d) le mode « je range » par lot (B10) arrive au lot 5 ; (e) tests Compose / XCUITest du parcours U1 texte avec les tests de plateforme du lot 4.
 
-## Lot 4 — Lieux et navigation (A2, A3, D1, D2, D4, D5, D6, C6, C7) ☐
+## Lot 4 — Lieux et navigation (A2, A3, D1, D2, D4, D5, D6, C6, C7) ◐
 - Arborescence des lieux, contenants déplaçables (déplacement = un événement), modèles de lieux proposés, photo du lieu, renommage/fusion sans perte d'historique.
 - Écrans : navigation par lieu, fil d'Ariane, fiche objet (photos, tags A11, quantités A12, historique optionnel A5, archivage D11, épinglage D7 en option).
 - Tests de plateforme Android (revue du lot 1) : `withDeviceTest` dans `shared` ou `androidTest` dans l'app, exécutés sur un Gradle Managed Device API 29 en CI — `AndroidDriverFactory` (fichier sous `no_backup/db`, WAL), `AndroidImageCodec` (orientation EXIF 6, PNG avec alpha, HEIC), smoke test de la release ; activer `lint { checkDependencies = true }` côté app pour couvrir `shared/androidMain` ; message « format non pris en charge » quand le codec renvoie null.

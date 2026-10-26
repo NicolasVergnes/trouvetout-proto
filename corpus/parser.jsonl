@@ -1,0 +1,236 @@
+{"id": "p0001", "lang": "fr", "origin": "synthetic", "input": "passeport dans le tiroir du haut de la commode", "expect": {"intent": "Store", "items": ["passeport"], "place": "tiroir du haut de la commode"}}
+{"id": "p0002", "lang": "fr", "origin": "synthetic", "input": "clés @ entrée", "expect": {"intent": "Store", "items": ["clés"], "place": "entrée"}}
+{"id": "p0003", "lang": "fr", "origin": "synthetic", "input": "clés@entrée", "expect": {"intent": "Store", "items": ["clés"], "place": "entrée"}}
+{"id": "p0004", "lang": "fr", "origin": "synthetic", "input": "les décos de Noël sont dans le carton 7 de l'étagère du fond de la cave", "expect": {"intent": "Store", "items": ["décos de Noël"], "place": "carton 7 de l'étagère du fond de la cave"}}
+{"id": "p0005", "lang": "fr", "origin": "synthetic", "input": "euh le chargeur du kindle sur le bureau", "expect": {"intent": "Store", "items": ["chargeur du kindle"], "place": "bureau"}}
+{"id": "p0006", "lang": "fr", "origin": "synthetic", "input": "la valise rouge est à la cave", "expect": {"intent": "Store", "items": ["valise rouge"], "place": "cave"}}
+{"id": "p0007", "lang": "fr", "origin": "synthetic", "input": "j'ai mis les piles AA dans le tiroir de la cuisine", "expect": {"intent": "Store", "items": ["piles AA"], "place": "tiroir de la cuisine"}}
+{"id": "p0008", "lang": "fr", "origin": "synthetic", "input": "12 vis M4 dans le bac bleu de l'atelier", "expect": {"intent": "Store", "items": ["vis M4"], "place": "bac bleu de l'atelier", "quantity": 12}}
+{"id": "p0009", "lang": "fr", "origin": "synthetic", "input": "3 m de câble HDMI sous le canapé", "expect": {"intent": "Store", "items": ["câble HDMI"], "place": "sous le canapé", "quantity": 3, "unit": "m"}}
+{"id": "p0010", "lang": "fr", "origin": "synthetic", "input": "livret de famille derrière les livres de la bibliothèque du salon", "expect": {"intent": "Store", "items": ["livret de famille"], "place": "derrière les livres de la bibliothèque du salon"}}
+{"id": "p0011", "lang": "fr", "origin": "synthetic", "input": "passeport et carnet de santé dans le tiroir", "expect": {"intent": "Store", "items": ["passeport", "carnet de santé"], "place": "tiroir"}}
+{"id": "p0012", "lang": "fr", "origin": "synthetic", "input": "le passeport est dans le coffre", "expect": {"intent": "Store", "items": ["passeport"], "place": "coffre"}}
+{"id": "p0013", "lang": "fr", "origin": "synthetic", "input": "les passeports sont dans la pochette bleue du bureau", "expect": {"intent": "Store", "items": ["passeports"], "place": "pochette bleue du bureau"}}
+{"id": "p0014", "lang": "fr", "origin": "synthetic", "input": "l'agrafeuse est sur l'étagère du bureau", "expect": {"intent": "Store", "items": ["agrafeuse"], "place": "étagère du bureau"}}
+{"id": "p0015", "lang": "fr", "origin": "synthetic", "input": "alors les ampoules de rechange sont dans le placard de l'entrée", "expect": {"intent": "Store", "items": ["ampoules de rechange"], "place": "placard de l'entrée"}}
+{"id": "p0016", "lang": "fr", "origin": "synthetic", "input": "bon j'ai rangé la raquette de tennis dans le garage", "expect": {"intent": "Store", "items": ["raquette de tennis"], "place": "garage"}}
+{"id": "p0017", "lang": "fr", "origin": "synthetic", "input": "j'ai posé mes lunettes sur la table de nuit", "expect": {"intent": "Store", "items": ["lunettes"], "place": "table de nuit"}}
+{"id": "p0018", "lang": "fr", "origin": "synthetic", "input": "je range le sèche-cheveux dans le meuble de la salle de bain", "expect": {"intent": "Store", "items": ["sèche-cheveux"], "place": "meuble de la salle de bain"}}
+{"id": "p0019", "lang": "fr", "origin": "synthetic", "input": "je mets la perceuse dans la caisse à outils", "expect": {"intent": "Store", "items": ["perceuse"], "place": "caisse à outils"}}
+{"id": "p0020", "lang": "fr", "origin": "synthetic", "input": "j'ai laissé le parapluie dans la voiture", "expect": {"intent": "Store", "items": ["parapluie"], "place": "voiture"}}
+{"id": "p0021", "lang": "fr", "origin": "synthetic", "input": "mon passeport est dans le sac à dos noir", "expect": {"intent": "Store", "items": ["passeport"], "place": "sac à dos noir"}}
+{"id": "p0022", "lang": "fr", "origin": "synthetic", "input": "la clé de la boîte aux lettres est au crochet de l'entrée", "expect": {"intent": "Store", "items": ["clé de la boîte aux lettres"], "place": "crochet de l'entrée"}}
+{"id": "p0023", "lang": "fr", "origin": "synthetic", "input": "le fer à repasser est dans la buanderie", "expect": {"intent": "Store", "items": ["fer à repasser"], "place": "buanderie"}}
+{"id": "p0024", "lang": "fr", "origin": "synthetic", "input": "la machine à coudre est au grenier", "expect": {"intent": "Store", "items": ["machine à coudre"], "place": "grenier"}}
+{"id": "p0025", "lang": "fr", "origin": "synthetic", "input": "le sac à main beige est dans l'armoire de la chambre", "expect": {"intent": "Store", "items": ["sac à main beige"], "place": "armoire de la chambre"}}
+{"id": "p0026", "lang": "fr", "origin": "synthetic", "input": "les skis sont à la cave", "expect": {"intent": "Store", "items": ["skis"], "place": "cave"}}
+{"id": "p0027", "lang": "fr", "origin": "synthetic", "input": "les chaussures de ski sont aux archives du garage", "expect": {"intent": "Store", "items": ["chaussures de ski"], "place": "archives du garage"}}
+{"id": "p0028", "lang": "fr", "origin": "synthetic", "input": "les papiers de la voiture sont dans la boîte à gants", "expect": {"intent": "Store", "items": ["papiers de la voiture"], "place": "boîte à gants"}}
+{"id": "p0029", "lang": "fr", "origin": "synthetic", "input": "la pompe à vélo est dans le garage à côté de la porte", "expect": {"intent": "Store", "items": ["pompe à vélo"], "place": "garage à côté de la porte"}}
+{"id": "p0030", "lang": "fr", "origin": "synthetic", "input": "le double des clés est chez ma mère", "expect": {"intent": "Store", "items": ["double des clés"], "place": "chez ma mère"}}
+{"id": "p0031", "lang": "fr", "origin": "synthetic", "input": "l'échelle est contre le mur du garage", "expect": {"intent": "Store", "items": ["échelle"], "place": "contre le mur du garage"}}
+{"id": "p0032", "lang": "fr", "origin": "synthetic", "input": "les valises sont au-dessus de l'armoire", "expect": {"intent": "Store", "items": ["valises"], "place": "au-dessus de l'armoire"}}
+{"id": "p0033", "lang": "fr", "origin": "synthetic", "input": "le carton de photos est en haut de l'armoire de la chambre d'amis", "expect": {"intent": "Store", "items": ["carton de photos"], "place": "en haut de l'armoire de la chambre d'amis"}}
+{"id": "p0034", "lang": "fr", "origin": "synthetic", "input": "les bottes sont en bas de l'escalier", "expect": {"intent": "Store", "items": ["bottes"], "place": "en bas de l'escalier"}}
+{"id": "p0035", "lang": "fr", "origin": "synthetic", "input": "la boîte de fusibles est au fond du placard", "expect": {"intent": "Store", "items": ["boîte de fusibles"], "place": "au fond du placard"}}
+{"id": "p0036", "lang": "fr", "origin": "synthetic", "input": "le ballon est derrière le canapé", "expect": {"intent": "Store", "items": ["ballon"], "place": "derrière le canapé"}}
+{"id": "p0037", "lang": "fr", "origin": "synthetic", "input": "la lampe de poche est devant la porte de la cave", "expect": {"intent": "Store", "items": ["lampe de poche"], "place": "devant la porte de la cave"}}
+{"id": "p0038", "lang": "fr", "origin": "synthetic", "input": "le tapis de yoga est sous le lit", "expect": {"intent": "Store", "items": ["tapis de yoga"], "place": "sous le lit"}}
+{"id": "p0039", "lang": "fr", "origin": "synthetic", "input": "les câbles sont à côté de la télé", "expect": {"intent": "Store", "items": ["câbles"], "place": "à côté de la télé"}}
+{"id": "p0040", "lang": "fr", "origin": "synthetic", "input": "le chargeur de l'appareil photo est près de l'imprimante", "expect": {"intent": "Store", "items": ["chargeur de l'appareil photo"], "place": "près de l'imprimante"}}
+{"id": "p0041", "lang": "fr", "origin": "synthetic", "input": "voilà les gants de jardinage sont dans le cabanon", "expect": {"intent": "Store", "items": ["gants de jardinage"], "place": "cabanon"}}
+{"id": "p0042", "lang": "fr", "origin": "synthetic", "input": "hum les tournevis sont dans le deuxième tiroir de l'établi", "expect": {"intent": "Store", "items": ["tournevis"], "place": "deuxième tiroir de l'établi"}}
+{"id": "p0043", "lang": "fr", "origin": "synthetic", "input": "il y a des piles dans le tiroir du bureau", "expect": {"intent": "Store", "items": ["piles"], "place": "tiroir du bureau"}}
+{"id": "p0044", "lang": "fr", "origin": "synthetic", "input": "on a mis les jouets de plage dans le coffre de la voiture", "expect": {"intent": "Store", "items": ["jouets de plage"], "place": "coffre de la voiture"}}
+{"id": "p0045", "lang": "fr", "origin": "synthetic", "input": "les guirlandes sont dans la caisse rouge du grenier", "expect": {"intent": "Store", "items": ["guirlandes"], "place": "caisse rouge du grenier"}}
+{"id": "p0046", "lang": "fr", "origin": "synthetic", "input": "les draps de rechange sont dans l'armoire du couloir", "expect": {"intent": "Store", "items": ["draps de rechange"], "place": "armoire du couloir"}}
+{"id": "p0047", "lang": "fr", "origin": "synthetic", "input": "le dossier des impôts est dans le classeur vert", "expect": {"intent": "Store", "items": ["dossier des impôts"], "place": "classeur vert"}}
+{"id": "p0048", "lang": "fr", "origin": "synthetic", "input": "la carte grise est dans la pochette de la boîte à gants", "expect": {"intent": "Store", "items": ["carte grise"], "place": "pochette de la boîte à gants"}}
+{"id": "p0049", "lang": "fr", "origin": "synthetic", "input": "les médicaments sont dans la boîte en haut du frigo", "expect": {"intent": "Store", "items": ["médicaments"], "place": "boîte en haut du frigo"}}
+{"id": "p0050", "lang": "fr", "origin": "synthetic", "input": "le disque dur externe est dans le tiroir du milieu", "expect": {"intent": "Store", "items": ["disque dur externe"], "place": "tiroir du milieu"}}
+{"id": "p0051", "lang": "fr", "origin": "synthetic", "input": "ma montre est dans la coupelle de l'entrée", "expect": {"intent": "Store", "items": ["montre"], "place": "coupelle de l'entrée"}}
+{"id": "p0052", "lang": "fr", "origin": "synthetic", "input": "ta brosse à dents de voyage est dans la trousse bleue", "expect": {"intent": "Store", "items": ["brosse à dents de voyage"], "place": "trousse bleue"}}
+{"id": "p0053", "lang": "fr", "origin": "synthetic", "input": "ses lunettes de soleil sont dans la voiture", "expect": {"intent": "Store", "items": ["lunettes de soleil"], "place": "voiture"}}
+{"id": "p0054", "lang": "fr", "origin": "synthetic", "input": "le câble USB-C blanc est dans le pot à crayons", "expect": {"intent": "Store", "items": ["câble USB-C blanc"], "place": "pot à crayons"}}
+{"id": "p0055", "lang": "fr", "origin": "synthetic", "input": "le mètre ruban est dans la poche du tablier", "expect": {"intent": "Store", "items": ["mètre ruban"], "place": "poche du tablier"}}
+{"id": "p0056", "lang": "fr", "origin": "synthetic", "input": "le testament est dans le coffre de la banque", "expect": {"intent": "Store", "items": ["testament"], "place": "coffre de la banque"}}
+{"id": "p0057", "lang": "fr", "origin": "synthetic", "input": "la tente est dans le sac bleu de la cave", "expect": {"intent": "Store", "items": ["tente"], "place": "sac bleu de la cave"}}
+{"id": "p0058", "lang": "fr", "origin": "synthetic", "input": "le réchaud de camping est dans le carton camping du garage", "expect": {"intent": "Store", "items": ["réchaud de camping"], "place": "carton camping du garage"}}
+{"id": "p0059", "lang": "fr", "origin": "synthetic", "input": "les cartes routières sont dans la portière côté conducteur", "expect": {"intent": "Store", "items": ["cartes routières"], "place": "portière côté conducteur"}}
+{"id": "p0060", "lang": "fr", "origin": "synthetic", "input": "les chargeurs sont dans le panier sur le frigo", "expect": {"intent": "Store", "items": ["chargeurs"], "place": "panier sur le frigo"}}
+{"id": "p0061", "lang": "fr", "origin": "synthetic", "input": "la cafetière italienne est dans le placard au-dessus de l'évier", "expect": {"intent": "Store", "items": ["cafetière italienne"], "place": "placard au-dessus de l'évier"}}
+{"id": "p0062", "lang": "fr", "origin": "synthetic", "input": "les sacs de congélation sont dans le tiroir sous le four", "expect": {"intent": "Store", "items": ["sacs de congélation"], "place": "tiroir sous le four"}}
+{"id": "p0063", "lang": "fr", "origin": "synthetic", "input": "les clés de la cave sont sur le crochet rouge", "expect": {"intent": "Store", "items": ["clés de la cave"], "place": "crochet rouge"}}
+{"id": "p0064", "lang": "fr", "origin": "synthetic", "input": "ok les enceintes sont dans le carton 3", "expect": {"intent": "Store", "items": ["enceintes"], "place": "carton 3"}}
+{"id": "p0065", "lang": "fr", "origin": "synthetic", "input": "carnet de vaccination dans le tiroir du secrétaire", "expect": {"intent": "Store", "items": ["carnet de vaccination"], "place": "tiroir du secrétaire"}}
+{"id": "p0066", "lang": "fr", "origin": "synthetic", "input": "télécommande de la clim dans le tiroir de la table basse", "expect": {"intent": "Store", "items": ["télécommande de la clim"], "place": "tiroir de la table basse"}}
+{"id": "p0067", "lang": "fr", "origin": "synthetic", "input": "lunettes de natation dans le sac de piscine", "expect": {"intent": "Store", "items": ["lunettes de natation"], "place": "sac de piscine"}}
+{"id": "p0068", "lang": "fr", "origin": "synthetic", "input": "mes bijoux sont dans la boîte en bois de la commode", "expect": {"intent": "Store", "items": ["bijoux"], "place": "boîte en bois de la commode"}}
+{"id": "p0069", "lang": "fr", "origin": "synthetic", "input": "bon alors la colle forte est dans le tiroir des outils", "expect": {"intent": "Store", "items": ["colle forte"], "place": "tiroir des outils"}}
+{"id": "p0070", "lang": "fr", "origin": "synthetic", "input": "douze vis M4 dans le bac bleu", "expect": {"intent": "Store", "items": ["vis M4"], "place": "bac bleu", "quantity": 12}}
+{"id": "p0071", "lang": "fr", "origin": "synthetic", "input": "2 paires de gants dans le tiroir de l'entrée", "expect": {"intent": "Store", "items": ["gants"], "place": "tiroir de l'entrée", "quantity": 2, "unit": "paires"}}
+{"id": "p0072", "lang": "fr", "origin": "synthetic", "input": "5 kg de riz dans le placard du bas", "expect": {"intent": "Store", "items": ["riz"], "place": "placard du bas", "quantity": 5, "unit": "kg"}}
+{"id": "p0073", "lang": "fr", "origin": "synthetic", "input": "4 bouteilles d'huile d'olive dans le cellier", "expect": {"intent": "Store", "items": ["huile d'olive"], "place": "cellier", "quantity": 4, "unit": "bouteilles"}}
+{"id": "p0074", "lang": "fr", "origin": "synthetic", "input": "trois rouleaux de scotch dans le tiroir du bureau", "expect": {"intent": "Store", "items": ["scotch"], "place": "tiroir du bureau", "quantity": 3, "unit": "rouleaux"}}
+{"id": "p0075", "lang": "fr", "origin": "synthetic", "input": "10 m de corde dans le coffre du garage", "expect": {"intent": "Store", "items": ["corde"], "place": "coffre du garage", "quantity": 10, "unit": "m"}}
+{"id": "p0076", "lang": "fr", "origin": "synthetic", "input": "2 boîtes de clous dans le bac jaune", "expect": {"intent": "Store", "items": ["clous"], "place": "bac jaune", "quantity": 2, "unit": "boîtes"}}
+{"id": "p0077", "lang": "fr", "origin": "synthetic", "input": "20 sachets de graines dans la boîte à graines du cabanon", "expect": {"intent": "Store", "items": ["graines"], "place": "boîte à graines du cabanon", "quantity": 20, "unit": "sachets"}}
+{"id": "p0078", "lang": "fr", "origin": "synthetic", "input": "6 ampoules E27 dans le placard de l'entrée", "expect": {"intent": "Store", "items": ["ampoules E27"], "place": "placard de l'entrée", "quantity": 6}}
+{"id": "p0079", "lang": "fr", "origin": "synthetic", "input": "1,5 l de lessive sous l'évier", "expect": {"intent": "Store", "items": ["lessive"], "place": "sous l'évier", "quantity": 1.5, "unit": "l"}}
+{"id": "p0080", "lang": "fr", "origin": "synthetic", "input": "vingt enveloppes et 3 timbres dans le tiroir du haut", "expect": {"intent": "Store", "items": ["enveloppes", "timbres"], "place": "tiroir du haut", "quantity": 20}}
+{"id": "p0081", "lang": "fr", "origin": "synthetic", "input": "passeport, carte d'identité et permis dans la pochette rouge", "expect": {"intent": "Store", "items": ["passeport", "carte d'identité", "permis"], "place": "pochette rouge"}}
+{"id": "p0082", "lang": "fr", "origin": "synthetic", "input": "marteau et tournevis dans la caisse à outils", "expect": {"intent": "Store", "items": ["marteau", "tournevis"], "place": "caisse à outils"}}
+{"id": "p0083", "lang": "fr", "origin": "synthetic", "input": "les raquettes et les balles sont dans le coffre de la voiture", "expect": {"intent": "Store", "items": ["raquettes", "balles"], "place": "coffre de la voiture"}}
+{"id": "p0084", "lang": "fr", "origin": "synthetic", "input": "chargeur + câble dans le sac de l'ordinateur", "expect": {"intent": "Store", "items": ["chargeur", "câble"], "place": "sac de l'ordinateur"}}
+{"id": "p0085", "lang": "fr", "origin": "synthetic", "input": "j'ai mis le masque et le tuba dans le sac de plage", "expect": {"intent": "Store", "items": ["masque", "tuba"], "place": "sac de plage"}}
+{"id": "p0086", "lang": "fr", "origin": "synthetic", "input": "bonnet, écharpe et gants dans le panier de l'entrée", "expect": {"intent": "Store", "items": ["bonnet", "écharpe", "gants"], "place": "panier de l'entrée"}}
+{"id": "p0087", "lang": "fr", "origin": "synthetic", "input": "perceuse sans fil", "expect": {"intent": "Store", "items": ["perceuse sans fil"]}}
+{"id": "p0088", "lang": "fr", "origin": "synthetic", "input": "les clés de la voiture", "expect": {"intent": "Store", "items": ["clés de la voiture"]}}
+{"id": "p0089", "lang": "fr", "origin": "synthetic", "input": "je prends la perceuse", "expect": {"intent": "Take", "items": ["perceuse"]}}
+{"id": "p0090", "lang": "fr", "origin": "synthetic", "input": "je prends les clés de la voiture", "expect": {"intent": "Take", "items": ["clés de la voiture"]}}
+{"id": "p0091", "lang": "fr", "origin": "synthetic", "input": "j'emporte la tente", "expect": {"intent": "Take", "items": ["tente"]}}
+{"id": "p0092", "lang": "fr", "origin": "synthetic", "input": "je sors la valise rouge", "expect": {"intent": "Take", "items": ["valise rouge"]}}
+{"id": "p0093", "lang": "fr", "origin": "synthetic", "input": "j'ai pris le vidéoprojecteur", "expect": {"intent": "Take", "items": ["vidéoprojecteur"]}}
+{"id": "p0094", "lang": "fr", "origin": "synthetic", "input": "euh je prends l'appareil photo", "expect": {"intent": "Take", "items": ["appareil photo"]}}
+{"id": "p0095", "lang": "fr", "origin": "synthetic", "input": "je prends la clé à molette", "expect": {"intent": "Take", "items": ["clé à molette"]}}
+{"id": "p0096", "lang": "fr", "origin": "synthetic", "input": "je récupère le chargeur du kindle", "expect": {"intent": "Take", "items": ["chargeur du kindle"]}}
+{"id": "p0097", "lang": "fr", "origin": "synthetic", "input": "bon je prends la perceuse et la visseuse", "expect": {"intent": "Take", "items": ["perceuse", "visseuse"]}}
+{"id": "p0098", "lang": "fr", "origin": "synthetic", "input": "j'embarque la glacière", "expect": {"intent": "Take", "items": ["glacière"]}}
+{"id": "p0099", "lang": "fr", "origin": "synthetic", "input": "je me sers de l'échelle", "expect": {"intent": "Take", "items": ["échelle"]}}
+{"id": "p0100", "lang": "fr", "origin": "synthetic", "input": "perceuse remise au garage", "expect": {"intent": "Return", "items": ["perceuse"], "place": "garage"}}
+{"id": "p0101", "lang": "fr", "origin": "synthetic", "input": "je remets la clé à molette", "expect": {"intent": "Return", "items": ["clé à molette"]}}
+{"id": "p0102", "lang": "fr", "origin": "synthetic", "input": "je remets la perceuse dans le garage", "expect": {"intent": "Return", "items": ["perceuse"], "place": "garage"}}
+{"id": "p0103", "lang": "fr", "origin": "synthetic", "input": "j'ai remis les clés de la voiture dans la coupelle", "expect": {"intent": "Return", "items": ["clés de la voiture"], "place": "coupelle"}}
+{"id": "p0104", "lang": "fr", "origin": "synthetic", "input": "je rapporte la tente à la cave", "expect": {"intent": "Return", "items": ["tente"], "place": "cave"}}
+{"id": "p0105", "lang": "fr", "origin": "synthetic", "input": "j'ai rapporté l'échelle au garage", "expect": {"intent": "Return", "items": ["échelle"], "place": "garage"}}
+{"id": "p0106", "lang": "fr", "origin": "synthetic", "input": "valise rouge remise à la cave", "expect": {"intent": "Return", "items": ["valise rouge"], "place": "cave"}}
+{"id": "p0107", "lang": "fr", "origin": "synthetic", "input": "je repose le marteau dans la caisse à outils", "expect": {"intent": "Return", "items": ["marteau"], "place": "caisse à outils"}}
+{"id": "p0108", "lang": "fr", "origin": "synthetic", "input": "la perceuse est de retour au garage", "expect": {"intent": "Return", "items": ["perceuse"], "place": "garage"}}
+{"id": "p0109", "lang": "fr", "origin": "synthetic", "input": "appareil photo remis dans le tiroir du bureau", "expect": {"intent": "Return", "items": ["appareil photo"], "place": "tiroir du bureau"}}
+{"id": "p0110", "lang": "fr", "origin": "synthetic", "input": "je remets le vidéoprojecteur", "expect": {"intent": "Return", "items": ["vidéoprojecteur"]}}
+{"id": "p0111", "lang": "fr", "origin": "synthetic", "input": "je ramène la glacière dans le cellier", "expect": {"intent": "Return", "items": ["glacière"], "place": "cellier"}}
+{"id": "p0112", "lang": "fr", "origin": "synthetic", "input": "la perceuse est maintenant dans le garage", "expect": {"intent": "MoveTo", "items": ["perceuse"], "place": "garage"}}
+{"id": "p0113", "lang": "fr", "origin": "synthetic", "input": "les skis sont maintenant au grenier", "expect": {"intent": "MoveTo", "items": ["skis"], "place": "grenier"}}
+{"id": "p0114", "lang": "fr", "origin": "synthetic", "input": "le carton 7 est désormais dans la chambre d'amis", "expect": {"intent": "MoveTo", "items": ["carton 7"], "place": "chambre d'amis"}}
+{"id": "p0115", "lang": "fr", "origin": "synthetic", "input": "j'ai déplacé la tente vers le garage", "expect": {"intent": "MoveTo", "items": ["tente"], "place": "garage"}}
+{"id": "p0116", "lang": "fr", "origin": "synthetic", "input": "j'ai déplacé les archives dans le placard du couloir", "expect": {"intent": "MoveTo", "items": ["archives"], "place": "placard du couloir"}}
+{"id": "p0117", "lang": "fr", "origin": "synthetic", "input": "la machine à coudre est maintenant sur le bureau", "expect": {"intent": "MoveTo", "items": ["machine à coudre"], "place": "bureau"}}
+{"id": "p0118", "lang": "fr", "origin": "synthetic", "input": "les guirlandes sont désormais dans la caisse rouge du grenier", "expect": {"intent": "MoveTo", "items": ["guirlandes"], "place": "caisse rouge du grenier"}}
+{"id": "p0119", "lang": "fr", "origin": "synthetic", "input": "j'ai bougé le vélo d'appartement dans le salon", "expect": {"intent": "MoveTo", "items": ["vélo d'appartement"], "place": "salon"}}
+{"id": "p0120", "lang": "fr", "origin": "synthetic", "input": "le disque dur est maintenant dans le tiroir du milieu", "expect": {"intent": "MoveTo", "items": ["disque dur"], "place": "tiroir du milieu"}}
+{"id": "p0121", "lang": "fr", "origin": "synthetic", "input": "euh la cafetière est maintenant au-dessus du frigo", "expect": {"intent": "MoveTo", "items": ["cafetière"], "place": "au-dessus du frigo"}}
+{"id": "p0122", "lang": "fr", "origin": "synthetic", "input": "j'ai prêté la tente à Marc", "expect": {"intent": "Lend", "items": ["tente"], "person": "Marc"}}
+{"id": "p0123", "lang": "fr", "origin": "synthetic", "input": "prêté le vidéoprojecteur à Sophie", "expect": {"intent": "Lend", "items": ["vidéoprojecteur"], "person": "Sophie"}}
+{"id": "p0124", "lang": "fr", "origin": "synthetic", "input": "je prête la perceuse à Julien", "expect": {"intent": "Lend", "items": ["perceuse"], "person": "Julien"}}
+{"id": "p0125", "lang": "fr", "origin": "synthetic", "input": "j'ai prêté la clé à molette à Paul", "expect": {"intent": "Lend", "items": ["clé à molette"], "person": "Paul"}}
+{"id": "p0126", "lang": "fr", "origin": "synthetic", "input": "j'ai prêté les skis à ma sœur", "expect": {"intent": "Lend", "items": ["skis"], "person": "ma sœur"}}
+{"id": "p0127", "lang": "fr", "origin": "synthetic", "input": "j'ai prêté la glacière et les chaises de camping à Marc", "expect": {"intent": "Lend", "items": ["glacière", "chaises de camping"], "person": "Marc"}}
+{"id": "p0128", "lang": "fr", "origin": "synthetic", "input": "tente prêtée à Léa", "expect": {"intent": "Lend", "items": ["tente"], "person": "Léa"}}
+{"id": "p0129", "lang": "fr", "origin": "synthetic", "input": "j'ai prêté le livre de recettes à Camille", "expect": {"intent": "Lend", "items": ["livre de recettes"], "person": "Camille"}}
+{"id": "p0130", "lang": "fr", "origin": "synthetic", "input": "Marc a emprunté la tente", "expect": {"intent": "Lend", "items": ["tente"], "person": "Marc"}}
+{"id": "p0131", "lang": "fr", "origin": "synthetic", "input": "Sophie m'a emprunté le vidéoprojecteur", "expect": {"intent": "Lend", "items": ["vidéoprojecteur"], "person": "Sophie"}}
+{"id": "p0132", "lang": "fr", "origin": "synthetic", "input": "Marc a rendu la tente", "expect": {"intent": "ReturnFromLend", "items": ["tente"], "person": "Marc"}}
+{"id": "p0133", "lang": "fr", "origin": "synthetic", "input": "Sophie m'a rendu le vidéoprojecteur", "expect": {"intent": "ReturnFromLend", "items": ["vidéoprojecteur"], "person": "Sophie"}}
+{"id": "p0134", "lang": "fr", "origin": "synthetic", "input": "Julien m'a rapporté la perceuse", "expect": {"intent": "ReturnFromLend", "items": ["perceuse"], "person": "Julien"}}
+{"id": "p0135", "lang": "fr", "origin": "synthetic", "input": "Paul a rendu la clé à molette", "expect": {"intent": "ReturnFromLend", "items": ["clé à molette"], "person": "Paul"}}
+{"id": "p0136", "lang": "fr", "origin": "synthetic", "input": "Léa m'a ramené la tente", "expect": {"intent": "ReturnFromLend", "items": ["tente"], "person": "Léa"}}
+{"id": "p0137", "lang": "fr", "origin": "synthetic", "input": "tente rendue par Marc", "expect": {"intent": "ReturnFromLend", "items": ["tente"], "person": "Marc"}}
+{"id": "p0138", "lang": "fr", "origin": "synthetic", "input": "Camille a rendu le livre de recettes", "expect": {"intent": "ReturnFromLend", "items": ["livre de recettes"], "person": "Camille"}}
+{"id": "p0139", "lang": "fr", "origin": "synthetic", "input": "Marc a rendu la glacière et les chaises de camping", "expect": {"intent": "ReturnFromLend", "items": ["glacière", "chaises de camping"], "person": "Marc"}}
+{"id": "p0140", "lang": "fr", "origin": "synthetic", "input": "où sont les clés de la voiture ?", "expect": {"intent": "Query", "query": "clés de la voiture"}}
+{"id": "p0141", "lang": "fr", "origin": "synthetic", "input": "où est le passeport", "expect": {"intent": "Query", "query": "passeport"}}
+{"id": "p0142", "lang": "fr", "origin": "synthetic", "input": "c'est où les lunettes de soleil", "expect": {"intent": "Query", "query": "lunettes de soleil"}}
+{"id": "p0143", "lang": "fr", "origin": "synthetic", "input": "ou est le passeport", "expect": {"intent": "Query", "query": "passeport"}}
+{"id": "p0144", "lang": "fr", "origin": "synthetic", "input": "où sont les décos de Noël", "expect": {"intent": "Query", "query": "décos de Noël"}}
+{"id": "p0145", "lang": "fr", "origin": "synthetic", "input": "où se trouve la perceuse", "expect": {"intent": "Query", "query": "perceuse"}}
+{"id": "p0146", "lang": "fr", "origin": "synthetic", "input": "où j'ai mis mes lunettes", "expect": {"intent": "Query", "query": "lunettes"}}
+{"id": "p0147", "lang": "fr", "origin": "synthetic", "input": "où est-ce que j'ai mis le chargeur du kindle", "expect": {"intent": "Query", "query": "chargeur du kindle"}}
+{"id": "p0148", "lang": "fr", "origin": "synthetic", "input": "où ai-je rangé le livret de famille ?", "expect": {"intent": "Query", "query": "livret de famille"}}
+{"id": "p0149", "lang": "fr", "origin": "synthetic", "input": "les clés de la cave c'est où", "expect": {"intent": "Query", "query": "clés de la cave"}}
+{"id": "p0150", "lang": "fr", "origin": "synthetic", "input": "je ne trouve plus la carte grise", "expect": {"intent": "Query", "query": "carte grise"}}
+{"id": "p0151", "lang": "fr", "origin": "synthetic", "input": "je cherche la pompe à vélo", "expect": {"intent": "Query", "query": "pompe à vélo"}}
+{"id": "p0152", "lang": "fr", "origin": "synthetic", "input": "t'as vu le chargeur de l'appareil photo", "expect": {"intent": "Query", "query": "chargeur de l'appareil photo"}}
+{"id": "p0153", "lang": "fr", "origin": "synthetic", "input": "où sont passées les piles", "expect": {"intent": "Query", "query": "piles"}}
+{"id": "p0154", "lang": "fr", "origin": "synthetic", "input": "euh où est la valise rouge ?", "expect": {"intent": "Query", "query": "valise rouge"}}
+{"id": "p0155", "lang": "fr", "origin": "synthetic", "input": "où sont rangés les draps de rechange", "expect": {"intent": "Query", "query": "draps de rechange"}}
+{"id": "p0156", "lang": "fr", "origin": "synthetic", "input": "la machine à coudre est où", "expect": {"intent": "Query", "query": "machine à coudre"}}
+{"id": "p0157", "lang": "fr", "origin": "synthetic", "input": "où est le double des clés", "expect": {"intent": "Query", "query": "double des clés"}}
+{"id": "p0158", "lang": "fr", "origin": "synthetic", "input": "où est la clé à molette", "expect": {"intent": "Query", "query": "clé à molette"}}
+{"id": "p0159", "lang": "fr", "origin": "synthetic", "input": "où sont les papiers de la voiture ?", "expect": {"intent": "Query", "query": "papiers de la voiture"}}
+{"id": "p0160", "lang": "en", "origin": "synthetic", "input": "spare keys in the top drawer of the dresser", "expect": {"intent": "Store", "items": ["spare keys"], "place": "top drawer of the dresser"}}
+{"id": "p0161", "lang": "en", "origin": "synthetic", "input": "christmas lights in box 7 on the back shelf in the basement", "expect": {"intent": "Store", "items": ["christmas lights"], "place": "box 7 on the back shelf in the basement"}}
+{"id": "p0162", "lang": "en", "origin": "synthetic", "input": "passport and health record in the drawer", "expect": {"intent": "Store", "items": ["passport", "health record"], "place": "drawer"}}
+{"id": "p0163", "lang": "en", "origin": "synthetic", "input": "12 M4 screws in the blue bin in the workshop", "expect": {"intent": "Store", "items": ["M4 screws"], "place": "blue bin in the workshop", "quantity": 12}}
+{"id": "p0164", "lang": "en", "origin": "synthetic", "input": "the passport is in the safe", "expect": {"intent": "Store", "items": ["passport"], "place": "safe"}}
+{"id": "p0165", "lang": "en", "origin": "synthetic", "input": "my passport is in the black backpack", "expect": {"intent": "Store", "items": ["passport"], "place": "black backpack"}}
+{"id": "p0166", "lang": "en", "origin": "synthetic", "input": "the car papers are in the glove box", "expect": {"intent": "Store", "items": ["car papers"], "place": "glove box"}}
+{"id": "p0167", "lang": "en", "origin": "synthetic", "input": "I put the batteries in the kitchen drawer", "expect": {"intent": "Store", "items": ["batteries"], "place": "kitchen drawer"}}
+{"id": "p0168", "lang": "en", "origin": "synthetic", "input": "I left the umbrella in the car", "expect": {"intent": "Store", "items": ["umbrella"], "place": "car"}}
+{"id": "p0169", "lang": "en", "origin": "synthetic", "input": "um the kindle charger is on the desk", "expect": {"intent": "Store", "items": ["kindle charger"], "place": "desk"}}
+{"id": "p0170", "lang": "en", "origin": "synthetic", "input": "well the drill is in the garage", "expect": {"intent": "Store", "items": ["drill"], "place": "garage"}}
+{"id": "p0171", "lang": "en", "origin": "synthetic", "input": "the suitcases are on top of the wardrobe", "expect": {"intent": "Store", "items": ["suitcases"], "place": "on top of the wardrobe"}}
+{"id": "p0172", "lang": "en", "origin": "synthetic", "input": "the yoga mat is under the bed", "expect": {"intent": "Store", "items": ["yoga mat"], "place": "under the bed"}}
+{"id": "p0173", "lang": "en", "origin": "synthetic", "input": "the ball is behind the sofa", "expect": {"intent": "Store", "items": ["ball"], "place": "behind the sofa"}}
+{"id": "p0174", "lang": "en", "origin": "synthetic", "input": "the ladder is against the garage wall", "expect": {"intent": "Store", "items": ["ladder"], "place": "against the garage wall"}}
+{"id": "p0175", "lang": "en", "origin": "synthetic", "input": "the flashlight is next to the basement door", "expect": {"intent": "Store", "items": ["flashlight"], "place": "next to the basement door"}}
+{"id": "p0176", "lang": "en", "origin": "synthetic", "input": "the fuse box key is at the back of the cupboard", "expect": {"intent": "Store", "items": ["fuse box key"], "place": "at the back of the cupboard"}}
+{"id": "p0177", "lang": "en", "origin": "synthetic", "input": "the boots are at the bottom of the stairs", "expect": {"intent": "Store", "items": ["boots"], "place": "at the bottom of the stairs"}}
+{"id": "p0178", "lang": "en", "origin": "synthetic", "input": "the spare bulbs are in the hallway closet", "expect": {"intent": "Store", "items": ["spare bulbs"], "place": "hallway closet"}}
+{"id": "p0179", "lang": "en", "origin": "synthetic", "input": "the tent is in the blue bag in the basement", "expect": {"intent": "Store", "items": ["tent"], "place": "blue bag in the basement"}}
+{"id": "p0180", "lang": "en", "origin": "synthetic", "input": "the camping stove is in the camping box in the garage", "expect": {"intent": "Store", "items": ["camping stove"], "place": "camping box in the garage"}}
+{"id": "p0181", "lang": "en", "origin": "synthetic", "input": "the external hard drive is in the middle drawer", "expect": {"intent": "Store", "items": ["external hard drive"], "place": "middle drawer"}}
+{"id": "p0182", "lang": "en", "origin": "synthetic", "input": "the white USB-C cable is in the pen holder", "expect": {"intent": "Store", "items": ["white USB-C cable"], "place": "pen holder"}}
+{"id": "p0183", "lang": "en", "origin": "synthetic", "input": "the tax folder is in the green binder", "expect": {"intent": "Store", "items": ["tax folder"], "place": "green binder"}}
+{"id": "p0184", "lang": "en", "origin": "synthetic", "input": "keys @ entrance", "expect": {"intent": "Store", "items": ["keys"], "place": "entrance"}}
+{"id": "p0185", "lang": "en", "origin": "synthetic", "input": "the sewing machine is in the attic", "expect": {"intent": "Store", "items": ["sewing machine"], "place": "attic"}}
+{"id": "p0186", "lang": "en", "origin": "synthetic", "input": "my watch is in the bowl by the door", "expect": {"intent": "Store", "items": ["watch"], "place": "bowl by the door"}}
+{"id": "p0187", "lang": "en", "origin": "synthetic", "input": "the spare keys are at my mother's", "expect": {"intent": "Store", "items": ["spare keys"], "place": "mother's"}}
+{"id": "p0188", "lang": "en", "origin": "synthetic", "input": "there are batteries in the desk drawer", "expect": {"intent": "Store", "items": ["batteries"], "place": "desk drawer"}}
+{"id": "p0189", "lang": "en", "origin": "synthetic", "input": "I stored the ski boots in the garage loft", "expect": {"intent": "Store", "items": ["ski boots"], "place": "garage loft"}}
+{"id": "p0190", "lang": "en", "origin": "synthetic", "input": "3 m of HDMI cable under the sofa", "expect": {"intent": "Store", "items": ["HDMI cable"], "place": "under the sofa", "quantity": 3, "unit": "m"}}
+{"id": "p0191", "lang": "en", "origin": "synthetic", "input": "two pairs of gloves in the hallway drawer", "expect": {"intent": "Store", "items": ["gloves"], "place": "hallway drawer", "quantity": 2, "unit": "pairs"}}
+{"id": "p0192", "lang": "en", "origin": "synthetic", "input": "5 kg of rice in the bottom cupboard", "expect": {"intent": "Store", "items": ["rice"], "place": "bottom cupboard", "quantity": 5, "unit": "kg"}}
+{"id": "p0193", "lang": "en", "origin": "synthetic", "input": "four bottles of olive oil in the pantry", "expect": {"intent": "Store", "items": ["olive oil"], "place": "pantry", "quantity": 4, "unit": "bottles"}}
+{"id": "p0194", "lang": "en", "origin": "synthetic", "input": "2 boxes of nails in the yellow bin", "expect": {"intent": "Store", "items": ["nails"], "place": "yellow bin", "quantity": 2, "unit": "boxes"}}
+{"id": "p0195", "lang": "en", "origin": "synthetic", "input": "twenty envelopes and 3 stamps in the top drawer", "expect": {"intent": "Store", "items": ["envelopes", "stamps"], "place": "top drawer", "quantity": 20}}
+{"id": "p0196", "lang": "en", "origin": "synthetic", "input": "hammer and screwdriver in the toolbox", "expect": {"intent": "Store", "items": ["hammer", "screwdriver"], "place": "toolbox"}}
+{"id": "p0197", "lang": "en", "origin": "synthetic", "input": "passport, ID card and driving licence in the red pouch", "expect": {"intent": "Store", "items": ["passport", "ID card", "driving licence"], "place": "red pouch"}}
+{"id": "p0198", "lang": "en", "origin": "synthetic", "input": "mask and snorkel in the beach bag", "expect": {"intent": "Store", "items": ["mask", "snorkel"], "place": "beach bag"}}
+{"id": "p0199", "lang": "en", "origin": "synthetic", "input": "cordless drill", "expect": {"intent": "Store", "items": ["cordless drill"]}}
+{"id": "p0200", "lang": "en", "origin": "synthetic", "input": "I'm taking the drill", "expect": {"intent": "Take", "items": ["drill"]}}
+{"id": "p0201", "lang": "en", "origin": "synthetic", "input": "taking the car keys", "expect": {"intent": "Take", "items": ["car keys"]}}
+{"id": "p0202", "lang": "en", "origin": "synthetic", "input": "I took the projector", "expect": {"intent": "Take", "items": ["projector"]}}
+{"id": "p0203", "lang": "en", "origin": "synthetic", "input": "I'm taking the tent and the cooler", "expect": {"intent": "Take", "items": ["tent", "cooler"]}}
+{"id": "p0204", "lang": "en", "origin": "synthetic", "input": "grabbing the camera", "expect": {"intent": "Take", "items": ["camera"]}}
+{"id": "p0205", "lang": "en", "origin": "synthetic", "input": "put the drill back in the garage", "expect": {"intent": "Return", "items": ["drill"], "place": "garage"}}
+{"id": "p0206", "lang": "en", "origin": "synthetic", "input": "I put the car keys back in the bowl", "expect": {"intent": "Return", "items": ["car keys"], "place": "bowl"}}
+{"id": "p0207", "lang": "en", "origin": "synthetic", "input": "put back the ladder in the garage", "expect": {"intent": "Return", "items": ["ladder"], "place": "garage"}}
+{"id": "p0208", "lang": "en", "origin": "synthetic", "input": "the drill is back in the garage", "expect": {"intent": "Return", "items": ["drill"], "place": "garage"}}
+{"id": "p0209", "lang": "en", "origin": "synthetic", "input": "I returned the tent to the basement", "expect": {"intent": "Return", "items": ["tent"], "place": "basement"}}
+{"id": "p0210", "lang": "en", "origin": "synthetic", "input": "putting the camera back in the desk drawer", "expect": {"intent": "Return", "items": ["camera"], "place": "desk drawer"}}
+{"id": "p0211", "lang": "en", "origin": "synthetic", "input": "I put the projector back", "expect": {"intent": "Return", "items": ["projector"]}}
+{"id": "p0212", "lang": "en", "origin": "synthetic", "input": "the drill is now in the garage", "expect": {"intent": "MoveTo", "items": ["drill"], "place": "garage"}}
+{"id": "p0213", "lang": "en", "origin": "synthetic", "input": "the skis are now in the attic", "expect": {"intent": "MoveTo", "items": ["skis"], "place": "attic"}}
+{"id": "p0214", "lang": "en", "origin": "synthetic", "input": "moved the tent to the garage", "expect": {"intent": "MoveTo", "items": ["tent"], "place": "garage"}}
+{"id": "p0215", "lang": "en", "origin": "synthetic", "input": "I moved the archives to the hallway closet", "expect": {"intent": "MoveTo", "items": ["archives"], "place": "hallway closet"}}
+{"id": "p0216", "lang": "en", "origin": "synthetic", "input": "the sewing machine is now on the desk", "expect": {"intent": "MoveTo", "items": ["sewing machine"], "place": "desk"}}
+{"id": "p0217", "lang": "en", "origin": "synthetic", "input": "uh the coffee maker is now on top of the fridge", "expect": {"intent": "MoveTo", "items": ["coffee maker"], "place": "on top of the fridge"}}
+{"id": "p0218", "lang": "en", "origin": "synthetic", "input": "lent the tent to Mark", "expect": {"intent": "Lend", "items": ["tent"], "person": "Mark"}}
+{"id": "p0219", "lang": "en", "origin": "synthetic", "input": "I lent the projector to Sophie", "expect": {"intent": "Lend", "items": ["projector"], "person": "Sophie"}}
+{"id": "p0220", "lang": "en", "origin": "synthetic", "input": "I've lent the drill to my brother", "expect": {"intent": "Lend", "items": ["drill"], "person": "my brother"}}
+{"id": "p0221", "lang": "en", "origin": "synthetic", "input": "lent the cooler and the camping chairs to Mark", "expect": {"intent": "Lend", "items": ["cooler", "camping chairs"], "person": "Mark"}}
+{"id": "p0222", "lang": "en", "origin": "synthetic", "input": "Mark borrowed the tent", "expect": {"intent": "Lend", "items": ["tent"], "person": "Mark"}}
+{"id": "p0223", "lang": "en", "origin": "synthetic", "input": "Mark returned the tent", "expect": {"intent": "ReturnFromLend", "items": ["tent"], "person": "Mark"}}
+{"id": "p0224", "lang": "en", "origin": "synthetic", "input": "Sophie brought the projector back", "expect": {"intent": "ReturnFromLend", "items": ["projector"], "person": "Sophie"}}
+{"id": "p0225", "lang": "en", "origin": "synthetic", "input": "Mark gave back the drill", "expect": {"intent": "ReturnFromLend", "items": ["drill"], "person": "Mark"}}
+{"id": "p0226", "lang": "en", "origin": "synthetic", "input": "Paul returned the adjustable wrench", "expect": {"intent": "ReturnFromLend", "items": ["adjustable wrench"], "person": "Paul"}}
+{"id": "p0227", "lang": "en", "origin": "synthetic", "input": "where is the passport", "expect": {"intent": "Query", "query": "passport"}}
+{"id": "p0228", "lang": "en", "origin": "synthetic", "input": "where are the car keys?", "expect": {"intent": "Query", "query": "car keys"}}
+{"id": "p0229", "lang": "en", "origin": "synthetic", "input": "where's the kindle charger", "expect": {"intent": "Query", "query": "kindle charger"}}
+{"id": "p0230", "lang": "en", "origin": "synthetic", "input": "where did I put my glasses", "expect": {"intent": "Query", "query": "glasses"}}
+{"id": "p0231", "lang": "en", "origin": "synthetic", "input": "where did I leave the umbrella", "expect": {"intent": "Query", "query": "umbrella"}}
+{"id": "p0232", "lang": "en", "origin": "synthetic", "input": "I can't find the car papers", "expect": {"intent": "Query", "query": "car papers"}}
+{"id": "p0233", "lang": "en", "origin": "synthetic", "input": "where do I keep the spare bulbs", "expect": {"intent": "Query", "query": "spare bulbs"}}
+{"id": "p0234", "lang": "en", "origin": "synthetic", "input": "um where are the christmas lights", "expect": {"intent": "Query", "query": "christmas lights"}}
+{"id": "p0235", "lang": "en", "origin": "synthetic", "input": "looking for the yoga mat", "expect": {"intent": "Query", "query": "yoga mat"}}
+{"id": "p0236", "lang": "en", "origin": "synthetic", "input": "where is the drill?", "expect": {"intent": "Query", "query": "drill"}}

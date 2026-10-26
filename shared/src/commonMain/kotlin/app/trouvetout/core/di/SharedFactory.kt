@@ -2,6 +2,7 @@ package app.trouvetout.core.di
 
 import app.cash.sqldelight.db.SqlDriver
 import app.trouvetout.core.AppInfo
+import app.trouvetout.core.capture.CaptureService
 import app.trouvetout.core.data.DeviceIdentity
 import app.trouvetout.core.data.EventStore
 import app.trouvetout.core.data.db.TrouveToutDb
@@ -26,6 +27,9 @@ import app.trouvetout.core.log.LogLevel
 import app.trouvetout.core.platform.FileStore
 import app.trouvetout.core.platform.createFileStore
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -69,6 +73,18 @@ public class SharedFactory(
     public val containerCommands: ContainerCommands by lazy { ContainerCommands(commandContext) }
     public val attachmentCommands: AttachmentCommands by lazy { AttachmentCommands(commandContext) }
     public val undo: UndoService by lazy { UndoService(eventStore, commandContext, deviceId) }
+
+    /** Text capture (lot 3): sentence → proposal → events. [captureLang] is the host's UI language. */
+    public val capture: CaptureService by lazy {
+        CaptureService(
+            database,
+            itemCommands,
+            placeCommands,
+            containerCommands,
+            config.dispatchers.io,
+            config.captureLang,
+        )
+    }
 
     public val itemRepository: ItemRepository by lazy { ItemRepository(database, config.dispatchers) }
     public val placeRepository: PlaceRepository by lazy { PlaceRepository(database, config.dispatchers) }
@@ -145,8 +161,15 @@ public class SharedFactory(
         DATA_DIRECTORIES.filter { files.deleteDirectory(it) }
     }
 
+    /**
+     * Scope for the host's flow watchers (Swift bridge): callbacks arrive on the main dispatcher; cancelled by
+     * [close].
+     */
+    public val uiScope: CoroutineScope = CoroutineScope(SupervisorJob() + config.dispatchers.main)
+
     /** Releases held resources (database connection, loaded models). */
     public fun close() {
+        uiScope.cancel()
         openedDriver?.close()
         openedDriver = null
     }
