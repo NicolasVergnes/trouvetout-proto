@@ -5,6 +5,15 @@ name: Dependency verification metadata
 # Manual: Actions → this workflow → Run, then download the `verification-metadata` artifact and commit the file.
 on:
   workflow_dispatch:
+  # Also whenever the dependency graph may change, so a fresh file is one artifact download away.
+  push:
+    branches: [main, "lot/**"]
+    paths:
+      - ".github/workflows/verification-metadata.yml"
+      - "gradle/libs.versions.toml"
+      - "gradle/wrapper/**"
+      - "settings.gradle.kts"
+      - "**/build.gradle.kts"
 
 permissions:
   contents: read
