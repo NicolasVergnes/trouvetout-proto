@@ -53,14 +53,15 @@ public class ExportService internal constructor(
     public suspend fun export(): ExportResult = withContext(dispatcher) {
         val now = clock.now().toEpochMilliseconds()
         val relativePath = "$DIRECTORY/$PREFIX${utcTimestamp(now)}.zip"
-        val photoFiles = photoStore.listFiles().filter { PhotoStore.isValidFileName(it) }
+        // Full-size photos only: the importer regenerates thumbnails, and every entry counts against ZIP32.
+        val photoFiles = photoStore.listFiles().filter { PhotoStore.isValidFileName(it) && !it.endsWith(THUMB_SUFFIX) }
         val counts =
             ExportCounts(
                 events = db.eventQueries.count().executeAsOne(),
                 items = db.itemQueries.countActive().executeAsOne(),
                 places = db.placeQueries.countActive().executeAsOne(),
                 containers = db.containerQueries.countActive().executeAsOne(),
-                photos = photoFiles.count { !it.endsWith(THUMB_SUFFIX) }.toLong(),
+                photos = photoFiles.size.toLong(),
             )
         val manifest =
             Manifest(

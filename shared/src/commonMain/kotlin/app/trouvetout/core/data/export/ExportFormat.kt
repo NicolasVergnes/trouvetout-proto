@@ -149,6 +149,9 @@ public data class Snapshot(
     val photos: List<SnapshotPhoto>,
 )
 
+/** Largest archive a host copies into `imports/` before handing it to the core (1 GiB). */
+public const val MAX_ARCHIVE_BYTES: Long = 1L shl 30
+
 /** `YYYYMMDD-HHMMSS` in UTC from epoch milliseconds, without a calendar library (proleptic Gregorian). */
 public fun utcTimestamp(epochMillis: Long): String {
     val totalSeconds = Math.floorDiv(epochMillis, MILLIS_PER_SECOND)

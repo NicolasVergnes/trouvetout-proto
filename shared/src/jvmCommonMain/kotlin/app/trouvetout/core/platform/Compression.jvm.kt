@@ -28,7 +28,7 @@ public actual fun inflateRaw(
     bytes: ByteArray,
     expectedSize: Int,
 ): ByteArray {
-    require(expectedSize >= 0) { "Negative size" }
+    require(expectedSize in 0 until Int.MAX_VALUE) { "Bad size" }
     val inflater = Inflater(true)
     try {
         inflater.setInput(bytes)

@@ -116,6 +116,25 @@ public class SharedFactory(
     }
 
     /**
+     * Routine maintenance the host runs once per launch after a successful [warmUp], never on a critical path:
+     * photo files of the 30-day bin (A13), exports older than a day, leftovers of an interrupted import.
+     * Failures are logged by class only.
+     */
+    public suspend fun housekeeping(): Unit = withContext(config.dispatchers.io) {
+        if (wiped || !config.storageReady) return@withContext
+        val attempt =
+            runCatching {
+                bin.purgeExpired()
+                exportService.purgeOldExports()
+                files.deleteDirectory(IMPORT_DIRECTORY)
+            }
+        attempt.exceptionOrNull()?.let { failure ->
+            if (failure is CancellationException) throw failure
+            config.logger.log(LogLevel.WARN, TAG, "housekeeping failed: ${failure::class.simpleName}")
+        }
+    }
+
+    /**
      * H6 (data part): closes the database and deletes every file the core wrote — database (with its WAL and
      * shm), photos, exports, imports. The host completes the wipe (keys, preferences, scheduled notifications),
      * then builds a fresh [SharedFactory]: this one refuses to reopen. Returns the directories removed.

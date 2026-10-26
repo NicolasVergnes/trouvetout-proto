@@ -27,6 +27,10 @@ class MemorySink : ByteSink {
         closed = true
     }
 
+    override fun abort() {
+        closed = true
+    }
+
     fun toByteArray(): ByteArray = buffer.copyOf(position.toInt())
 }
 

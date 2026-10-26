@@ -1,9 +1,15 @@
 package app.trouvetout.core.platform
 
+import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCObjectVar
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
 import platform.Foundation.NSData
 import platform.Foundation.NSDataWritingAtomic
 import platform.Foundation.NSDataWritingFileProtectionCompleteUntilFirstUserAuthentication
+import platform.Foundation.NSError
 import platform.Foundation.NSFileHandle
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSFileProtectionCompleteUntilFirstUserAuthentication
@@ -13,12 +19,10 @@ import platform.Foundation.closeFile
 import platform.Foundation.dataWithContentsOfFile
 import platform.Foundation.fileHandleForReadingAtPath
 import platform.Foundation.fileHandleForWritingAtPath
-import platform.Foundation.readDataOfLength
 import platform.Foundation.seekToEndOfFile
-import platform.Foundation.seekToFileOffset
-import platform.Foundation.synchronizeFile
 import platform.Foundation.writeData
 import platform.Foundation.writeToFile
+import platform.posix.rename
 
 /**
  * Foundation implementation; writes are atomic and carry the `completeUntilFirstUserAuthentication` protection
@@ -103,19 +107,30 @@ internal class NSFileStore(
             length: Int,
         ) {
             val slice = if (offset == 0 && length == bytes.size) bytes else bytes.copyOfRange(offset, offset + length)
-            handle.writeData(slice.toNSData())
+            check(withError { handle.writeData(slice.toNSData(), it) }) { "Write failed" }
             position += length
         }
 
         override fun close() {
             if (closed) return
             closed = true
-            handle.synchronizeFile()
-            handle.closeFile()
-            fileManager.removeItemAtPath(target, error = null)
-            val moved = fileManager.moveItemAtPath(temporary, toPath = target, error = null)
+            val synced = withError { handle.synchronizeAndReturnError(it) }
+            val closedOk = withError { handle.closeAndReturnError(it) }
+            if (!synced || !closedOk) {
+                fileManager.removeItemAtPath(temporary, error = null)
+                error("Flush failed")
+            }
+            // rename(2) replaces the target atomically on APFS, like ATOMIC_MOVE on the JVM.
+            val moved = rename(temporary, target) == 0
             if (!moved) fileManager.removeItemAtPath(temporary, error = null)
             check(moved) { "Rename failed" }
+        }
+
+        override fun abort() {
+            if (closed) return
+            closed = true
+            handle.closeFile()
+            fileManager.removeItemAtPath(temporary, error = null)
         }
     }
 
@@ -129,10 +144,15 @@ internal class NSFileStore(
             length: Int,
         ): ByteArray {
             require(offset >= 0 && length >= 0 && offset + length <= size) { "Read out of range" }
-            handle.seekToFileOffset(offset.toULong())
-            val data = handle.readDataOfLength(length.toULong()).toByteArray()
-            require(data.size == length) { "Short read" }
-            return data
+            check(withError { handle.seekToOffset(offset.toULong(), it) }) { "Seek failed" }
+            val data =
+                memScoped {
+                    val failure = alloc<ObjCObjectVar<NSError?>>()
+                    handle.readDataUpToLength(length.toULong(), failure.ptr)
+                } ?: error("Read failed")
+            val bytes = data.toByteArray()
+            require(bytes.size == length) { "Short read" }
+            return bytes
         }
 
         override fun close() = handle.closeFile()
@@ -140,3 +160,10 @@ internal class NSFileStore(
 }
 
 public actual fun createFileStore(rootDirectory: String): FileStore = NSFileStore(rootDirectory)
+
+/** Runs a Foundation call that reports failure through an `NSError` out-parameter; the error object is dropped. */
+@OptIn(ExperimentalForeignApi::class)
+private inline fun withError(block: (CPointer<ObjCObjectVar<NSError?>>) -> Boolean): Boolean = memScoped {
+    val failure = alloc<ObjCObjectVar<NSError?>>()
+    block(failure.ptr)
+}

@@ -68,20 +68,31 @@ public class UndoService internal constructor(
         before: Event,
     ): List<Event> = store.historyOf(subject).filter { it.at < before.at || (it.at == before.at && it.id < before.id) }
 
+    /** Before a store or move, the item was taken, lent, or at its previous location (or nowhere). */
     private suspend fun previousLocation(
         itemId: String,
         before: Event,
     ): EventPayload {
-        val last =
-            historyBefore(EventSubject(SubjectType.ITEM, itemId), before)
-                .map { it.payload }
-                .lastOrNull { it is EventPayload.ItemStored || it is EventPayload.ItemMovedTo }
-        return when (last) {
-            is EventPayload.ItemStored -> EventPayload.ItemStored(itemId, last.placeId, last.containerId)
-            is EventPayload.ItemMovedTo -> EventPayload.ItemStored(itemId, last.placeId, last.containerId)
-            else -> EventPayload.ItemStored(itemId) // back to "no known location"
+        val history = historyBefore(EventSubject(SubjectType.ITEM, itemId), before).map { it.payload }
+        return when (val lastStatus = history.lastOrNull { it.isStatusEvent() }) {
+            is EventPayload.ItemTaken -> lastStatus
+            is EventPayload.ItemLent -> lastStatus
+            else -> {
+                val last = history.lastOrNull { it is EventPayload.ItemStored || it is EventPayload.ItemMovedTo }
+                when (last) {
+                    is EventPayload.ItemStored -> EventPayload.ItemStored(itemId, last.placeId, last.containerId)
+                    is EventPayload.ItemMovedTo -> EventPayload.ItemStored(itemId, last.placeId, last.containerId)
+                    else -> EventPayload.ItemStored(itemId) // back to "no known location"
+                }
+            }
         }
     }
+
+    private fun EventPayload.isStatusEvent(): Boolean = this is EventPayload.ItemTaken ||
+        this is EventPayload.ItemLent ||
+        this is EventPayload.ItemReturned ||
+        this is EventPayload.ItemStored ||
+        this is EventPayload.ItemMovedTo
 
     /** Before an `ItemReturned`, the item was taken or lent: re-emit that state (or nothing to do). */
     private suspend fun previousStatus(
@@ -89,14 +100,7 @@ public class UndoService internal constructor(
         before: Event,
     ): EventPayload {
         val history = historyBefore(EventSubject(SubjectType.ITEM, itemId), before).map { it.payload }
-        val lastStatus =
-            history.lastOrNull {
-                it is EventPayload.ItemTaken ||
-                    it is EventPayload.ItemLent ||
-                    it is EventPayload.ItemReturned ||
-                    it is EventPayload.ItemStored ||
-                    it is EventPayload.ItemMovedTo
-            }
+        val lastStatus = history.lastOrNull { it.isStatusEvent() }
         return when (lastStatus) {
             is EventPayload.ItemTaken -> lastStatus
             is EventPayload.ItemLent -> lastStatus

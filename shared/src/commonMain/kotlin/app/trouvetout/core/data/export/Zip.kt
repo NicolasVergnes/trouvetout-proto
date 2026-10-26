@@ -25,6 +25,10 @@ public object Zip {
     internal const val FLAG_UTF8 = 0x0800
     internal const val FLAG_ENCRYPTED = 0x0001
     internal const val FLAG_DATA_DESCRIPTOR = 0x0008
+
+    /** No ZIP64 yet: beyond these, [ZipWriter.finish] fails instead of writing a wrapped end record. */
+    internal const val MAX_ENTRIES_ZIP32 = 0xFFFF
+    internal const val MAX_OFFSET_ZIP32 = 0xFFFF_FFFFL
     internal const val DOS_TIME = 0
     internal const val DOS_DATE = 0x21 // 1980-01-01: exports carry their date in manifest.json, not in DOS fields
     internal const val END_RECORD_SIZE = 22
@@ -96,6 +100,9 @@ public class ZipWriter(
         check(!finished) { "Archive finished" }
         finished = true
         val centralOffset = sink.position
+        check(count < Zip.MAX_ENTRIES_ZIP32 && centralOffset + central.size < Zip.MAX_OFFSET_ZIP32) {
+            "Archive too large for ZIP32"
+        }
         sink.write(central.toByteArray())
         val end = ByteWriter()
         end.u32(Zip.SIG_END)

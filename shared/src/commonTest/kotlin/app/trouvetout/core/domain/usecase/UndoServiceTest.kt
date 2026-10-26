@@ -213,4 +213,20 @@ class UndoServiceTest {
         store.append(listOf(imported.event(EventPayload.ItemCreated("y", "y"), source = EventSource.IMPORT)))
         assertTrue(undo.peek().isEmpty(), "imported events are never undone")
     }
+
+    @Test
+    fun should_undo_a_put_back_to_the_taken_state() = runTest {
+        val garage = place("garage")
+        val drill = item("perceuse", LocationRef.InPlace(garage))
+        clock.tick()
+        items.take(drill, EventSource.TEXT).events()
+        clock.tick()
+        items.store(drill, LocationRef.InPlace(garage), EventSource.TEXT).events()
+        assertEquals("STORED", location(drill).state)
+
+        undoNow().events()
+
+        assertEquals("TAKEN", location(drill).state, "the drill is out again, as before the put-back (U5)")
+        assertEquals(garage, location(drill).place_id)
+    }
 }

@@ -100,12 +100,22 @@ internal class JavaFileStore(
             if (closed) return
             closed = true
             try {
-                stream.fd.sync()
-                stream.close()
+                try {
+                    stream.fd.sync()
+                } finally {
+                    stream.close()
+                }
                 moveInto(temporary, target)
             } finally {
                 temporary.delete()
             }
+        }
+
+        override fun abort() {
+            if (closed) return
+            closed = true
+            runCatching { stream.close() }
+            temporary.delete()
         }
     }
 

@@ -9,6 +9,7 @@ import app.trouvetout.core.domain.model.EventPayload
 import app.trouvetout.core.platform.FileStore
 import app.trouvetout.core.platform.use
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 
@@ -20,6 +21,9 @@ public enum class ImportRejection {
     MANIFEST_INVALID,
     FORMAT_TOO_NEW,
     EVENTS_MISSING,
+
+    /** `events.jsonl` is truncated or its checksum does not match. */
+    EVENTS_CORRUPT,
     EVENTS_TOO_LARGE,
     TOO_MANY_EVENTS,
 }
@@ -39,7 +43,10 @@ public data class ImportReport(
     val photosRejected: Int,
     /** Archive entries this version does not know (ignored). */
     val ignoredEntries: Int,
-)
+) {
+    /** What the archive contained and this import did not keep (unknown payloads are kept, not counted here). */
+    val dropped: Int get() = invalidLines + photosRejected + ignoredEntries
+}
 
 public sealed interface ImportResult {
     public data class Done(
@@ -89,7 +96,12 @@ public class ImportService internal constructor(
                 return@withContext ImportResult.Rejected(ImportRejection.EVENTS_TOO_LARGE)
             }
 
-            val events = importEvents(reader.read(eventsRecord))
+            val eventsBytes =
+                runCatching { reader.read(eventsRecord) }.getOrElse { failure ->
+                    if (failure !is IllegalArgumentException) throw failure
+                    return@withContext ImportResult.Rejected(ImportRejection.EVENTS_CORRUPT)
+                }
+            val events = importEvents(eventsBytes)
                 ?: return@withContext ImportResult.Rejected(ImportRejection.TOO_MANY_EVENTS)
             val photos = importPhotos(reader)
             val known = setOf(ExportEntries.MANIFEST, ExportEntries.EVENTS, ExportEntries.SNAPSHOT)
@@ -152,41 +164,51 @@ public class ImportService internal constructor(
             skipped += result.skipped
             batch.clear()
         }
-        for (line in lines) {
-            read++
-            if (read > MAX_EVENTS) return null
-            val event = parseLine(line)
-            if (event == null) {
-                invalid++
-                continue
+        try {
+            for (line in lines) {
+                read++
+                if (read > MAX_EVENTS) return null
+                val event = parseLine(line)
+                if (event == null) {
+                    invalid++
+                    continue
+                }
+                if (event.payload is EventPayload.Unknown) unknown++
+                batch += event
+                if (batch.size == BATCH) flush()
             }
-            if (event.payload is EventPayload.Unknown) unknown++
-            batch += event
-            if (batch.size == BATCH) flush()
+            flush()
+        } finally {
+            // Whatever ended the loop (limit, failure, cancellation), the projection must match the journal.
+            if (appended > 0) withContext(NonCancellable) { eventStore.rebuildProjection() }
         }
-        flush()
-        if (appended > 0) eventStore.rebuildProjection()
         return EventsOutcome(read, appended, skipped, unknown, invalid)
     }
 
     private fun parseLine(line: String): Event? {
-        if (line.length > MAX_LINE_CHARS) return null
-        val record =
-            try {
-                EventJson.format.decodeFromString(EventRecord.serializer(), line)
-            } catch (_: SerializationException) {
-                return null
-            } catch (_: IllegalArgumentException) {
-                return null
-            }
-        val valid =
-            Ulid.isValid(record.id) &&
-                record.deviceId.isNotBlank() &&
-                record.deviceId.length <= MAX_ID_CHARS &&
-                record.actor.length <= MAX_ID_CHARS &&
-                record.type.isNotBlank() &&
-                record.at in MIN_AT..MAX_AT
-        return if (valid) record.toEvent() else null
+        val record = if (line.length > MAX_LINE_CHARS) null else decodeRecord(line)
+        return record?.takeIf { it.isWellFormed() }?.toEvent()?.takeIf { it.hasStoreFileNames() }
+    }
+
+    private fun decodeRecord(line: String): EventRecord? = try {
+        EventJson.format.decodeFromString(EventRecord.serializer(), line)
+    } catch (_: SerializationException) {
+        null
+    } catch (_: IllegalArgumentException) {
+        null
+    }
+
+    private fun EventRecord.isWellFormed(): Boolean = Ulid.isValid(id) &&
+        deviceId.isNotBlank() &&
+        deviceId.length <= MAX_ID_CHARS &&
+        actor.length <= MAX_ID_CHARS &&
+        type.isNotBlank() &&
+        at in MIN_AT..MAX_AT
+
+    /** A photo row may only ever name files this store produces (the purge and the readers rely on it). */
+    private fun Event.hasStoreFileNames(): Boolean {
+        val photo = payload as? EventPayload.PhotoAttached ?: return true
+        return PhotoStore.isValidFileName(photo.fileName) && PhotoStore.isValidFileName(photo.thumbName)
     }
 
     private class PhotosOutcome(
@@ -233,8 +255,10 @@ public class ImportService internal constructor(
     private companion object {
         const val MAX_ENTRIES = 200_000
         const val MAX_MANIFEST_BYTES = 1024 * 1024
-        const val MAX_EVENTS_BYTES = 512 * 1024 * 1024
-        const val MAX_EVENTS = 2_000_000
+
+        // N7 targets 100 000 events; the journal is inflated in memory, so the ceiling stays modest.
+        const val MAX_EVENTS_BYTES = 64 * 1024 * 1024
+        const val MAX_EVENTS = 1_000_000
         const val MAX_LINE_CHARS = 64 * 1024
         const val MAX_ID_CHARS = 64
         const val MAX_PHOTO_BYTES = 48 * 1024 * 1024

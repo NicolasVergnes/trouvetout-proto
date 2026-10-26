@@ -108,4 +108,53 @@ class BinServiceTest {
         clock.millis += 31.days.inWholeMilliseconds
         assertEquals(2, bin.purgeExpired().photoFilesDeleted)
     }
+
+    @Test
+    fun should_keep_a_file_still_referenced_by_a_live_photo_row() = runTest {
+        val shared = photos.store("100x100".encodeToByteArray())!!
+        store.append(
+            listOf(
+                fx.event(EventPayload.ItemCreated("gone", "parti")),
+                attached("p1", "gone", shared),
+                fx.event(EventPayload.ItemDeleted("gone")),
+                fx.event(EventPayload.ItemCreated("alive", "vivant")),
+                // An imported journal may point two rows at the same file.
+                attached("p2", "alive", shared),
+            ),
+        )
+        clock.millis += 31.days.inWholeMilliseconds
+
+        assertEquals(PurgeReport(itemsPurged = 0, photoFilesDeleted = 0), bin.purgeExpired())
+        assertTrue(photos.exists(shared.fileName))
+    }
+
+    @Test
+    fun should_skip_rows_with_foreign_file_names_and_still_purge_the_rest() = runTest {
+        val good = photos.store("100x100".encodeToByteArray())!!
+        store.append(
+            listOf(
+                fx.event(EventPayload.ItemCreated("bad", "mauvais")),
+                fx.event(
+                    EventPayload.PhotoAttached(
+                        "p1",
+                        PhotoOwnerType.ITEM,
+                        "bad",
+                        "../../etc/passwd",
+                        "../x",
+                        1,
+                        1,
+                        "sha",
+                    ),
+                ),
+                fx.event(EventPayload.ItemDeleted("bad")),
+                fx.event(EventPayload.ItemCreated("old", "vieux")),
+                attached("p2", "old", good),
+                fx.event(EventPayload.ItemDeleted("old")),
+            ),
+        )
+        clock.millis += 31.days.inWholeMilliseconds
+
+        assertEquals(PurgeReport(itemsPurged = 1, photoFilesDeleted = 2), bin.purgeExpired())
+        assertFalse(photos.exists(good.fileName))
+    }
 }

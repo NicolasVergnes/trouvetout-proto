@@ -11,7 +11,11 @@ public interface ByteSink {
     /** Bytes written so far. */
     public val position: Long
 
+    /** Commits: the target appears only now (temp file + rename). */
     public fun close()
+
+    /** Discards everything written; the target is left untouched. */
+    public fun abort()
 }
 
 /** Random-access reader of a file (ZIP archives are read from their end). */
@@ -32,7 +36,7 @@ public inline fun <T> ByteSink.use(block: (ByteSink) -> T): T {
     try {
         return block(this).also { ok = true }
     } finally {
-        if (ok) close() else runCatching { close() }
+        if (ok) close() else runCatching { abort() }
     }
 }
 

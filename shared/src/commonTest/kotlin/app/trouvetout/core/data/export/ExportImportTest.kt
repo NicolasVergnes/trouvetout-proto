@@ -270,4 +270,44 @@ class ExportImportTest {
         assertEquals("20261024-153000", utcTimestamp(1_792_855_800_000L))
         assertEquals("20000229-235959", utcTimestamp(951_868_799_000L))
     }
+
+    @Test
+    fun should_reject_a_corrupt_events_entry_without_throwing() = runTest {
+        val b = Device("dev-corrupt")
+        val archive =
+            zipOf(
+                entry(
+                    "manifest.json",
+                    (
+                        """{"formatVersion":1,"appVersion":"x","schemaVersion":1,"exportedAt":1,"deviceId":"x",""" +
+                            """"counts":{"events":1,"items":0,"places":0,"containers":0,"photos":0}}"""
+                    ).encodeToByteArray(),
+                ),
+                entry("events.jsonl", "{}".encodeToByteArray()),
+            )
+        // Flip one byte of the (deflated) events payload: the CRC no longer matches.
+        val eventsOffset = archive.indexOfSubArray("events.jsonl".encodeToByteArray()) + "events.jsonl".length
+        archive[eventsOffset] = (archive[eventsOffset].toInt() xor 0x55).toByte()
+        b.files.files["imports/corrupt.zip"] = archive
+
+        val result = b.importer.import("imports/corrupt.zip")
+
+        assertEquals(ImportResult.Rejected(ImportRejection.EVENTS_CORRUPT), result)
+    }
+
+    @Test
+    fun should_abort_a_failed_export_without_leaving_a_file() = runTest {
+        val a = Device("dev-fail")
+        a.store.append(listOf(a.fx.event(EventPayload.ItemCreated("i1", "skis"))))
+        a.files.failWritesContaining = "exports/"
+
+        val failure = runCatching { a.exporter.export() }.exceptionOrNull()
+
+        assertIs<IllegalStateException>(failure)
+
+        assertTrue(a.files.files.keys.none { it.startsWith("exports/") }, "no half-written archive")
+    }
+
+    private fun ByteArray.indexOfSubArray(needle: ByteArray): Int =
+        (0..size - needle.size).first { start -> needle.indices.all { this[start + it] == needle[it] } }
 }

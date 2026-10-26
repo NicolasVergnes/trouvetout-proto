@@ -26,31 +26,44 @@ public class BinService internal constructor(
 ) {
     public suspend fun purgeExpired(retention: Duration = RETENTION): PurgeReport = withContext(dispatcher) {
         val cutoff = clock.now().toEpochMilliseconds() - retention.inWholeMilliseconds
+        val expiredItemIds = db.itemQueries.selectDeleted().executeAsList().filter {
+            it.deleted_at <= cutoff
+        }.map { it.id }.toSet()
+        val photos = db.photoQueries.selectAll().executeAsList()
+        val (expiredByItem, others) = photos.partition {
+            it.owner_type == PhotoOwnerType.ITEM.name &&
+                it.owner_id in expiredItemIds
+        }
+        val expiredDetached = others.filter { it.detached_at != null && it.detached_at <= cutoff }
+        // A file still referenced by a live row (possible after an import) is never removed.
+        val stillReferenced = (others - expiredDetached.toSet()).flatMap { listOf(it.file_name, it.thumb_name) }.toSet()
         var itemsPurged = 0
         var filesDeleted = 0
-        val expiredItems = db.itemQueries.selectDeleted().executeAsList().filter { it.deleted_at <= cutoff }
-        for (item in expiredItems) {
-            val photos = db.photoQueries.selectByOwner(PhotoOwnerType.ITEM.name, item.id).executeAsList()
+        for (itemPhotos in expiredByItem.groupBy { it.owner_id }.values) {
             var deletedSomething = false
-            for (photo in photos) {
-                if (photoStore.delete(photo.file_name)) {
+            for (photo in itemPhotos) {
+                if (deleteUnlessReferenced(photo.file_name, stillReferenced)) {
                     filesDeleted++
                     deletedSomething = true
                 }
-                if (photoStore.delete(photo.thumb_name)) filesDeleted++
+                if (deleteUnlessReferenced(photo.thumb_name, stillReferenced)) filesDeleted++
             }
             if (deletedSomething) itemsPurged++
         }
-        val detached = db.photoQueries.selectAll().executeAsList().filter {
-            it.detached_at != null &&
-                it.detached_at <= cutoff
-        }
-        for (photo in detached) {
-            if (photoStore.delete(photo.file_name)) filesDeleted++
-            if (photoStore.delete(photo.thumb_name)) filesDeleted++
+        for (photo in expiredDetached) {
+            if (deleteUnlessReferenced(photo.file_name, stillReferenced)) filesDeleted++
+            if (deleteUnlessReferenced(photo.thumb_name, stillReferenced)) filesDeleted++
         }
         PurgeReport(itemsPurged, filesDeleted)
     }
+
+    /** A row with a name the store never produced (imported journal) is skipped, never a reason to stop the purge. */
+    private suspend fun deleteUnlessReferenced(
+        fileName: String,
+        stillReferenced: Set<String>,
+    ): Boolean = fileName !in stillReferenced &&
+        PhotoStore.isValidFileName(fileName) &&
+        photoStore.delete(fileName)
 
     public companion object {
         public val RETENTION: Duration = 30.days

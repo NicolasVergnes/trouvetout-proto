@@ -83,6 +83,7 @@ class InMemoryFileStore : FileStore {
                 offset: Int,
                 length: Int,
             ) {
+                failWritesContaining?.let { check(it !in relativePath) { "write failed" } }
                 buffer += bytes.copyOfRange(offset, offset + length)
                 position += length
             }
@@ -90,6 +91,8 @@ class InMemoryFileStore : FileStore {
             override fun close() {
                 files[relativePath] = buffer
             }
+
+            override fun abort() = Unit
         }
     }
 

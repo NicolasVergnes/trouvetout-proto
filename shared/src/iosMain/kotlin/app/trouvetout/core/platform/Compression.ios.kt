@@ -7,6 +7,7 @@ import kotlinx.cinterop.convert
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.reinterpret
+import kotlinx.cinterop.sizeOf
 import kotlinx.cinterop.usePinned
 import platform.zlib.MAX_MEM_LEVEL
 import platform.zlib.ZLIB_VERSION
@@ -15,7 +16,6 @@ import platform.zlib.Z_DEFAULT_COMPRESSION
 import platform.zlib.Z_DEFAULT_STRATEGY
 import platform.zlib.Z_DEFLATED
 import platform.zlib.Z_FINISH
-import platform.zlib.Z_NO_FLUSH
 import platform.zlib.Z_OK
 import platform.zlib.Z_STREAM_END
 import platform.zlib.deflate
@@ -41,7 +41,7 @@ public actual fun deflateRaw(bytes: ByteArray): ByteArray = memScoped {
             MAX_MEM_LEVEL,
             Z_DEFAULT_STRATEGY,
             ZLIB_VERSION,
-            kotlinx.cinterop.sizeOf<z_stream>().toInt(),
+            sizeOf<z_stream>().toInt(),
         )
     check(init == Z_OK) { "deflateInit failed" }
     try {
@@ -61,7 +61,7 @@ public actual fun deflateRaw(bytes: ByteArray): ByteArray = memScoped {
                         BUFFER - stream.avail_out.toInt()
                     }
                 if (produced > 0) chunks += outBuffer.copyOf(produced)
-            } while (status == Z_OK || status == Z_BUF_ERROR && stream.avail_out.toInt() == 0)
+            } while (status == Z_OK || (status == Z_BUF_ERROR && stream.avail_out.toInt() == 0))
             check(status == Z_STREAM_END) { "deflate failed" }
         }
         concat(chunks)
@@ -75,10 +75,10 @@ public actual fun inflateRaw(
     bytes: ByteArray,
     expectedSize: Int,
 ): ByteArray {
-    require(expectedSize >= 0) { "Negative size" }
+    require(expectedSize in 0 until Int.MAX_VALUE) { "Bad size" }
     return memScoped {
         val stream = alloc<z_stream>()
-        val init = inflateInit2_(stream.ptr, RAW_WINDOW_BITS, ZLIB_VERSION, kotlinx.cinterop.sizeOf<z_stream>().toInt())
+        val init = inflateInit2_(stream.ptr, RAW_WINDOW_BITS, ZLIB_VERSION, sizeOf<z_stream>().toInt())
         check(init == Z_OK) { "inflateInit failed" }
         try {
             val out = ByteArray(expectedSize + 1) // one spare byte to detect a stream longer than declared
@@ -114,6 +114,3 @@ private fun concat(chunks: List<ByteArray>): ByteArray {
 }
 
 private const val BUFFER = 16 * 1024
-
-@Suppress("unused")
-private val keepNoFlush = Z_NO_FLUSH
