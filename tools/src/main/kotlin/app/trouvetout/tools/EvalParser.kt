@@ -35,12 +35,15 @@ fun main(args: Array<String>) {
     if (!ok) exitProcess(1)
 }
 
-private fun pct(rate: Double): String = "${"%.1f".format(rate * 100)} %"
+private const val PERCENT = 100
+
+private fun pct(rate: Double): String = "${"%.1f".format(rate * PERCENT)} %"
 
 private fun toJson(report: CorpusReport): String {
     val scores =
         report.scores.values.joinToString(",") {
-            """{"lang":"${it.lang}","total":${it.total},"intentOk":${it.intentOk},"splitOk":${it.splitOk},"xfail":${it.xfail}}"""
+            """{"lang":"${it.lang}","total":${it.total},"intentOk":${it.intentOk},""" +
+                """"splitOk":${it.splitOk},"xfail":${it.xfail}}"""
         }
     val failures = report.failures.joinToString(",") {
         """{"id":"${it.line.id}","intentOk":${it.intentOk},"splitOk":${it.splitOk}}"""

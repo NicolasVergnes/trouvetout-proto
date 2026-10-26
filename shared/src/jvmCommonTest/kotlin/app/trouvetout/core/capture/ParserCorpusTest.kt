@@ -9,7 +9,7 @@ import kotlin.test.fail
 /** N3 companion for capture: replays `corpus/parser.jsonl`, FR and EN scored separately (docs/06 §1). */
 class ParserCorpusTest {
     private fun corpusFile(): File {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
+        var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
         while (dir != null) {
             val candidate = File(dir, "corpus/parser.jsonl")
             if (candidate.isFile) return candidate
@@ -25,7 +25,8 @@ class ParserCorpusTest {
 
         val summary =
             report.scores.values.joinToString("\n") {
-                "${it.lang}: ${it.total} lines, intents ${(it.intentRate * 100).toInt()} %, split ${(it.splitRate * 100).toInt()} %, xfail ${it.xfail}"
+                "${it.lang}: ${it.total} lines, intents ${(it.intentRate * 100).toInt()} %, " +
+                    "split ${(it.splitRate * 100).toInt()} %, xfail ${it.xfail}"
             }
         val failures =
             report.failures.joinToString("\n") { r ->

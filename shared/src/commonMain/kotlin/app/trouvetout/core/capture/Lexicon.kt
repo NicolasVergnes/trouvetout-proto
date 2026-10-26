@@ -7,6 +7,7 @@ public enum class Lang { FR, EN }
  * Word lists of one language. Every list is matched on folded lowercase tokens (`Text.fold`), so a missing
  * accent in a transcription (« ou » for « où ») still matches. Multi-word entries are written with spaces.
  */
+@Suppress("LongParameterList") // a word-list record, built twice (FR, EN); no call site passes positional args
 internal class Lexicon(
     val lang: Lang,
     /** Prepositions that are dropped from the place text (« dans le tiroir » → « tiroir »). */
@@ -44,6 +45,7 @@ internal class Lexicon(
     /** Tokens weighted for language detection. */
     val markers: Set<String>,
 ) {
+    @Suppress("LargeClass") // the two word lists themselves
     companion object {
         fun of(lang: Lang): Lexicon = if (lang == Lang.FR) FR else EN
 

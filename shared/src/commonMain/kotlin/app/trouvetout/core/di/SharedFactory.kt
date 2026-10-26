@@ -2,6 +2,7 @@ package app.trouvetout.core.di
 
 import app.cash.sqldelight.db.SqlDriver
 import app.trouvetout.core.AppInfo
+import app.trouvetout.core.capture.CaptureService
 import app.trouvetout.core.data.DeviceIdentity
 import app.trouvetout.core.data.EventStore
 import app.trouvetout.core.data.db.TrouveToutDb
@@ -69,6 +70,18 @@ public class SharedFactory(
     public val containerCommands: ContainerCommands by lazy { ContainerCommands(commandContext) }
     public val attachmentCommands: AttachmentCommands by lazy { AttachmentCommands(commandContext) }
     public val undo: UndoService by lazy { UndoService(eventStore, commandContext, deviceId) }
+
+    /** Text capture (lot 3): sentence → proposal → events. [captureLang] is the host's UI language. */
+    public val capture: CaptureService by lazy {
+        CaptureService(
+            database,
+            itemCommands,
+            placeCommands,
+            containerCommands,
+            config.dispatchers.io,
+            config.captureLang,
+        )
+    }
 
     public val itemRepository: ItemRepository by lazy { ItemRepository(database, config.dispatchers) }
     public val placeRepository: PlaceRepository by lazy { PlaceRepository(database, config.dispatchers) }

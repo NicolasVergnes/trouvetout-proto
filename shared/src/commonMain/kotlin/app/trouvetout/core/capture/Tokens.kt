@@ -32,6 +32,13 @@ internal object Tokens {
         word: String,
         out: MutableList<Tok>,
     ) {
+        val (core, trailing) = peel(word)
+        if (core.isNotEmpty()) emitCore(core, out)
+        for (c in trailing) if (c == '?' || c == ',') out += Tok(c.toString())
+    }
+
+    /** Strips surrounding punctuation; the trailing characters are returned in order. */
+    private fun peel(word: String): Pair<String, List<Char>> {
         var w = word
         while (w.isNotEmpty() && w[0] in LEADING) w = w.substring(1)
         val trailing = ArrayList<Char>()
@@ -39,27 +46,28 @@ internal object Tokens {
             trailing.add(0, w.last())
             w = w.dropLast(1)
         }
-        if (w.isNotEmpty()) {
-            val at = w.indexOf('@')
-            when {
-                w == "@" || w == "+" -> out += Tok(w)
-                at >= 0 -> {
-                    if (at > 0) emitWord(w.substring(0, at), out)
-                    out += Tok("@")
-                    if (at < w.length - 1) emitWord(w.substring(at + 1), out)
-                }
-                else -> {
-                    val elision = ELISION.matchEntire(w)
-                    if (elision != null) {
-                        out += Tok(elision.groupValues[1])
-                        emitWord(elision.groupValues[2], out)
-                    } else {
-                        out += Tok(w)
-                    }
-                }
+        return w to trailing
+    }
+
+    private fun emitCore(
+        w: String,
+        out: MutableList<Tok>,
+    ) {
+        val at = w.indexOf('@')
+        val elision = ELISION.matchEntire(w)
+        when {
+            w == "@" || w == "+" -> out += Tok(w)
+            at >= 0 -> {
+                if (at > 0) emitWord(w.substring(0, at), out)
+                out += Tok("@")
+                if (at < w.length - 1) emitWord(w.substring(at + 1), out)
             }
+            elision != null -> {
+                out += Tok(elision.groupValues[1])
+                emitWord(elision.groupValues[2], out)
+            }
+            else -> out += Tok(w)
         }
-        for (c in trailing) if (c == '?' || c == ',') out += Tok(c.toString())
     }
 
     /** Rebuilds a display string: no space after an elided article, none before a comma. */

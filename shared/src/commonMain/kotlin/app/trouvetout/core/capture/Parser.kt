@@ -213,13 +213,23 @@ internal class Sentence(
         val subjectEnd =
             when {
                 lex.lang == Lang.EN -> verb
-                toks[verb - 1].key != "a" -> return null
+                toks[verb - 1].key != "a" -> 0
                 toks.getOrNull(verb - 2)?.key == "m'" -> verb - 2
                 else -> verb - 1
             }
-        val items = mentions(toks.drop(verb + 1))
-        if (subjectEnd < 1 || items.isEmpty()) return null
-        return result(Intent.LEND, items, null, Tokens.render(toks.subList(0, subjectEnd)), null, MEDIUM)
+        val items = if (subjectEnd >= 1) mentions(toks.drop(verb + 1)) else emptyList()
+        return if (items.isEmpty()) {
+            null
+        } else {
+            result(
+                Intent.LEND,
+                items,
+                null,
+                Tokens.render(toks.subList(0, subjectEnd)),
+                null,
+                MEDIUM,
+            )
+        }
     }
 
     fun returnFromLend(): ParseResult? {
@@ -236,11 +246,11 @@ internal class Sentence(
             val person = Tokens.render(toks.drop(par.first + par.second))
             return if (items.isEmpty()) null else result(Intent.RETURN_FROM_LEND, items, null, person, null, MEDIUM)
         }
-        if (toks[verb - 1].key != "a" || !startsWithName()) return null
         val subjectEnd = if (verb >= 2 && toks[verb - 2].key == "m'") verb - 2 else verb - 1
-        val items = mentions(toks.drop(verb + 1))
-        if (subjectEnd < 1 || items.isEmpty()) return null
-        return result(Intent.RETURN_FROM_LEND, items, null, Tokens.render(toks.subList(0, subjectEnd)), null, HIGH)
+        val valid = toks[verb - 1].key == "a" && startsWithName() && subjectEnd >= 1
+        val items = if (valid) mentions(toks.drop(verb + 1)) else emptyList()
+        val person = Tokens.render(toks.subList(0, maxOf(subjectEnd, 0)))
+        return if (items.isEmpty()) null else result(Intent.RETURN_FROM_LEND, items, null, person, null, HIGH)
     }
 
     /** "Mark returned the tent", "Mark brought the tent back", "Mark gave back the tent". */
@@ -305,11 +315,14 @@ internal class Sentence(
         val prefix = rules.movePrefixes.matchAt(toks, 0)
         if (prefix == 0) return null
         val rest = toks.drop(prefix)
-        val link = rules.moveLinks.find(rest, 1) ?: return located(Intent.MOVE_TO, rest, MEDIUM)
-        val items = mentions(rest.subList(0, link.first))
-        val place = Tokens.render(stripArticles(rest.drop(link.first + link.second)))
-        if (items.isEmpty() || place.isEmpty()) return located(Intent.MOVE_TO, rest, MEDIUM)
-        return result(Intent.MOVE_TO, items, place, null, null, HIGH)
+        val link = rules.moveLinks.find(rest, 1)
+        val items = link?.let { mentions(rest.subList(0, it.first)) }.orEmpty()
+        val place = link?.let { Tokens.render(stripArticles(rest.drop(it.first + it.second))) }.orEmpty()
+        return if (items.isEmpty() || place.isEmpty()) {
+            located(Intent.MOVE_TO, rest, MEDIUM)
+        } else {
+            result(Intent.MOVE_TO, items, place, null, null, HIGH)
+        }
     }
 
     /** « la perceuse est maintenant dans le garage », "the drill is now in the garage". */
@@ -375,9 +388,13 @@ internal class Sentence(
         val copula = rules.copulas.find(list, 1)
         val from = if (copula != null) copula.first + copula.second else 1
         for (i in from until list.size) {
-            val prep = rules.prepositionAt(list, i) ?: continue
-            val place = placeText(list, i, prep) ?: continue
-            return list.subList(0, i) to place
+            val split = rules.prepositionAt(list, i)?.let { prep ->
+                placeText(list, i, prep)?.let {
+                    list.subList(0, i) to
+                        it
+                }
+            }
+            if (split != null) return split
         }
         return null
     }

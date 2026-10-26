@@ -1,6 +1,7 @@
 package app.trouvetout.core.di
 
 import app.trouvetout.core.AppInfo
+import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.data.db.DriverFactory
 import app.trouvetout.core.log.Logger
 import app.trouvetout.core.log.NoopLogger
@@ -20,6 +21,7 @@ import kotlin.time.Clock
  * @param storageReady false when the host could not prepare or verify that directory: the core then refuses
  *   to open the store (nothing is written to a backed-up or purgeable location) and `warmUp()` reports it.
  */
+@Suppress("LongParameterList") // configuration record filled with named arguments by the hosts
 public class SharedConfig(
     public val dataDirectory: String,
     public val deviceInfo: DeviceInfo,
@@ -29,6 +31,8 @@ public class SharedConfig(
     public val storageReady: Boolean = true,
     /** Written in export manifests. */
     public val appVersion: String = AppInfo.CORE_VERSION,
+    /** Language assumed for capture when a sentence gives no clue (the host passes its UI language). */
+    public val captureLang: Lang = Lang.FR,
 ) {
     /** Overridable for tests; the host apps keep the system defaults. */
     public var clock: Clock = Clock.System
