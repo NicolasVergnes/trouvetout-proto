@@ -210,7 +210,10 @@ private struct DecisionSheet: View {
             String(format: NSLocalizedString("capture_place_title", comment: ""), proposal.parse.place ?? "")
         case let .item(proposal, _, _, target, _):
             String(
-                format: NSLocalizedString(proposal.movesExistingItems ? "capture_item_which" : "capture_item_exists", comment: ""),
+                format: NSLocalizedString(
+                    proposal.movesExistingItems ? "capture_item_which" : "capture_item_exists",
+                    comment: ""
+                ),
                 target.mention.name
             )
         }
@@ -222,7 +225,11 @@ private struct DecisionSheet: View {
             ForEach(ambiguous.suggestions, id: \.candidate.id) { match in
                 Button(String(format: NSLocalizedString("capture_place_attach", comment: ""), match.candidate.name)) {
                     viewModel.choosePlace(
-                        PlaceChoice.Existing(id: match.candidate.id, isContainer: match.candidate.isContainer, rememberAlias: true)
+                        PlaceChoice.Existing(
+                            id: match.candidate.id,
+                            isContainer: match.candidate.isContainer,
+                            rememberAlias: true
+                        )
                     )
                 }
             }
@@ -233,7 +240,10 @@ private struct DecisionSheet: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
-        let createLabel = String(format: NSLocalizedString("capture_place_create", comment: ""), creation.names.joined(separator: " › "))
+        let createLabel = String(
+            format: NSLocalizedString("capture_place_create", comment: ""),
+            creation.names.joined(separator: " › ")
+        )
         Button(createLabel) {
             viewModel.choosePlace(creation)
         }
