@@ -113,6 +113,7 @@ public class CaptureService internal constructor(
     private val dispatcher: CoroutineDispatcher,
     private val defaultLang: Lang = Lang.FR,
 ) {
+    /** [lang] is the UI language, used only when a sentence gives no clue about its own. */
     public suspend fun propose(
         text: String,
         lang: Lang? = null,
@@ -124,7 +125,8 @@ public class CaptureService internal constructor(
             return@withContext tooLong(text, language)
         }
         val snapshot = snapshot()
-        val parse = Parser(snapshot.itemNames.map { it.second }, language).parse(text, lang)
+        // The host's language only breaks ties: a French sentence typed under an English UI still parses as French.
+        val parse = Parser(snapshot.itemNames.map { it.second }, language).parse(text, lang = null)
         if (parse.items.size > MAX_MENTIONS) return@withContext tooLong(text, language)
         val place = parse.place?.let { PlaceResolver(snapshot.locations, parse.lang).resolve(it) }
         val detector = DuplicateDetector(snapshot.itemNames)

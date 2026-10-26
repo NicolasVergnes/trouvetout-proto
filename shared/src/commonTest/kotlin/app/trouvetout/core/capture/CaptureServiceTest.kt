@@ -244,4 +244,16 @@ class CaptureServiceTest {
         val movement = service.propose("je prends le marteau et la perceuse")
         assertEquals(0, movement.nextQuestion(emptyList()), "the hammer is unknown, the drill is confident")
     }
+
+    @Test
+    fun should_parse_a_french_sentence_under_an_english_ui() = runTest {
+        say("perceuse dans le garage")
+        clock.tick()
+        val proposal = service.propose("je prends la perceuse", Lang.EN)
+        assertEquals(Intent.TAKE, proposal.parse.intent)
+        assertEquals(Lang.FR, proposal.parse.lang)
+        val stored = service.propose("passeport dans le tiroir du haut", Lang.EN)
+        assertEquals("tiroir du haut", stored.parse.place)
+        assertEquals(Intent.RETURN, service.propose("perceuse remise au garage", Lang.EN).parse.intent)
+    }
 }
