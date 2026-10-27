@@ -12,7 +12,7 @@ struct ItemSheetView: View {
     @State private var tags: [String] = []
     @State private var newTag = ""
     @State private var person = ""
-    @State private var loadedItem: Item?
+    @State private var loadedItem: Item_?
     @State private var moveShown = false
     @State private var lendShown = false
     @State private var deleteShown = false
