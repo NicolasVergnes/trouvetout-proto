@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Home: the capture screen (lot 3), with the settings (export, import, erase) in the toolbar. When the private
+/// Home: the capture screen (lot 3); the places (lot 4) and the settings (export, import, erase) are in the
+/// toolbar. When the private
 /// storage could not be prepared, the screen says so instead of touching a core that refuses to open.
 struct ContentView: View {
     @EnvironmentObject private var container: AppContainer
@@ -14,8 +15,15 @@ struct ContentView: View {
                     CaptureView(container: container)
                 }
             }
+            .navigationDestination(for: BrowseTarget.self) { target in
+                BrowseView(container: container, target: target)
+            }
+            .navigationDestination(for: ItemRoute.self) { route in
+                ItemSheetView(container: container, itemId: route.id)
+            }
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    NavigationLink("places_title", value: BrowseTarget.root)
                     NavigationLink("settings_title") {
                         SettingsView(container: container)
                     }

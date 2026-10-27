@@ -17,6 +17,7 @@ import app.trouvetout.core.domain.model.Place
 import app.trouvetout.core.platform.CoroutineDispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 
 /** What a place screen shows (C7): the place itself (null at the root), its path, and what it holds. */
@@ -72,7 +73,8 @@ public class BrowseRepository internal constructor(
         }
     }
 
-    public fun observeContainer(containerId: String): Flow<ContainerContent?> = combine(
+    /** Content of one container; stops emitting (never emits null) once the container is gone. */
+    public fun observeContainer(containerId: String): Flow<ContainerContent> = combine(
         db.containerQueries.selectById(containerId).asFlow().mapToOneOrNull(dispatchers.io),
         items.observeActive(),
         photosFlow(PhotoOwnerType.CONTAINER, containerId),
@@ -86,7 +88,10 @@ public class BrowseRepository internal constructor(
                 photos = photos,
             )
         }
-    }
+    }.filterNotNull()
+
+    /** The item of a sheet; stops emitting (never emits null) once the item is deleted. */
+    public fun observeItem(itemId: String): Flow<ItemView> = items.observeItem(itemId).filterNotNull()
 
     /** Attached photos of any owner, oldest first. */
     public fun observePhotos(

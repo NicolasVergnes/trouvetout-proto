@@ -110,7 +110,7 @@ class BrowseRepositoryTest {
         assertEquals(listOf("Carton 7"), onShelf.containers.map { it.label })
         assertEquals(listOf(skis), onShelf.items.map { it.item.id }, "the item in the box is not listed on the shelf")
 
-        val inBox = assertNotNull(browse.observeContainer(box).first())
+        val inBox = browse.observeContainer(box).first()
         assertEquals(listOf("Cave", "Étagère du fond"), inBox.path.map { it.name })
         assertEquals(listOf(lights), inBox.items.map { it.item.id })
         assertEquals(garage, browse.observePlace(null).first().children.last().id)
@@ -129,7 +129,7 @@ class BrowseRepositoryTest {
         val moved = assertIs<CommandResult.Done>(containers.move(box, garage, EventSource.TEXT))
 
         assertEquals(1, moved.events.size, "one event for the whole box")
-        val inGarage = assertNotNull(browse.observeContainer(box).first())
+        val inGarage = browse.observeContainer(box).first()
         assertEquals(listOf("Garage"), inGarage.path.map { it.name })
         assertEquals(setOf(a, b), inGarage.items.map { it.item.id }.toSet())
         assertEquals(listOf("Garage", "Carton 7"), itemRepository.observeItem(a).first()?.path?.labels)

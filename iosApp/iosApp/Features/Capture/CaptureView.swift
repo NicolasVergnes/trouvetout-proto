@@ -101,14 +101,16 @@ struct CaptureView: View {
             Spacer()
         } else {
             List(shown, id: \.item.id) { view in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(view.item.name)
-                        .font(.headline)
-                    Text(whereText(view))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                NavigationLink(value: ItemRoute(id: view.item.id)) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(view.item.name)
+                            .font(.headline)
+                        Text(whereText(view))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityElement(children: .combine)
                 }
-                .accessibilityElement(children: .combine)
             }
             .listStyle(.plain)
         }

@@ -201,8 +201,9 @@ private fun PlaceBody(
     PhotoStrip(content.photos, pathOf = {
         app.shared.photoStore.absolutePath(it)
     }, onDetach = viewModel::detachPhoto, enabled = !busy)
+    AddPhotoButtons(onPicked = viewModel::attachPhoto, enabled = !busy)
+    // Two rows: four text buttons do not fit a phone width (seen on the API 29 emulator).
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        AddPhotoButtons(onPicked = viewModel::attachPhoto, enabled = !busy)
         TextButton(onClick = onAddPlace) { Text(stringResource(R.string.place_add_child)) }
         TextButton(onClick = onAddContainer) { Text(stringResource(R.string.container_add)) }
     }
@@ -253,13 +254,9 @@ private fun ContainerBody(
     PhotoStrip(content.photos, pathOf = {
         app.shared.photoStore.absolutePath(it)
     }, onDetach = viewModel::detachPhoto, enabled = !busy)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        AddPhotoButtons(onPicked = viewModel::attachPhoto, enabled = !busy)
-        if (content.items.isEmpty()) {
-            TextButton(onClick = viewModel::deleteContainer) {
-                Text(stringResource(R.string.container_delete))
-            }
-        }
+    AddPhotoButtons(onPicked = viewModel::attachPhoto, enabled = !busy)
+    if (content.items.isEmpty()) {
+        TextButton(onClick = viewModel::deleteContainer) { Text(stringResource(R.string.container_delete)) }
     }
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(content.items, key = { it.item.id }) { view ->
