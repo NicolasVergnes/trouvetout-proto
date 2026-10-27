@@ -29,3 +29,35 @@ func stream<T: AnyObject>(_ watcher: FlowWatcher<T>) -> AsyncThrowingStream<T, E
         continuation.onTermination = { _ in subscription.cancel() }
     }
 }
+
+/// Keeps the Kotlin flow subscriptions of one view model and cancels them together. The core's `uiScope`
+/// runs on the main dispatcher, so each value is delivered on the main actor.
+final class FlowSubscriptions {
+    private var subscriptions: [FlowSubscription] = []
+
+    deinit {
+        subscriptions.forEach { $0.cancel() }
+    }
+
+    func watch<T: AnyObject>(
+        _ flow: Kotlinx_coroutines_coreFlow,
+        scope: Kotlinx_coroutines_coreCoroutineScope,
+        _ onEach: @escaping @MainActor (T) -> Void
+    ) {
+        let watcher = FlowWatcher<T>(flow: flow, scope: scope)
+        let subscription = watcher.watch(
+            onEach: { value in
+                MainActor.assumeIsolated {
+                    onEach(value)
+                }
+            },
+            onComplete: { _ in }
+        )
+        subscriptions.append(subscription)
+    }
+
+    func cancelAll() {
+        subscriptions.forEach { $0.cancel() }
+        subscriptions = []
+    }
+}

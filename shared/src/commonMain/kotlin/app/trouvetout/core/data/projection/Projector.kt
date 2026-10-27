@@ -157,7 +157,7 @@ internal class Projector(
             description = if (p.clearDescription) null else p.description ?: row.description,
             tags = p.tags?.let(JsonLists::encode) ?: row.tags,
             quantity = if (p.clearQuantity) null else p.quantity ?: row.quantity,
-            unit = if (p.clearQuantity) null else p.unit ?: row.unit,
+            unit = if (p.clearQuantity || p.clearUnit) null else p.unit ?: row.unit,
             sensitive = p.sensitive ?: row.sensitive,
             pinned = p.pinned ?: row.pinned,
             id = p.itemId,

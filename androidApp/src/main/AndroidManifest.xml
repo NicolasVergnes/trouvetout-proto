@@ -4,6 +4,13 @@
     <!-- No permissions in lot 0. Microphone, camera and notifications are requested at first use (H9). -->
 
     <!-- Backups are disabled; the rules below additionally exclude every data domain (defence in depth, A9 is the only backup channel). -->
+    <!-- Lets the app see whether a camera app handles a capture (API 30+ package visibility); no permission. -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
+
     <application
         android:name=".App"
         android:allowBackup="false"
@@ -25,7 +32,8 @@
             </intent-filter>
         </activity>
 
-        <!-- Share sheet for exports (A7): serves the cache copy only, see res/xml/file_paths.xml. -->
+        <!-- Serves two cache directories only (res/xml/file_paths.xml): the copy of an export for the share
+             sheet (A7) and the target file of a camera capture (D5); the database and photos are never exposed. -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.exports"

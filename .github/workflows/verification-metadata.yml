@@ -23,6 +23,7 @@ env:
   # Every task of both CI jobs, dry-run: resolves all their configurations without building.
   GRADLE_TASKS: >-
     :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :androidApp:assembleRelease :tools:build
+    :androidApp:assembleDebugAndroidTest
     ktlintCheck ktlintFormat detekt :shared:iosSimulatorArm64Test :shared:embedAndSignAppleFrameworkForXcode
 
 jobs:

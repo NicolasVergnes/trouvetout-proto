@@ -4,7 +4,11 @@ import app.trouvetout.core.data.TickingClock
 import app.trouvetout.core.data.db.openTestDatabase
 import app.trouvetout.core.data.testEventStore
 import app.trouvetout.core.domain.ids.MonotonicUlidGenerator
+import app.trouvetout.core.domain.model.EventPayload
+import app.trouvetout.core.domain.model.EventSource
+import app.trouvetout.core.domain.model.PlaceKind
 import app.trouvetout.core.domain.usecase.CommandContext
+import app.trouvetout.core.domain.usecase.CommandResult
 import app.trouvetout.core.domain.usecase.ContainerCommands
 import app.trouvetout.core.domain.usecase.ItemCommands
 import app.trouvetout.core.domain.usecase.LocationRef
@@ -255,5 +259,30 @@ class CaptureServiceTest {
         val stored = service.propose("passeport dans le tiroir du haut", Lang.EN)
         assertEquals("tiroir du haut", stored.parse.place)
         assertEquals(Intent.RETURN, service.propose("perceuse remise au garage", Lang.EN).parse.intent)
+    }
+
+    @Test
+    fun should_still_resolve_a_container_after_it_moved_to_a_child_place_and_with_a_quantity() = runTest {
+        val garage =
+            assertIs<CommandResult.Done>(
+                PlaceCommands(ctx).create("Garage2Garage", kind = PlaceKind.ROOT, source = EventSource.TEXT),
+            )
+        val garageId = (garage.events.single().payload as EventPayload.PlaceCreated).placeId
+        val bench =
+            assertIs<CommandResult.Done>(PlaceCommands(ctx).create("Etabli", garageId, source = EventSource.TEXT))
+        val benchId = (bench.events.single().payload as EventPayload.PlaceCreated).placeId
+        val box =
+            assertIs<CommandResult.Done>(ContainerCommands(ctx).create("Carton 7", garageId, source = EventSource.TEXT))
+        val boxId = (box.events.single().payload as EventPayload.ContainerCreated).containerId
+        assertIs<CommandResult.Done>(ContainerCommands(ctx).move(boxId, benchId, EventSource.TEXT))
+        // Noise seen on the test device: a root place and an item both called « carton 1 ».
+        PlaceCommands(ctx).create("carton 1", kind = PlaceKind.ROOT, source = EventSource.TEXT)
+        say("carton 1 dans l'étagère noire au grenier")
+        say("fil de fer dans le carton 1")
+
+        val proposal = service.propose("12 vis M4 dans le carton 7", Lang.EN)
+
+        val resolved = assertIs<PlaceResolution.Resolved>(proposal.place, "still known: ${proposal.place}")
+        assertEquals(boxId, resolved.match.candidate.id)
     }
 }

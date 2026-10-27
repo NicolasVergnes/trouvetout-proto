@@ -101,6 +101,7 @@ class SettingsViewModel(
         run {
             shared.wipeAllData()
             withContext(Dispatchers.IO) { app.cacheDir.deleteRecursively() }
+            app.uiPrefs.clear()
             _state.update { it.copy(exportToShare = null) }
             app.recreateShared()
             _state.update { it.copy(message = SettingsMessage.Wiped) }

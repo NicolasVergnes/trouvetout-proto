@@ -75,6 +75,8 @@ public class PhotoStore internal constructor(
         /** `<ULID>.jpg` or `<ULID>_t.jpg`. */
         public fun isValidFileName(fileName: String): Boolean = FILE_NAME.matches(fileName)
 
+        /** Largest source accepted from a picker or a camera (same bound as the import, A8). */
+        public const val MAX_SOURCE_BYTES: Int = 48 * 1024 * 1024
         public const val MAX_SIDE: Int = 2048
         public const val THUMB_SIDE: Int = 256
         public const val QUALITY: Int = 85

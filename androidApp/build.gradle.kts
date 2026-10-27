@@ -38,6 +38,21 @@ android {
     lint {
         abortOnError = true
         warningsAsErrors = true
+        // Also analyses shared/androidMain (the KMP library has no lint of its own).
+        checkDependencies = true
+    }
+
+    testOptions {
+        // Platform tests (driver, image codec, U1 smoke) on the minimum supported system, in CI (lot 4).
+        managedDevices {
+            localDevices {
+                create("api29") {
+                    device = "Pixel 2"
+                    apiLevel = 29
+                    systemImageSource = "aosp"
+                }
+            }
+        }
     }
 }
 
@@ -54,6 +69,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation.compose)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
@@ -61,4 +77,11 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons.core)
     debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
+
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }

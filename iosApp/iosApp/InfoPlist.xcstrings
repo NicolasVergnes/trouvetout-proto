@@ -1,0 +1,22 @@
+{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "NSCameraUsageDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To photograph an object or a place. Photos stay in the app, on this device: never in your photo library, never online."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour photographier un objet ou un lieu. Les photos restent dans l'application, sur votre téléphone : ni dans votre galerie, ni sur internet."
+          }
+        }
+      }
+    }
+  }
+}

@@ -63,7 +63,8 @@ final class SettingsViewModel: ObservableObject {
     func wipeAll() {
         perform { [self] in
             defer {
-                // Whatever happened, the spent factory is replaced and the stale share link dropped.
+                // Whatever happened, the spent factory is replaced, the preferences and the stale share link dropped.
+                UiPrefs.clear()
                 container.recreateShared()
                 exportURL = nil
             }

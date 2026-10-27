@@ -1,8 +1,10 @@
 package app.trouvetout.core.domain.usecase
 
+import app.trouvetout.core.domain.model.Event
 import app.trouvetout.core.domain.model.EventPayload
 import app.trouvetout.core.domain.model.EventSource
 import app.trouvetout.core.domain.model.PlaceKind
+import app.trouvetout.core.domain.places.PlaceTemplate
 import app.trouvetout.core.domain.usecase.CommandContext.Companion.cleanName
 import app.trouvetout.core.domain.usecase.CommandContext.Companion.cleanTags
 import app.trouvetout.core.domain.usecase.CommandContext.Companion.rejected
@@ -23,6 +25,26 @@ public class PlaceCommands internal constructor(
         parentId?.let { ctx.checkPlace(it) }?.let { return rejected(it) }
         val payload = EventPayload.PlaceCreated(ctx.newId(), cleanName, parentId, kind, cleanTags(aliases))
         return ctx.commit(listOf(ctx.event(payload, source, rawInput)))
+    }
+
+    /**
+     * D2: creates a proposed place and its proposed rooms or spots in one go (one event per place, all committed
+     * together). The user asked for the template; nothing is ever created without that tap.
+     */
+    public suspend fun createFromTemplate(
+        template: PlaceTemplate,
+        source: EventSource,
+    ): CommandResult {
+        val rootName = cleanName(template.name) ?: return rejected(Rejection.BLANK_NAME)
+        val rootId = ctx.newId()
+        val events = ArrayList<Event>()
+        events += ctx.event(EventPayload.PlaceCreated(rootId, rootName, null, template.kind, emptyList()), source)
+        for (child in template.children) {
+            val childName = cleanName(child.name) ?: continue
+            events +=
+                ctx.event(EventPayload.PlaceCreated(ctx.newId(), childName, rootId, child.kind, emptyList()), source)
+        }
+        return ctx.commit(events)
     }
 
     /** New name and full alias list (B7 keeps the user's wording as an alias). */

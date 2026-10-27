@@ -1,5 +1,6 @@
 package app.trouvetout.core.domain.usecase
 
+import app.trouvetout.core.capture.Tokens
 import app.trouvetout.core.domain.model.EventPayload
 import app.trouvetout.core.domain.model.EventSource
 import app.trouvetout.core.domain.usecase.CommandContext.Companion.cleanName
@@ -18,7 +19,7 @@ public class ContainerCommands internal constructor(
     ): CommandResult {
         val cleanLabel = cleanName(label) ?: return rejected(Rejection.BLANK_NAME)
         ctx.checkPlace(placeId)?.let { return rejected(it) }
-        val payload = EventPayload.ContainerCreated(ctx.newId(), cleanLabel, placeId, number)
+        val payload = EventPayload.ContainerCreated(ctx.newId(), cleanLabel, placeId, number ?: numberIn(cleanLabel))
         return ctx.commit(listOf(ctx.event(payload, source, rawInput)))
     }
 
@@ -43,5 +44,11 @@ public class ContainerCommands internal constructor(
         val empty = ctx.read { db -> db.locationStateQueries.itemsInContainer(containerId).executeAsList().isEmpty() }
         if (!empty) return rejected(Rejection.CONTAINER_NOT_EMPTY)
         return ctx.commit(listOf(ctx.event(EventPayload.ContainerDeleted(containerId), source)))
+    }
+
+    public companion object {
+        /** The first number of a label (« Carton 7 » → 7, « Boîte 3 et 4 » → 3), null when there is none. */
+        public fun numberIn(label: String): Long? =
+            Tokens.tokenize(label).firstOrNull { it.isNumber }?.key?.toLongOrNull()
     }
 }

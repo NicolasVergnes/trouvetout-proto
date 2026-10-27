@@ -1,8 +1,10 @@
 package app.trouvetout.android.ui.capture
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,8 +37,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
@@ -63,6 +67,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun CaptureRoute(
     onOpenSettings: () -> Unit,
+    onOpenPlaces: () -> Unit,
+    onOpenItem: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val app = LocalContext.current.applicationContext as App
@@ -70,7 +76,7 @@ fun CaptureRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val items by viewModel.items.collectAsStateWithLifecycle()
     val callbacks =
-        remember(viewModel, onOpenSettings) {
+        remember(viewModel, onOpenSettings, onOpenPlaces, onOpenItem) {
             CaptureCallbacks(
                 onInputChange = viewModel::onInputChange,
                 onSubmit = viewModel::submit,
@@ -83,6 +89,8 @@ fun CaptureRoute(
                 onUndo = viewModel::undo,
                 onDismissMessages = viewModel::dismissMessages,
                 onOpenSettings = onOpenSettings,
+                onOpenPlaces = onOpenPlaces,
+                onOpenItem = onOpenItem,
             )
         }
     CaptureScreen(state = state, items = items, callbacks = callbacks, modifier = modifier)
@@ -101,6 +109,8 @@ data class CaptureCallbacks(
     val onUndo: () -> Unit,
     val onDismissMessages: () -> Unit,
     val onOpenSettings: () -> Unit,
+    val onOpenPlaces: () -> Unit,
+    val onOpenItem: (String) -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -117,6 +127,7 @@ fun CaptureScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
+                    TextButton(onClick = callbacks.onOpenPlaces) { Text(stringResource(R.string.places_title)) }
                     TextButton(onClick = callbacks.onOpenSettings) { Text(stringResource(R.string.settings_title)) }
                 },
             )
@@ -168,7 +179,7 @@ private fun CaptureField(
     OutlinedTextField(
         value = state.input,
         onValueChange = callbacks.onInputChange,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag(CAPTURE_FIELD_TAG),
         placeholder = { Text(stringResource(R.string.capture_hint)) },
         singleLine = true,
         trailingIcon = {
@@ -267,15 +278,25 @@ private fun ItemList(
     }
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(shown, key = { it.item.id }) { view ->
-            ItemRow(view)
+            ItemRow(view, onOpen = { callbacks.onOpenItem(view.item.id) })
             HorizontalDivider()
         }
     }
 }
 
 @Composable
-private fun ItemRow(view: ItemView) {
-    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+private fun ItemRow(
+    view: ItemView,
+    onOpen: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpen, role = Role.Button)
+                .defaultMinSize(minHeight = 48.dp)
+                .padding(vertical = 8.dp),
+    ) {
         Text(view.item.name, style = MaterialTheme.typography.titleMedium)
         val where =
             when (view.location.status) {
@@ -434,7 +455,12 @@ private fun CaptureScreenPreview() {
                     onUndo = noop,
                     onDismissMessages = noop,
                     onOpenSettings = noop,
+                    onOpenPlaces = noop,
+                    onOpenItem = {},
                 ),
         )
     }
 }
+
+/** Test hook for the instrumented smoke test. */
+const val CAPTURE_FIELD_TAG = "capture_field"
