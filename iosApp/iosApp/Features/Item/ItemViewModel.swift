@@ -25,7 +25,7 @@ final class ItemViewModel: ObservableObject {
     @Published private(set) var tagSuggestions: [String] = []
     @Published private(set) var history: [Event] = []
     @Published private(set) var allPlaces: [Place_] = []
-    @Published private(set) var allContainers: [Container] = []
+    @Published private(set) var allContainers: [Container_] = []
     @Published private(set) var busy = false
     @Published private(set) var problem: ItemProblem?
     /// Set once the item went to the bin: the sheet closes.
@@ -79,7 +79,7 @@ final class ItemViewModel: ObservableObject {
             self?.allPlaces = (list as? [Place_]) ?? []
         }
         flows.watch(shared.containerRepository.observeActive(), scope: scope) { [weak self] (list: NSArray) in
-            self?.allContainers = (list as? [Container]) ?? []
+            self?.allContainers = (list as? [Container_]) ?? []
         }
         observeHistory()
     }

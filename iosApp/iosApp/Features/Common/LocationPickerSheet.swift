@@ -5,7 +5,7 @@ import SwiftUI
 struct LocationPickerSheet: View {
     let title: LocalizedStringKey
     let places: [Place_]
-    let containers: [Container]
+    let containers: [Container_]
     var excludedPlaceIds: Set<String> = []
     var withContainers = true
     let onPick: (LocationRef) -> Void
