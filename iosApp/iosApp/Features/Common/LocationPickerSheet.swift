@@ -20,17 +20,9 @@ struct LocationPickerSheet: View {
                         .foregroundStyle(.secondary)
                 }
                 ForEach(rows, id: \.place.id) { row in
-                    Button(row.place.name) { onPick(LocationRefInPlace(placeId: row.place.id)) }
-                        .padding(.leading, CGFloat(row.depth) * 16)
+                    placeRow(row)
                     if withContainers {
-                        ForEach(containers.filter { $0.placeId == row.place.id }, id: \.id) { container in
-                            Button {
-                                onPick(LocationRefInContainer(containerId: container.id))
-                            } label: {
-                                Label(container.label, systemImage: "shippingbox")
-                            }
-                            .padding(.leading, CGFloat(row.depth + 1) * 16)
-                        }
+                        containerRows(in: row)
                     }
                 }
             }
@@ -45,8 +37,25 @@ struct LocationPickerSheet: View {
     }
 
     private struct Row {
-        let place: Place
+        let place: Place_
         let depth: Int
+    }
+
+    private func placeRow(_ row: Row) -> some View {
+        Button(row.place.name) { onPick(LocationRefInPlace(placeId: row.place.id)) }
+            .padding(.leading, CGFloat(row.depth) * 16)
+    }
+
+    private func containerRows(in row: Row) -> some View {
+        let inPlace = containers.filter { $0.placeId == row.place.id }
+        return ForEach(inPlace, id: \.id) { container in
+            Button {
+                onPick(LocationRefInContainer(containerId: container.id))
+            } label: {
+                Label(container.label, systemImage: "shippingbox")
+            }
+            .padding(.leading, CGFloat(row.depth + 1) * 16)
+        }
     }
 
     /// Depth-first order of the active places with their depth; merged places are hidden by the repository.
