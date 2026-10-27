@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Home: the capture screen (lot 3); the places (lot 4) and the settings (export, import, erase) are in the
-/// toolbar. When the private
+/// Home: the capture screen (lot 3), with the places (lot 4) and the settings (lot 2) in the toolbar. When the private
 /// storage could not be prepared, the screen says so instead of touching a core that refuses to open.
 struct ContentView: View {
     @EnvironmentObject private var container: AppContainer

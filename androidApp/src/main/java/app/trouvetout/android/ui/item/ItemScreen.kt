@@ -3,6 +3,7 @@ package app.trouvetout.android.ui.item
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -31,12 +34,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,6 +54,7 @@ import app.trouvetout.android.ui.common.AddPhotoButtons
 import app.trouvetout.android.ui.common.LocationPickerDialog
 import app.trouvetout.android.ui.common.PhotoStrip
 import app.trouvetout.android.ui.places.NameDialog
+import app.trouvetout.android.ui.places.ProblemText
 import app.trouvetout.core.data.repository.ItemView
 import app.trouvetout.core.domain.model.Event
 import app.trouvetout.core.domain.model.LocationStatus
@@ -102,7 +111,7 @@ fun ItemRoute(
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            state.problem?.let { Text(problemText(it), color = MaterialTheme.colorScheme.error) }
+            state.problem?.let { ProblemText(problemText(it)) }
             LocationSection(current, onOpenPlace, onMove = {
                 dialog = DIALOG_MOVE
             }, onTake = viewModel::take, onPutBack = viewModel::putBack, onLend = {
@@ -114,18 +123,14 @@ fun ItemRoute(
             }, onDetach = viewModel::detachPhoto, enabled = !state.busy)
             AddPhotoButtons(onPicked = viewModel::attachPhoto, enabled = !state.busy)
             EditForm(current, suggestions, state.busy, viewModel)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.item_pinned), modifier = Modifier.weight(1f))
-                Switch(checked = current.item.pinned, onCheckedChange = viewModel::setPinned, enabled = !state.busy)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.item_archived), modifier = Modifier.weight(1f))
-                Switch(checked = current.item.archived, onCheckedChange = viewModel::setArchived, enabled = !state.busy)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.item_show_history), modifier = Modifier.weight(1f))
-                Switch(checked = state.showHistory, onCheckedChange = viewModel::setShowHistory)
-            }
+            SwitchRow(stringResource(R.string.item_pinned), current.item.pinned, !state.busy, viewModel::setPinned)
+            SwitchRow(
+                stringResource(R.string.item_archived),
+                current.item.archived,
+                !state.busy,
+                viewModel::setArchived,
+            )
+            SwitchRow(stringResource(R.string.item_show_history), state.showHistory, true, viewModel::setShowHistory)
             if (state.showHistory) HistoryList(history)
         }
     }
@@ -200,7 +205,7 @@ private fun LocationSection(
             it.id
         }) { place -> SuggestionChip(onClick = { onOpenPlace(place.id) }, label = { Text(place.name) }) }
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TextButton(onClick = onMove) { Text(stringResource(R.string.item_move)) }
         when (view.location.status) {
             LocationStatus.STORED -> {
@@ -221,15 +226,19 @@ private fun EditForm(
     busy: Boolean,
     viewModel: ItemViewModel,
 ) {
-    var name by rememberSaveable(view.item.id) { mutableStateOf(view.item.name) }
-    var description by rememberSaveable(view.item.id) { mutableStateOf(view.item.description.orEmpty()) }
-    var quantity by rememberSaveable(view.item.id) {
-        mutableStateOf(view.item.quantity?.let { formatQuantity(it) }.orEmpty())
+    // Keyed on the stored item: the fields follow every change written by the core (−1, undo, a move).
+    val stored = view.item
+    var name by rememberSaveable(stored) { mutableStateOf(stored.name) }
+    var description by rememberSaveable(stored) { mutableStateOf(stored.description.orEmpty()) }
+    var quantity by rememberSaveable(stored) { mutableStateOf(stored.quantity?.let { formatQuantity(it) }.orEmpty()) }
+    var unit by rememberSaveable(stored) { mutableStateOf(stored.unit.orEmpty()) }
+    var tags by rememberSaveable(stored, stateSaver = listSaver<List<String>, String>({ it }, { it })) {
+        mutableStateOf(stored.tags)
     }
-    var unit by rememberSaveable(view.item.id) { mutableStateOf(view.item.unit.orEmpty()) }
-    var tags by rememberSaveable(view.item.id) { mutableStateOf(view.item.tags.joinToString(",")) }
     var newTag by rememberSaveable { mutableStateOf("") }
-    val tagList = tags.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+    val tagList = tags
+    val quantityValue = quantity.replace(',', '.').trim().toDoubleOrNull()
+    val quantityValid = quantity.isBlank() || (quantityValue != null && quantityValue >= 0.0)
 
     OutlinedTextField(value = name, onValueChange = {
         name = it
@@ -238,20 +247,29 @@ private fun EditForm(
         description = it
     }, label = { Text(stringResource(R.string.item_description)) }, modifier = Modifier.fillMaxWidth())
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(value = quantity, onValueChange = {
-            quantity = it
-        }, label = { Text(stringResource(R.string.item_quantity)) }, singleLine = true, modifier = Modifier.weight(1f))
+        OutlinedTextField(
+            value = quantity,
+            onValueChange = { quantity = it },
+            label = { Text(stringResource(R.string.item_quantity)) },
+            isError = !quantityValid,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.weight(1f),
+        )
         OutlinedTextField(value = unit, onValueChange = {
             unit = it
         }, label = { Text(stringResource(R.string.item_unit)) }, singleLine = true, modifier = Modifier.weight(1f))
-        TextButton(onClick = viewModel::decrement, enabled = !busy && (view.item.quantity ?: 0.0) > 0.0) {
-            Text(stringResource(R.string.item_minus_one))
-        }
+        val minusOne = stringResource(R.string.item_minus_one_description)
+        TextButton(
+            onClick = viewModel::decrement,
+            enabled = !busy && (view.item.quantity ?: 0.0) > 0.0,
+            modifier = Modifier.semantics { contentDescription = minusOne },
+        ) { Text(stringResource(R.string.item_minus_one)) }
     }
     Text(stringResource(R.string.item_tags), style = MaterialTheme.typography.labelLarge)
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(tagList, key = { it }) { tag ->
-            InputChip(selected = true, onClick = { tags = (tagList - tag).joinToString(",") }, label = { Text(tag) })
+            InputChip(selected = true, onClick = { tags = tagList - tag }, label = { Text(tag) })
         }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -261,7 +279,7 @@ private fun EditForm(
         TextButton(
             enabled = newTag.isNotBlank(),
             onClick = {
-                tags = (tagList + newTag.trim()).distinct().joinToString(",")
+                tags = (tagList + newTag.trim()).distinct()
                 newTag = ""
             },
         ) { Text(stringResource(R.string.item_tag_add)) }
@@ -271,15 +289,34 @@ private fun EditForm(
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(unused, key = {
                 it
-            }) { tag -> SuggestionChip(onClick = { tags = (tagList + tag).joinToString(",") }, label = { Text(tag) }) }
+            }) { tag -> SuggestionChip(onClick = { tags = tagList + tag }, label = { Text(tag) }) }
         }
     }
     Button(
-        enabled = !busy && name.isNotBlank(),
-        onClick = {
-            viewModel.save(name.trim(), description, tagList, quantity.replace(',', '.').toDoubleOrNull(), unit)
-        },
+        enabled = !busy && name.isNotBlank() && quantityValid,
+        onClick = { viewModel.save(name.trim(), description, tagList, quantityValue, unit.trim()) },
     ) { Text(stringResource(R.string.action_save)) }
+}
+
+/** Label + switch as one TalkBack element. */
+@Composable
+private fun SwitchRow(
+    label: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onChange),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(label, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
+    }
 }
 
 @Composable
@@ -325,6 +362,7 @@ private fun problemText(problem: ItemProblem): String = stringResource(
         ItemProblem.REJECTED -> R.string.capture_problem_rejected
         ItemProblem.PHOTO_UNSUPPORTED -> R.string.photo_unsupported
         ItemProblem.PHOTO_UNREADABLE -> R.string.photo_unreadable
+        ItemProblem.PHOTO_TOO_LARGE -> R.string.photo_too_large
     },
 )
 

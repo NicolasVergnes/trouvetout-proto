@@ -1233,6 +1233,22 @@
         }
       }
     },
+    "photo_too_large": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This image is too large (48 MB at most)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette image est trop lourde (48 Mo au plus)."
+          }
+        }
+      }
+    },
     "photo_unsupported": {
       "localizations": {
         "en": {

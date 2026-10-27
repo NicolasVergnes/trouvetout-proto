@@ -27,6 +27,8 @@ public enum class Rejection {
     SAME_PLACE,
     PLACE_CYCLE,
     UNKNOWN_PHOTO,
+    UNSUPPORTED_IMAGE,
+    IMAGE_TOO_LARGE,
     UNKNOWN_REMINDER,
     NOTHING_TO_UNDO,
     NOT_UNDOABLE,
@@ -61,6 +63,7 @@ public data class ItemPatch(
     val quantity: Double? = null,
     val clearQuantity: Boolean = false,
     val unit: String? = null,
+    val clearUnit: Boolean = false,
     val sensitive: Boolean? = null,
     val pinned: Boolean? = null,
 )

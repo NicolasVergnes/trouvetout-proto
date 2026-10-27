@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.trouvetout.android.App
 import app.trouvetout.android.ui.common.PhotoAttachment
+import app.trouvetout.android.ui.common.PhotoBytes
 import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.data.repository.ContainerContent
 import app.trouvetout.core.data.repository.PlaceContent
@@ -15,6 +16,7 @@ import app.trouvetout.core.domain.model.PlaceKind
 import app.trouvetout.core.domain.places.PlaceTemplate
 import app.trouvetout.core.domain.places.PlaceTemplates
 import app.trouvetout.core.domain.usecase.CommandResult
+import app.trouvetout.core.domain.usecase.Rejection
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,7 +50,7 @@ data class BrowseUiState(
     val gone: Boolean = false,
 )
 
-enum class BrowseProblem { REJECTED, PHOTO_UNSUPPORTED, PHOTO_UNREADABLE }
+enum class BrowseProblem { REJECTED, PHOTO_UNSUPPORTED, PHOTO_UNREADABLE, PHOTO_TOO_LARGE }
 
 /** Navigation by place (C7), containers (A3, D4), templates (D2), rename/merge (D6), place photos (D5). */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -103,12 +105,10 @@ class BrowseViewModel(
         record(app.shared.placeCommands.createFromTemplate(template, EventSource.TEXT))
     }
 
-    fun addContainer(
-        label: String,
-        number: Long?,
-    ) = run {
+    /** The number (« Carton 7 » → 7) is derived by the core, not here. */
+    fun addContainer(label: String) = run {
         val placeId = (target as? BrowseTarget.Place)?.id ?: return@run
-        record(app.shared.containerCommands.create(label, placeId, number, EventSource.TEXT))
+        record(app.shared.containerCommands.create(label, placeId, source = EventSource.TEXT))
     }
 
     fun rename(
@@ -135,11 +135,6 @@ class BrowseViewModel(
         record(app.shared.containerCommands.move(containerId, toPlaceId, EventSource.TEXT))
     }
 
-    fun deletePlace() = run {
-        val placeId = (target as? BrowseTarget.Place)?.id ?: return@run
-        if (record(app.shared.placeCommands.delete(placeId, EventSource.TEXT))) _state.update { it.copy(gone = true) }
-    }
-
     fun deleteContainer() = run {
         val containerId = (target as? BrowseTarget.Container)?.id ?: return@run
         if (record(app.shared.containerCommands.delete(containerId, EventSource.TEXT))) {
@@ -157,9 +152,21 @@ class BrowseViewModel(
                 is BrowseTarget.Container -> PhotoOwnerType.CONTAINER to target.id
                 BrowseTarget.Root -> return@run
             }
-        val bytes = attachment.read() ?: return@run problem(BrowseProblem.PHOTO_UNREADABLE)
-        val file = app.shared.photoStore.store(bytes) ?: return@run problem(BrowseProblem.PHOTO_UNSUPPORTED)
-        record(app.shared.attachmentCommands.attachPhoto(ownerType, ownerId, file, EventSource.PHOTO))
+        val bytes =
+            when (val read = attachment.read()) {
+                is PhotoBytes.Ok -> read.bytes
+                PhotoBytes.TooLarge -> return@run problem(BrowseProblem.PHOTO_TOO_LARGE)
+                PhotoBytes.Unreadable -> return@run problem(BrowseProblem.PHOTO_UNREADABLE)
+            }
+        recordPhoto(app.shared.photoAttacher.attach(ownerType, ownerId, bytes, EventSource.PHOTO))
+    }
+
+    private fun recordPhoto(result: CommandResult) {
+        when ((result as? CommandResult.Rejected)?.reason) {
+            Rejection.UNSUPPORTED_IMAGE -> problem(BrowseProblem.PHOTO_UNSUPPORTED)
+            Rejection.IMAGE_TOO_LARGE -> problem(BrowseProblem.PHOTO_TOO_LARGE)
+            else -> record(result)
+        }
     }
 
     fun detachPhoto(photoId: String) = run {
@@ -177,8 +184,12 @@ class BrowseViewModel(
 
     private fun uiLang(): Lang = if (Locale.getDefault().language == "fr") Lang.FR else Lang.EN
 
+    /** Several actions may overlap (a photo while a rename runs): busy stays true until the last one ends. */
+    private var running = 0
+
     private fun run(block: suspend () -> Unit) {
-        _state.update { it.copy(busy = true) }
+        running += 1
+        _state.update { it.copy(busy = true, problem = null) }
         viewModelScope.launch {
             try {
                 block()
@@ -187,7 +198,8 @@ class BrowseViewModel(
             } catch (_: Exception) {
                 problem(BrowseProblem.REJECTED)
             } finally {
-                _state.update { it.copy(busy = false) }
+                running -= 1
+                _state.update { it.copy(busy = running > 0) }
             }
         }
     }

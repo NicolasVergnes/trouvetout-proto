@@ -3,12 +3,13 @@ package app.trouvetout.android
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.trouvetout.android.ui.capture.CAPTURE_FIELD_TAG
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,8 +31,8 @@ class CaptureSmokeTest {
         val send = compose.activity.getString(R.string.capture_send)
         val create = compose.activity.getString(R.string.capture_place_create, place)
 
-        compose.waitUntilAtLeastOneExists(hasSetTextAction(), timeoutMillis = TIMEOUT)
-        compose.onNode(hasSetTextAction()).performTextInput("$item @ $place")
+        compose.waitUntilAtLeastOneExists(hasTestTag(CAPTURE_FIELD_TAG), timeoutMillis = TIMEOUT)
+        compose.onNode(hasTestTag(CAPTURE_FIELD_TAG)).performTextInput("$item @ $place")
         compose.onNode(hasContentDescription(send)).performClick()
 
         // The place is unknown: the question offers to create it (B7).

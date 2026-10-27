@@ -1,5 +1,6 @@
 package app.trouvetout.android.ui.common
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -22,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,17 +46,24 @@ fun AddPhotoButtons(
     enabled: Boolean = true,
 ) {
     val context = LocalContext.current
-    var cameraTarget by remember { mutableStateOf<Pair<Uri, File>?>(null) }
+    // Survives the process death that the camera app often causes on small devices: the capture is not lost
+    // and its temporary file is read then deleted instead of staying in the cache with its EXIF.
+    var cameraPath by rememberSaveable { mutableStateOf<String?>(null) }
     val gallery =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) onPicked(PhotoAttachment(context, uri))
         }
+    val hasCamera =
+        remember(context) {
+            val intent = android.content.Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+            intent.resolveActivity(context.packageManager) != null
+        }
     val camera =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
-            val target = cameraTarget
-            cameraTarget = null
-            if (target != null) {
-                if (saved) onPicked(PhotoAttachment(context, target.first, target.second)) else target.second.delete()
+            val file = cameraPath?.let(::File)
+            cameraPath = null
+            if (file != null) {
+                if (saved) onPicked(PhotoAttachment(context, cameraUri(context, file), file)) else file.delete()
             }
         }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -62,17 +71,33 @@ fun AddPhotoButtons(
             enabled = enabled,
             onClick = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
         ) { Text(stringResource(R.string.photo_pick)) }
-        TextButton(
-            enabled = enabled,
-            onClick = {
-                val dir = File(context.cacheDir, CAMERA_DIR).apply { mkdirs() }
-                val file = File(dir, "capture-${System.currentTimeMillis()}.jpg")
-                val uri = FileProvider.getUriForFile(context, "${context.packageName}.exports", file)
-                cameraTarget = uri to file
-                camera.launch(uri)
-            },
-        ) { Text(stringResource(R.string.photo_take)) }
+        if (hasCamera) {
+            TextButton(
+                enabled = enabled,
+                onClick = {
+                    val dir = File(context.cacheDir, CAMERA_DIR).apply { mkdirs() }
+                    val file = File(dir, "capture-${java.util.UUID.randomUUID()}.jpg")
+                    cameraPath = file.absolutePath
+                    try {
+                        camera.launch(cameraUri(context, file))
+                    } catch (_: android.content.ActivityNotFoundException) {
+                        cameraPath = null
+                        file.delete()
+                    }
+                },
+            ) { Text(stringResource(R.string.photo_take)) }
+        }
     }
+}
+
+private fun cameraUri(
+    context: Context,
+    file: File,
+): Uri = FileProvider.getUriForFile(context, "${context.packageName}.exports", file)
+
+/** Leftover capture files (process killed before the result came back); called at startup. */
+fun clearCameraCaptures(context: Context) {
+    File(context.cacheDir, CAMERA_DIR).deleteRecursively()
 }
 
 /** Thumbnails of the attached photos, each with a detach action (long names stay out of the UI, ids only). */

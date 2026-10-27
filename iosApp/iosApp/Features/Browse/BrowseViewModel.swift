@@ -12,6 +12,7 @@ enum BrowseTarget: Hashable {
 enum BrowseProblem {
     case rejected
     case photoUnsupported
+    case photoTooLarge
 }
 
 /// Navigation by place (C7), containers (A3, D4), templates (D2), rename/merge (D6), place photos (D5).
@@ -20,7 +21,6 @@ final class BrowseViewModel: ObservableObject {
     @Published private(set) var place: PlaceContent?
     @Published private(set) var container: ContainerContent?
     @Published private(set) var allPlaces: [Place] = []
-    @Published private(set) var allContainers: [Container] = []
     @Published private(set) var busy = false
     @Published private(set) var problem: BrowseProblem?
     /// Set when the shown place or container was removed (merged, deleted): the screen goes back.
@@ -67,18 +67,14 @@ final class BrowseViewModel: ObservableObject {
         flows.watch(shared.placeRepository.observeActive(), scope: scope) { [weak self] (list: NSArray) in
             self?.allPlaces = (list as? [Place]) ?? []
         }
-        flows.watch(shared.containerRepository.observeActive(), scope: scope) { [weak self] (list: NSArray) in
-            self?.allContainers = (list as? [Container]) ?? []
-        }
     }
 
     // MARK: - Actions
 
     func addPlace(name: String) {
-        let parentId: String?
-        switch target {
-        case let .place(id): parentId = id
-        default: parentId = nil
+        let parentId: String? = switch target {
+        case let .place(id): id
+        default: nil
         }
         let kind: PlaceKind = parentId == nil ? .root : .spot
         perform { [self] in
@@ -96,18 +92,20 @@ final class BrowseViewModel: ObservableObject {
 
     func apply(_ template: PlaceTemplate) {
         perform { [self] in
-            record(try await appContainer.shared.placeCommands.createFromTemplate(template: template, source: .text))
+            let commands = appContainer.shared.placeCommands
+            let result = try await commands.createFromTemplate(template: template, source: .text)
+            record(result)
         }
     }
 
+    /// The number (« Carton 7 » → 7) is derived by the core, not here.
     func addContainer(label: String) {
         guard case let .place(placeId) = target else { return }
-        let number: KotlinLong? = Int64(label.filter(\.isNumber)).map { KotlinLong(value: $0) }
         perform { [self] in
             let result = try await appContainer.shared.containerCommands.create(
                 label: label,
                 placeId: placeId,
-                number: number,
+                number: nil,
                 source: .text,
                 rawInput: nil
             )
@@ -160,7 +158,8 @@ final class BrowseViewModel: ObservableObject {
     func deleteContainer() {
         guard case let .container(containerId) = target else { return }
         perform { [self] in
-            if record(try await appContainer.shared.containerCommands.delete(containerId: containerId, source: .text)) {
+            let result = try await appContainer.shared.containerCommands.delete(containerId: containerId, source: .text)
+            if record(result) {
                 gone = true
             }
         }
@@ -175,24 +174,24 @@ final class BrowseViewModel: ObservableObject {
         case .root: return
         }
         perform { [self] in
-            let bytes = BytesKt.bytesOf(data: data as NSData)
-            guard let file = try await appContainer.shared.photoStore.store(source: bytes) else {
-                problem = .photoUnsupported
+            guard data.count <= Int(PhotoStore.companion.MAX_SOURCE_BYTES) else {
+                problem = .photoTooLarge
                 return
             }
-            let result = try await appContainer.shared.attachmentCommands.attachPhoto(
+            let result = try await appContainer.shared.photoAttacher.attach(
                 ownerType: owner.0,
                 ownerId: owner.1,
-                file: file,
-                source: .photo
+                source: BytesKt.bytesOf(data: data as NSData),
+                eventSource: .photo
             )
-            record(result)
+            recordPhoto(result)
         }
     }
 
     func detach(photoId: String) {
         perform { [self] in
-            record(try await appContainer.shared.attachmentCommands.detachPhoto(photoId: photoId, source: .photo))
+            let result = try await appContainer.shared.attachmentCommands.detachPhoto(photoId: photoId, source: .photo)
+            record(result)
         }
     }
 
@@ -200,8 +199,12 @@ final class BrowseViewModel: ObservableObject {
         appContainer.shared.photoStore.absolutePath(fileName: fileName)
     }
 
-    func dismissProblem() {
-        problem = nil
+    private func recordPhoto(_ result: CommandResult) {
+        switch (result as? CommandResultRejected)?.reason {
+        case .some(.unsupportedImage): problem = .photoUnsupported
+        case .some(.imageTooLarge): problem = .photoTooLarge
+        default: record(result)
+        }
     }
 
     @discardableResult
@@ -212,15 +215,21 @@ final class BrowseViewModel: ObservableObject {
         return result is CommandResultDone
     }
 
+    /// Several actions may overlap (a photo while a rename runs): busy stays true until the last one ends.
+    private var running = 0
+
     private func perform(_ work: @escaping @MainActor () async throws -> Void) {
+        running += 1
         busy = true
+        problem = nil
         Task {
             do {
                 try await work()
             } catch {
                 problem = .rejected
             }
-            busy = false
+            running -= 1
+            busy = running > 0
         }
     }
 }

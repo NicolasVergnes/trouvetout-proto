@@ -2,6 +2,7 @@ package app.trouvetout.android
 
 import android.app.Application
 import androidx.core.content.edit
+import app.trouvetout.android.ui.common.clearCameraCaptures
 import app.trouvetout.android.ui.settings.ExportSharing
 import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.data.db.AndroidDriverFactory
@@ -47,6 +48,7 @@ class App : Application() {
         // (activity, widget, tile, reminder receiver) benefits. warmUp() never throws.
         appScope.launch {
             ExportSharing.clear(this@App)
+            clearCameraCaptures(this@App)
             warmUp(shared)
         }
     }
@@ -98,6 +100,9 @@ class UiPrefs(
     var showHistory: Boolean
         get() = prefs.getBoolean(KEY_SHOW_HISTORY, false)
         set(value) = prefs.edit { putBoolean(KEY_SHOW_HISTORY, value) }
+
+    /** H6: display preferences go with the data. */
+    fun clear() = prefs.edit { clear() }
 
     private companion object {
         const val KEY_SHOW_HISTORY = "show_history"

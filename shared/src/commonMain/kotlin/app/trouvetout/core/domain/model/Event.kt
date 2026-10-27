@@ -91,6 +91,8 @@ public sealed interface EventPayload {
         val quantity: Double? = null,
         val clearQuantity: Boolean = false,
         val unit: String? = null,
+        /** Added at lot 4 (additive field): clears the unit alone; `clearQuantity` still clears both. */
+        val clearUnit: Boolean = false,
         val sensitive: Boolean? = null,
         val pinned: Boolean? = null,
     ) : EventPayload {

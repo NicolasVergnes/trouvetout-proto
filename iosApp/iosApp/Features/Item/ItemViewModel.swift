@@ -5,6 +5,16 @@ import Shared
 enum ItemProblem {
     case rejected
     case photoUnsupported
+    case photoTooLarge
+}
+
+/// Per-device display preferences (never business data); H6 clears them with the data.
+enum UiPrefs {
+    static let showHistoryKey = "showHistory"
+
+    static func clear() {
+        UserDefaults.standard.removeObject(forKey: showHistoryKey)
+    }
 }
 
 /// The item sheet (A1, A5, A11, A12, D7, D11): every change is a command of the core.
@@ -23,14 +33,13 @@ final class ItemViewModel: ObservableObject {
     /// A5: the optional history. A per-device display preference, never business data.
     @Published var showHistory: Bool {
         didSet {
-            UserDefaults.standard.set(showHistory, forKey: Self.showHistoryKey)
+            UserDefaults.standard.set(showHistory, forKey: UiPrefs.showHistoryKey)
             observeHistory()
         }
     }
 
     let itemId: String
 
-    private static let showHistoryKey = "showHistory"
     private let appContainer: AppContainer
     private let flows = FlowSubscriptions()
     private let historyFlows = FlowSubscriptions()
@@ -40,7 +49,7 @@ final class ItemViewModel: ObservableObject {
     init(container: AppContainer, itemId: String) {
         appContainer = container
         self.itemId = itemId
-        showHistory = UserDefaults.standard.bool(forKey: Self.showHistoryKey)
+        showHistory = UserDefaults.standard.bool(forKey: UiPrefs.showHistoryKey)
         readiness = container.$ready.sink { [weak self] ready in
             self?.observe(ready ? container.shared : nil)
         }
@@ -80,8 +89,8 @@ final class ItemViewModel: ObservableObject {
         historyFlows.cancelAll()
         history = []
         guard showHistory, let shared = activeShared else { return }
-        historyFlows.watch(shared.browse.observeHistory(itemId: itemId), scope: shared.uiScope) {
-            [weak self] (list: NSArray) in
+        let historyFlow = shared.browse.observeHistory(itemId: itemId)
+        historyFlows.watch(historyFlow, scope: shared.uiScope) { [weak self] (list: NSArray) in
             self?.history = (list as? [Event]) ?? []
         }
     }
@@ -98,21 +107,21 @@ final class ItemViewModel: ObservableObject {
             quantity: quantity.map { KotlinDouble(value: $0) },
             clearQuantity: quantity == nil,
             unit: unit.isEmpty ? nil : unit,
+            clearUnit: unit.isEmpty,
             sensitive: nil,
             pinned: nil
         )
         perform { [self] in
-            record(try await appContainer.shared.itemCommands.update(itemId: itemId, patch: patch, source: .text))
+            let result = try await appContainer.shared.itemCommands.update(itemId: itemId, patch: patch, source: .text)
+            record(result)
         }
     }
 
-    /// A12: one less, never below zero.
+    /// A12: one less, never below zero: the rule lives in the core.
     func decrement() {
-        guard let current = item?.item.quantity?.doubleValue else { return }
-        let next = max(current - 1, 0)
-        let patch = quantityPatch(next)
         perform { [self] in
-            record(try await appContainer.shared.itemCommands.update(itemId: itemId, patch: patch, source: .text))
+            let result = try await appContainer.shared.itemCommands.decrement(itemId: itemId, source: .text)
+            record(result)
         }
     }
 
@@ -125,11 +134,13 @@ final class ItemViewModel: ObservableObject {
             quantity: nil,
             clearQuantity: false,
             unit: nil,
+            clearUnit: false,
             sensitive: nil,
             pinned: KotlinBoolean(value: pinned)
         )
         perform { [self] in
-            record(try await appContainer.shared.itemCommands.update(itemId: itemId, patch: patch, source: .text))
+            let result = try await appContainer.shared.itemCommands.update(itemId: itemId, patch: patch, source: .text)
+            record(result)
         }
     }
 
@@ -158,13 +169,16 @@ final class ItemViewModel: ObservableObject {
 
     func take() {
         perform { [self] in
-            record(try await appContainer.shared.itemCommands.take(itemId: itemId, source: .text, rawInput: nil))
+            let result = try await appContainer.shared.itemCommands.take(itemId: itemId, source: .text, rawInput: nil)
+            record(result)
         }
     }
 
     func putBack() {
         perform { [self] in
-            record(try await appContainer.shared.itemCommands.putBack(itemId: itemId, source: .text, rawInput: nil))
+            let commands = appContainer.shared.itemCommands
+            let result = try await commands.putBack(itemId: itemId, source: .text, rawInput: nil)
+            record(result)
         }
     }
 
@@ -183,31 +197,36 @@ final class ItemViewModel: ObservableObject {
     /// The bytes are re-encoded by the core (A10), never stored as received.
     func attach(_ data: Data) {
         perform { [self] in
-            let bytes = BytesKt.bytesOf(data: data as NSData)
-            guard let file = try await appContainer.shared.photoStore.store(source: bytes) else {
-                problem = .photoUnsupported
+            guard data.count <= Int(PhotoStore.companion.MAX_SOURCE_BYTES) else {
+                problem = .photoTooLarge
                 return
             }
-            let result = try await appContainer.shared.attachmentCommands.attachPhoto(
+            let result = try await appContainer.shared.photoAttacher.attach(
                 ownerType: .item,
                 ownerId: itemId,
-                file: file,
-                source: .photo
+                source: BytesKt.bytesOf(data: data as NSData),
+                eventSource: .photo
             )
-            record(result)
+            switch (result as? CommandResultRejected)?.reason {
+            case .some(.unsupportedImage): problem = .photoUnsupported
+            case .some(.imageTooLarge): problem = .photoTooLarge
+            default: record(result)
+            }
         }
     }
 
     func detach(photoId: String) {
         perform { [self] in
-            record(try await appContainer.shared.attachmentCommands.detachPhoto(photoId: photoId, source: .photo))
+            let result = try await appContainer.shared.attachmentCommands.detachPhoto(photoId: photoId, source: .photo)
+            record(result)
         }
     }
 
     /// A13: to the bin; a restore stays possible for 30 days.
     func delete() {
         perform { [self] in
-            if record(try await appContainer.shared.itemCommands.delete(itemId: itemId, source: .text)) {
+            let result = try await appContainer.shared.itemCommands.delete(itemId: itemId, source: .text)
+            if record(result) {
                 gone = true
             }
         }
@@ -215,24 +234,6 @@ final class ItemViewModel: ObservableObject {
 
     func photoPath(_ fileName: String) -> String {
         appContainer.shared.photoStore.absolutePath(fileName: fileName)
-    }
-
-    func dismissProblem() {
-        problem = nil
-    }
-
-    private func quantityPatch(_ quantity: Double) -> ItemPatch {
-        ItemPatch(
-            name: nil,
-            description: nil,
-            clearDescription: false,
-            tags: nil,
-            quantity: KotlinDouble(value: quantity),
-            clearQuantity: false,
-            unit: nil,
-            sensitive: nil,
-            pinned: nil
-        )
     }
 
     @discardableResult
@@ -243,15 +244,21 @@ final class ItemViewModel: ObservableObject {
         return result is CommandResultDone
     }
 
+    /// Several actions may overlap (a photo while a save runs): busy stays true until the last one ends.
+    private var running = 0
+
     private func perform(_ work: @escaping @MainActor () async throws -> Void) {
+        running += 1
         busy = true
+        problem = nil
         Task {
             do {
                 try await work()
             } catch {
                 problem = .rejected
             }
-            busy = false
+            running -= 1
+            busy = running > 0
         }
     }
 }

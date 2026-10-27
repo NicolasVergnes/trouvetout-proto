@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.trouvetout.android.App
 import app.trouvetout.android.ui.common.PhotoAttachment
+import app.trouvetout.android.ui.common.PhotoBytes
 import app.trouvetout.core.data.repository.ItemView
 import app.trouvetout.core.domain.model.Container
 import app.trouvetout.core.domain.model.Event
@@ -14,6 +15,7 @@ import app.trouvetout.core.domain.model.Place
 import app.trouvetout.core.domain.usecase.CommandResult
 import app.trouvetout.core.domain.usecase.ItemPatch
 import app.trouvetout.core.domain.usecase.LocationRef
+import app.trouvetout.core.domain.usecase.Rejection
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +35,7 @@ data class ItemUiState(
     val showHistory: Boolean = false,
 )
 
-enum class ItemProblem { REJECTED, PHOTO_UNSUPPORTED, PHOTO_UNREADABLE }
+enum class ItemProblem { REJECTED, PHOTO_UNSUPPORTED, PHOTO_UNREADABLE, PHOTO_TOO_LARGE }
 
 /** The item sheet (A1, A5, A11, A12, D7, D11): every change is a command of the core. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -99,16 +101,13 @@ class ItemViewModel(
                 quantity = quantity,
                 clearQuantity = quantity == null,
                 unit = unit.ifBlank { null },
+                clearUnit = unit.isBlank(),
             )
         record(app.shared.itemCommands.update(itemId, patch, EventSource.TEXT))
     }
 
-    /** A12: one less, never below zero. */
-    fun decrement() = run {
-        val current = item.value?.item?.quantity ?: return@run
-        val next = (current - 1).coerceAtLeast(0.0)
-        record(app.shared.itemCommands.update(itemId, ItemPatch(quantity = next), EventSource.TEXT))
-    }
+    /** A12: one less, never below zero: the rule lives in the core. */
+    fun decrement() = run { record(app.shared.itemCommands.decrement(itemId, EventSource.TEXT)) }
 
     fun setPinned(pinned: Boolean) = run {
         record(app.shared.itemCommands.update(itemId, ItemPatch(pinned = pinned), EventSource.TEXT))
@@ -127,9 +126,18 @@ class ItemViewModel(
     fun lend(to: String) = run { record(app.shared.itemCommands.lend(itemId, to, EventSource.TEXT)) }
 
     fun attachPhoto(attachment: PhotoAttachment) = run {
-        val bytes = attachment.read() ?: return@run problem(ItemProblem.PHOTO_UNREADABLE)
-        val file = app.shared.photoStore.store(bytes) ?: return@run problem(ItemProblem.PHOTO_UNSUPPORTED)
-        record(app.shared.attachmentCommands.attachPhoto(PhotoOwnerType.ITEM, itemId, file, EventSource.PHOTO))
+        val bytes =
+            when (val read = attachment.read()) {
+                is PhotoBytes.Ok -> read.bytes
+                PhotoBytes.TooLarge -> return@run problem(ItemProblem.PHOTO_TOO_LARGE)
+                PhotoBytes.Unreadable -> return@run problem(ItemProblem.PHOTO_UNREADABLE)
+            }
+        val result = app.shared.photoAttacher.attach(PhotoOwnerType.ITEM, itemId, bytes, EventSource.PHOTO)
+        when ((result as? CommandResult.Rejected)?.reason) {
+            Rejection.UNSUPPORTED_IMAGE -> problem(ItemProblem.PHOTO_UNSUPPORTED)
+            Rejection.IMAGE_TOO_LARGE -> problem(ItemProblem.PHOTO_TOO_LARGE)
+            else -> record(result)
+        }
     }
 
     fun detachPhoto(photoId: String) = run {
@@ -155,8 +163,12 @@ class ItemViewModel(
         return result is CommandResult.Done
     }
 
+    /** Several actions may overlap (a photo while a save runs): busy stays true until the last one ends. */
+    private var running = 0
+
     private fun run(block: suspend () -> Unit) {
-        _state.update { it.copy(busy = true) }
+        running += 1
+        _state.update { it.copy(busy = true, problem = null) }
         viewModelScope.launch {
             try {
                 block()
@@ -165,7 +177,8 @@ class ItemViewModel(
             } catch (_: Exception) {
                 problem(ItemProblem.REJECTED)
             } finally {
-                _state.update { it.copy(busy = false) }
+                running -= 1
+                _state.update { it.copy(busy = running > 0) }
             }
         }
     }

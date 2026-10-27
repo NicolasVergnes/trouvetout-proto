@@ -11,6 +11,7 @@ import app.trouvetout.core.data.export.ExportIdentity
 import app.trouvetout.core.data.export.ExportService
 import app.trouvetout.core.data.export.ImportService
 import app.trouvetout.core.data.photo.BinService
+import app.trouvetout.core.data.photo.PhotoAttacher
 import app.trouvetout.core.data.photo.PhotoStore
 import app.trouvetout.core.data.projection.Projector
 import app.trouvetout.core.data.repository.BrowseRepository
@@ -106,6 +107,7 @@ public class SharedFactory(
             dispatcher = config.dispatchers.default,
         )
     }
+    public val photoAttacher: PhotoAttacher by lazy { PhotoAttacher(photoStore, attachmentCommands) }
     public val bin: BinService by lazy { BinService(database, photoStore, config.clock, config.dispatchers.io) }
     public val exportService: ExportService by lazy {
         ExportService(

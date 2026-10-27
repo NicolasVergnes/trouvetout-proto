@@ -2,7 +2,7 @@ package app.trouvetout.android.ui.places
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -33,6 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -100,9 +104,9 @@ fun BrowseRoute(
         ) {
             val path = place?.path ?: container?.path.orEmpty()
             if (path.isNotEmpty()) Breadcrumb(path, navigation.onOpenPlace)
-            state.problem?.let { Text(problemText(it), color = MaterialTheme.colorScheme.error) }
+            state.problem?.let { ProblemText(problemText(it)) }
             when (target) {
-                BrowseTarget.Root -> RootContent(viewModel, place?.children.orEmpty(), navigation, onAdd = {
+                BrowseTarget.Root -> RootContent(viewModel, place?.children.orEmpty(), state.busy, navigation, onAdd = {
                     dialog =
                         DIALOG_ADD_PLACE
                 })
@@ -158,6 +162,7 @@ private fun Breadcrumb(
 private fun RootContent(
     viewModel: BrowseViewModel,
     roots: List<Place>,
+    busy: Boolean,
     navigation: BrowseNavigation,
     onAdd: () -> Unit,
 ) {
@@ -166,7 +171,11 @@ private fun RootContent(
         Text(stringResource(R.string.places_templates), style = MaterialTheme.typography.titleSmall)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(viewModel.templates, key = { it.name }) { template ->
-                SuggestionChip(onClick = { viewModel.applyTemplate(template) }, label = { Text(template.name) })
+                SuggestionChip(
+                    onClick = { viewModel.applyTemplate(template) },
+                    enabled = !busy,
+                    label = { Text(template.name) },
+                )
             }
         }
     }
@@ -202,8 +211,7 @@ private fun PlaceBody(
         app.shared.photoStore.absolutePath(it)
     }, onDetach = viewModel::detachPhoto, enabled = !busy)
     AddPhotoButtons(onPicked = viewModel::attachPhoto, enabled = !busy)
-    // Two rows: four text buttons do not fit a phone width (seen on the API 29 emulator).
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TextButton(onClick = onAddPlace) { Text(stringResource(R.string.place_add_child)) }
         TextButton(onClick = onAddContainer) { Text(stringResource(R.string.container_add)) }
     }
@@ -277,13 +285,23 @@ fun ItemRow(
     onOpen: () -> Unit,
 ) {
     val status =
-        when (view.location.status) {
-            LocationStatus.TAKEN -> stringResource(R.string.state_taken)
-            LocationStatus.LENT -> stringResource(R.string.state_lent, view.location.lentTo.orEmpty())
-            LocationStatus.STORED -> null
+        when {
+            view.item.archived -> stringResource(R.string.item_archived)
+            view.location.status == LocationStatus.TAKEN -> stringResource(R.string.state_taken)
+            view.location.status == LocationStatus.LENT -> stringResource(
+                R.string.state_lent,
+                view.location.lentTo.orEmpty(),
+            )
+            else -> null
         }
     ListItem(
-        headlineContent = { Text((if (view.item.pinned) "★ " else "") + view.item.name) },
+        leadingContent =
+            if (view.item.pinned) {
+                { Icon(Icons.Filled.Star, contentDescription = stringResource(R.string.item_pinned)) }
+            } else {
+                null
+            },
+        headlineContent = { Text(view.item.name) },
         supportingContent = status?.let { { Text(it) } },
         trailingContent = { TextButton(onClick = onOpen) { Text(stringResource(R.string.action_open)) } },
     )
@@ -331,7 +349,7 @@ private fun BrowseDialogs(
                 title = stringResource(R.string.container_add),
                 initial = "",
                 onConfirm = { label ->
-                    viewModel.addContainer(label, label.filter { it.isDigit() }.toLongOrNull())
+                    viewModel.addContainer(label)
                     onClose()
                 },
                 onDismiss = onClose,
@@ -416,8 +434,19 @@ private fun problemText(problem: BrowseProblem): String = stringResource(
         BrowseProblem.REJECTED -> R.string.capture_problem_rejected
         BrowseProblem.PHOTO_UNSUPPORTED -> R.string.photo_unsupported
         BrowseProblem.PHOTO_UNREADABLE -> R.string.photo_unreadable
+        BrowseProblem.PHOTO_TOO_LARGE -> R.string.photo_too_large
     },
 )
+
+/** An error line that TalkBack announces when it appears. */
+@Composable
+fun ProblemText(text: String) {
+    Text(
+        text,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+    )
+}
 
 private const val DIALOG_ADD_PLACE = "add_place"
 private const val DIALOG_ADD_CONTAINER = "add_container"

@@ -147,7 +147,7 @@ public class UndoService internal constructor(
                 unit = null
             } else {
                 update.quantity?.let { quantity = it }
-                update.unit?.let { unit = it }
+                unit = if (update.clearUnit) null else update.unit ?: unit
             }
             update.sensitive?.let { sensitive = it }
             update.pinned?.let { pinned = it }
@@ -161,6 +161,7 @@ public class UndoService internal constructor(
             quantity = quantity,
             clearQuantity = quantity == null,
             unit = unit,
+            clearUnit = unit == null,
             sensitive = sensitive,
             pinned = pinned,
         )

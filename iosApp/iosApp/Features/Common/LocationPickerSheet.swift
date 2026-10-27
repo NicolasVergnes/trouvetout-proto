@@ -24,10 +24,12 @@ struct LocationPickerSheet: View {
                         .padding(.leading, CGFloat(row.depth) * 16)
                     if withContainers {
                         ForEach(containers.filter { $0.placeId == row.place.id }, id: \.id) { container in
-                            Button("▢ " + container.label) {
+                            Button {
                                 onPick(LocationRefInContainer(containerId: container.id))
+                            } label: {
+                                Label(container.label, systemImage: "shippingbox")
                             }
-                                .padding(.leading, CGFloat(row.depth + 1) * 16)
+                            .padding(.leading, CGFloat(row.depth + 1) * 16)
                         }
                     }
                 }
@@ -58,7 +60,8 @@ struct LocationPickerSheet: View {
             let children = (byParent[parentId] ?? []).sorted { $0.name < $1.name }
             for place in children where !excludedPlaceIds.contains(place.id) {
                 out.append(Row(place: place, depth: depth))
-                if depth < 8 {
+                // Guard against a cyclic tree only; the core accepts any depth (A2).
+                if depth < 64 {
                     walk(place.id, depth + 1)
                 }
             }

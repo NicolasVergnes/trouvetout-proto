@@ -102,6 +102,7 @@ public class BrowseRepository internal constructor(
     /** Every tag in use, most used first (A11 suggestions). */
     public fun observeTags(): Flow<List<String>> = items.observeActive().map { list ->
         list
+            .filter { !it.item.archived }
             .flatMap { it.item.tags }
             .groupingBy { it }
             .eachCount()
@@ -146,6 +147,8 @@ public class BrowseRepository internal constructor(
             .map { rows -> rows.map { it.toPhoto() } }
     }
 
-    private fun List<ItemView>.pinnedFirst(): List<ItemView> =
-        sortedWith(compareByDescending<ItemView> { it.item.pinned }.thenBy { it.item.name })
+    /** Pinned first (D7), archived last (D11), names in between. */
+    private fun List<ItemView>.pinnedFirst(): List<ItemView> = sortedWith(
+        compareBy<ItemView> { it.item.archived }.thenByDescending { it.item.pinned }.thenBy { it.item.name },
+    )
 }

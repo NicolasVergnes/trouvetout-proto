@@ -62,6 +62,7 @@ public class ItemCommands internal constructor(
                 tags = patch.tags?.let(::cleanTags),
                 quantity = patch.quantity,
                 clearQuantity = patch.clearQuantity,
+                clearUnit = patch.clearUnit,
                 unit = patch.unit?.trim()?.ifEmpty { null },
                 sensitive = patch.sensitive,
                 pinned = patch.pinned,
@@ -79,6 +80,25 @@ public class ItemCommands internal constructor(
         ctx.checkItem(itemId)?.let { return rejected(it) }
         ctx.checkLocation(location)?.let { return rejected(it) }
         return ctx.commit(listOf(ctx.event(location.toStored(itemId), source, rawInput)))
+    }
+
+    /** A12: one less, never below zero; nothing is written without a quantity or when it is already zero. */
+    public suspend fun decrement(
+        itemId: String,
+        source: EventSource,
+    ): CommandResult {
+        ctx.checkItem(itemId)?.let { return rejected(it) }
+        val current =
+            ctx.read { db -> db.itemQueries.selectById(itemId).executeAsOneOrNull()?.quantity }
+                ?: return rejected(Rejection.INVALID_QUANTITY)
+        val next = (current - 1).coerceAtLeast(0.0)
+        return if (next ==
+            current
+        ) {
+            CommandResult.Done(emptyList())
+        } else {
+            update(itemId, ItemPatch(quantity = next), source)
+        }
     }
 
     public suspend fun move(
@@ -157,6 +177,7 @@ public class ItemCommands internal constructor(
         quantity == null &&
         !clearQuantity &&
         unit == null &&
+        !clearUnit &&
         sensitive == null &&
         pinned == null
 }

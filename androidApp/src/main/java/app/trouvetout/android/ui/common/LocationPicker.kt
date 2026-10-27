@@ -95,4 +95,6 @@ fun descendantsOf(
 }
 
 private const val INDENT_DP = 16
-private const val MAX_DEPTH = 8
+
+/** Guard against a cyclic tree only; the core accepts any depth (A2). */
+private const val MAX_DEPTH = 64

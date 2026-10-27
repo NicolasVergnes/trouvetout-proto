@@ -12,7 +12,7 @@ struct ItemSheetView: View {
     @State private var tags: [String] = []
     @State private var newTag = ""
     @State private var person = ""
-    @State private var loadedItemId: String?
+    @State private var loadedItem: Item?
     @State private var moveShown = false
     @State private var lendShown = false
     @State private var deleteShown = false
@@ -80,10 +80,10 @@ struct ItemSheetView: View {
         }
     }
 
-    /// Fields follow the item once per shown item; what the user types is not overwritten by later updates.
+    /// Fields follow the stored item: every change written by the core (−1, undo, a move) refreshes them.
     private func load(_ view: ItemView?) {
-        guard let view, loadedItemId != view.item.id else { return }
-        loadedItemId = view.item.id
+        guard let view, loadedItem != view.item else { return }
+        loadedItem = view.item
         name = view.item.name
         description = view.item.description_ ?? ""
         quantity = view.item.quantity.map { formatQuantity($0.doubleValue) } ?? ""
@@ -154,8 +154,18 @@ struct ItemSheetView: View {
                     unit: unit.trimmingCharacters(in: .whitespaces)
                 )
             }
-            .disabled(viewModel.busy || name.trimmingCharacters(in: .whitespaces).isEmpty)
+            .disabled(viewModel.busy || name.trimmingCharacters(in: .whitespaces).isEmpty || !quantityValid)
         }
+    }
+
+    /// Blank, or a non-negative number (the core refuses the rest; the button says so before).
+    private var quantityValid: Bool {
+        let text = quantity.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)
+        if text.isEmpty {
+            return true
+        }
+        guard let value = Double(text) else { return false }
+        return value >= 0
     }
 
     @ViewBuilder
@@ -242,6 +252,7 @@ struct ItemSheetView: View {
         switch problem {
         case .rejected: "capture_problem_rejected"
         case .photoUnsupported: "photo_unsupported"
+        case .photoTooLarge: "photo_too_large"
         }
     }
 }

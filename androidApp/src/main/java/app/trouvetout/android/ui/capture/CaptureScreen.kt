@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,8 +37,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
@@ -176,7 +179,7 @@ private fun CaptureField(
     OutlinedTextField(
         value = state.input,
         onValueChange = callbacks.onInputChange,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag(CAPTURE_FIELD_TAG),
         placeholder = { Text(stringResource(R.string.capture_hint)) },
         singleLine = true,
         trailingIcon = {
@@ -290,7 +293,8 @@ private fun ItemRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onOpen)
+                .clickable(onClick = onOpen, role = Role.Button)
+                .defaultMinSize(minHeight = 48.dp)
                 .padding(vertical = 8.dp),
     ) {
         Text(view.item.name, style = MaterialTheme.typography.titleMedium)
@@ -457,3 +461,6 @@ private fun CaptureScreenPreview() {
         )
     }
 }
+
+/** Test hook for the instrumented smoke test. */
+const val CAPTURE_FIELD_TAG = "capture_field"

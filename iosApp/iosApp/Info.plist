@@ -30,7 +30,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>To photograph an object or a place. Photos stay in the app, on this device.</string>
+	<string>To photograph an object or a place. Photos stay in the app, on this device: never in your photo library, never online.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

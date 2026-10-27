@@ -250,6 +250,7 @@ struct BrowseView: View {
         switch problem {
         case .rejected: "capture_problem_rejected"
         case .photoUnsupported: "photo_unsupported"
+        case .photoTooLarge: "photo_too_large"
         }
     }
 }
@@ -263,9 +264,14 @@ struct Breadcrumb: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
                     ForEach(Array(path.enumerated()), id: \.element.id) { index, place in
-                        NavigationLink(place.name, value: BrowseTarget.place(place.id))
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
+                        if index < path.count - 1 {
+                            NavigationLink(place.name, value: BrowseTarget.place(place.id))
+                                .buttonStyle(.bordered)
+                        } else {
+                            // The shown place itself: not a link, or it would push a copy of this screen.
+                            Text(place.name)
+                                .font(.subheadline.bold())
+                        }
                         if index < path.count - 1 {
                             Text(verbatim: "›")
                                 .foregroundStyle(.secondary)
@@ -301,9 +307,20 @@ struct ItemRowView: View {
     var body: some View {
         NavigationLink(value: ItemRoute(id: view.item.id)) {
             VStack(alignment: .leading, spacing: 2) {
-                Text((view.item.pinned ? "★ " : "") + view.item.name)
-                    .font(.headline)
-                if let status = statusText(view.location) {
+                Label {
+                    Text(view.item.name)
+                        .font(.headline)
+                } icon: {
+                    if view.item.pinned {
+                        Image(systemName: "star.fill")
+                            .accessibilityLabel("item_pinned")
+                    }
+                }
+                if view.item.archived {
+                    Text("item_archived")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else if let status = statusText(view.location) {
                     Text(status)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)

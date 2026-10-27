@@ -14,6 +14,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
@@ -263,5 +264,46 @@ class CommandsTest {
         )
         items.update(screws, ItemPatch(quantity = 12.0, unit = "pcs"), EventSource.TEXT).events()
         assertEquals(12.0, db.itemQueries.selectById(screws).executeAsOne().quantity)
+    }
+
+    @Test
+    fun should_decrement_a_quantity_in_the_core_and_never_below_zero_A12() = runTest {
+        val screws = item("vis")
+        items.update(screws, ItemPatch(quantity = 1.0, unit = "pièces"), EventSource.TEXT).events()
+
+        items.decrement(screws, EventSource.TEXT).events().single()
+        assertEquals(0.0, db.itemQueries.selectById(screws).executeAsOne().quantity)
+        assertEquals(emptyList(), items.decrement(screws, EventSource.TEXT).events(), "already zero: nothing written")
+        assertEquals(Rejection.INVALID_QUANTITY, items.decrement(item("sans quantité"), EventSource.TEXT).reason())
+    }
+
+    @Test
+    fun should_clear_the_unit_alone_and_keep_the_quantity() = runTest {
+        val screws = item("vis")
+        items.update(screws, ItemPatch(quantity = 12.0, unit = "pièces"), EventSource.TEXT).events()
+
+        items.update(screws, ItemPatch(clearUnit = true), EventSource.TEXT).events().single()
+
+        val row = db.itemQueries.selectById(screws).executeAsOne()
+        assertEquals(12.0, row.quantity)
+        assertNull(row.unit)
+    }
+
+    @Test
+    fun should_derive_the_container_number_from_its_label_when_none_is_given() = runTest {
+        val cave = place("cave")
+
+        suspend fun numberOf(
+            label: String,
+            number: Long? = null,
+        ): Long? {
+            val created = containers.create(label, cave, number, EventSource.TEXT).events().single()
+            return (created.payload as EventPayload.ContainerCreated).number
+        }
+
+        assertEquals(7L, numberOf("Carton 7 - hiver 2023"))
+        assertEquals(3L, numberOf("Boîte 3 et 4"))
+        assertNull(numberOf("Valise rouge"))
+        assertEquals(9L, numberOf("Carton 7", number = 9), "an explicit number wins")
     }
 }

@@ -101,6 +101,8 @@
     <string name="photo_detach">Retirer</string>
     <string name="photo_description">Photo</string>
     <string name="photo_unsupported">Ce format d\'image n\'est pas pris en charge.</string>
+    <string name="photo_too_large">Cette image est trop lourde (48 Mo au plus).</string>
+    <string name="item_minus_one_description">Retirer une unité</string>
     <string name="photo_unreadable">L\'image n\'a pas pu être lue.</string>
     <string name="item_delete">Supprimer</string>
     <string name="item_delete_title">Mettre à la corbeille ?</string>

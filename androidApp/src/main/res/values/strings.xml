@@ -101,6 +101,8 @@
     <string name="photo_detach">Remove</string>
     <string name="photo_description">Photo</string>
     <string name="photo_unsupported">This image format is not supported.</string>
+    <string name="photo_too_large">This image is too large (48 MB at most).</string>
+    <string name="item_minus_one_description">Remove one unit</string>
     <string name="photo_unreadable">The image could not be read.</string>
     <string name="item_delete">Delete</string>
     <string name="item_delete_title">Move to the bin?</string>
