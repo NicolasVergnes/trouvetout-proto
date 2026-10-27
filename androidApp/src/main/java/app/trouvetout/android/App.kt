@@ -1,6 +1,7 @@
 package app.trouvetout.android
 
 import android.app.Application
+import androidx.core.content.edit
 import app.trouvetout.android.ui.settings.ExportSharing
 import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.data.db.AndroidDriverFactory
@@ -32,6 +33,9 @@ class App : Application() {
      * directly), so a core replaced by a total wipe (H6) or a store that cannot open never reaches a collector.
      */
     val readyShared: Flow<SharedFactory> get() = readyState.filterNotNull()
+
+    /** Display preferences only (A5 history toggle); never business data (rule 3, H2 scope). */
+    val uiPrefs: UiPrefs by lazy { UiPrefs(getSharedPreferences("ui", MODE_PRIVATE)) }
 
     /** Process-wide scope for work that must not die with an Activity (warm-up, later: reindexing). */
     val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -84,5 +88,18 @@ class App : Application() {
                 captureLang = if (Locale.getDefault().language == "fr") Lang.FR else Lang.EN,
             ),
         )
+    }
+}
+
+/** Thin wrapper over the UI preference file. */
+class UiPrefs(
+    private val prefs: android.content.SharedPreferences,
+) {
+    var showHistory: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_HISTORY, false)
+        set(value) = prefs.edit { putBoolean(KEY_SHOW_HISTORY, value) }
+
+    private companion object {
+        const val KEY_SHOW_HISTORY = "show_history"
     }
 }

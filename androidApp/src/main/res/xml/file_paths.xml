@@ -2,4 +2,6 @@
 <!-- Only the cache copy of an export is ever shared; the database and photos directories are never exposed. -->
 <paths>
     <cache-path name="exports" path="share/" />
+    <!-- Target file of a camera capture (D5, A1 photos): read once by the app, then deleted. -->
+    <cache-path name="camera" path="camera/" />
 </paths>

@@ -36,6 +36,8 @@ complexity:
     excludes: ['**/test/**', '**/androidTest/**', '**/androidHostTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jvmCommonTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/iosSimulatorArm64Test/**']
   TooManyFunctions:
     ignorePrivate: true
+    # A screen ViewModel exposes one function per user action (item sheet: save, pin, archive, move, take, lend…).
+    thresholdInClasses: 18
 
 naming:
   FunctionNaming:
