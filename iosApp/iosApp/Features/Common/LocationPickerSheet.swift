@@ -4,7 +4,7 @@ import SwiftUI
 /// A place or a container the user picks as a destination (move an item, move a container, merge a place).
 struct LocationPickerSheet: View {
     let title: LocalizedStringKey
-    let places: [Place]
+    let places: [Place_]
     let containers: [Container]
     var excludedPlaceIds: Set<String> = []
     var withContainers = true
@@ -51,7 +51,7 @@ struct LocationPickerSheet: View {
 
     /// Depth-first order of the active places with their depth; merged places are hidden by the repository.
     private func flatten() -> [Row] {
-        var byParent: [String?: [Place]] = [:]
+        var byParent: [String?: [Place_]] = [:]
         for place in places where place.mergedInto == nil {
             byParent[place.parentId, default: []].append(place)
         }
@@ -72,8 +72,8 @@ struct LocationPickerSheet: View {
 }
 
 /// Ids of `placeId` and all its descendants (a place cannot be merged into itself or below itself).
-func descendants(of placeId: String, in places: [Place]) -> Set<String> {
-    var byParent: [String: [Place]] = [:]
+func descendants(of placeId: String, in places: [Place_]) -> Set<String> {
+    var byParent: [String: [Place_]] = [:]
     for place in places {
         if let parent = place.parentId {
             byParent[parent, default: []].append(place)

@@ -148,7 +148,7 @@ struct BrowseView: View {
     }
 
     @ViewBuilder
-    private func photoRows(_ photos: [Photo]) -> some View {
+    private func photoRows(_ photos: [Photo_]) -> some View {
         PhotoStrip(
             photos: photos,
             enabled: !viewModel.busy,
@@ -259,7 +259,7 @@ struct BrowseView: View {
 
 /// C6: the places above the shown one, each a link; outside the list so every crumb has its own tap.
 struct Breadcrumb: View {
-    let path: [Place]
+    let path: [Place_]
 
     var body: some View {
         if !path.isEmpty {

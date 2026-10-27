@@ -84,7 +84,7 @@ struct CameraPicker: UIViewControllerRepresentable {
 
 /// Thumbnails of the attached photos, each with a remove action.
 struct PhotoStrip: View {
-    let photos: [Photo]
+    let photos: [Photo_]
     let enabled: Bool
     let pathOf: (String) -> String
     let onDetach: (String) -> Void

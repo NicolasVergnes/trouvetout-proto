@@ -44,10 +44,10 @@ final class BrowseBridgeTests: XCTestCase {
         XCTAssertTrue(created is CommandResultDone)
 
         let scope = factory.uiScope
-        var places: [Place] = []
+        var places: [Place_] = []
         let watcher = FlowWatcher<NSArray>(flow: factory.placeRepository.observeActive(), scope: scope)
         for try await value in stream(watcher) {
-            places = (value as? [Place]) ?? []
+            places = (value as? [Place_]) ?? []
             break
         }
         let root = try XCTUnwrap(places.first { $0.parentId == nil })

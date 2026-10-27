@@ -20,7 +20,7 @@ enum BrowseProblem {
 final class BrowseViewModel: ObservableObject {
     @Published private(set) var place: PlaceContent?
     @Published private(set) var container: ContainerContent?
-    @Published private(set) var allPlaces: [Place] = []
+    @Published private(set) var allPlaces: [Place_] = []
     @Published private(set) var busy = false
     @Published private(set) var problem: BrowseProblem?
     /// Set when the shown place or container was removed (merged, deleted): the screen goes back.
@@ -65,7 +65,7 @@ final class BrowseViewModel: ObservableObject {
             }
         }
         flows.watch(shared.placeRepository.observeActive(), scope: scope) { [weak self] (list: NSArray) in
-            self?.allPlaces = (list as? [Place]) ?? []
+            self?.allPlaces = (list as? [Place_]) ?? []
         }
     }
 
@@ -181,7 +181,7 @@ final class BrowseViewModel: ObservableObject {
             let result = try await appContainer.shared.photoAttacher.attach(
                 ownerType: owner.0,
                 ownerId: owner.1,
-                source: BytesKt.bytesOf(data: data as NSData),
+                source: BytesKt.bytesOf(data: data),
                 eventSource: .photo
             )
             recordPhoto(result)

@@ -21,10 +21,10 @@ enum UiPrefs {
 @MainActor
 final class ItemViewModel: ObservableObject {
     @Published private(set) var item: ItemView?
-    @Published private(set) var photos: [Photo] = []
+    @Published private(set) var photos: [Photo_] = []
     @Published private(set) var tagSuggestions: [String] = []
     @Published private(set) var history: [Event] = []
-    @Published private(set) var allPlaces: [Place] = []
+    @Published private(set) var allPlaces: [Place_] = []
     @Published private(set) var allContainers: [Container] = []
     @Published private(set) var busy = false
     @Published private(set) var problem: ItemProblem?
@@ -70,13 +70,13 @@ final class ItemViewModel: ObservableObject {
         }
         let photoFlow = shared.browse.observePhotos(ownerType: .item, ownerId: itemId)
         flows.watch(photoFlow, scope: scope) { [weak self] (list: NSArray) in
-            self?.photos = (list as? [Photo]) ?? []
+            self?.photos = (list as? [Photo_]) ?? []
         }
         flows.watch(shared.browse.observeTags(), scope: scope) { [weak self] (list: NSArray) in
             self?.tagSuggestions = (list as? [String]) ?? []
         }
         flows.watch(shared.placeRepository.observeActive(), scope: scope) { [weak self] (list: NSArray) in
-            self?.allPlaces = (list as? [Place]) ?? []
+            self?.allPlaces = (list as? [Place_]) ?? []
         }
         flows.watch(shared.containerRepository.observeActive(), scope: scope) { [weak self] (list: NSArray) in
             self?.allContainers = (list as? [Container]) ?? []
@@ -204,7 +204,7 @@ final class ItemViewModel: ObservableObject {
             let result = try await appContainer.shared.photoAttacher.attach(
                 ownerType: .item,
                 ownerId: itemId,
-                source: BytesKt.bytesOf(data: data as NSData),
+                source: BytesKt.bytesOf(data: data),
                 eventSource: .photo
             )
             switch (result as? CommandResultRejected)?.reason {
