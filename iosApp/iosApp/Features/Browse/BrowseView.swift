@@ -16,7 +16,9 @@ private enum PickerDialog: Identifiable {
     case merge
     case moveContainer
 
-    var id: Self { self }
+    var id: Self {
+        self
+    }
 }
 
 /// Root level, one place, or one container (C6, C7, D1–D6). Destinations are registered by `ContentView`.
