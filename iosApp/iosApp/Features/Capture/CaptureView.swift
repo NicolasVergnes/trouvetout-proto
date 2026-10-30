@@ -74,6 +74,8 @@ struct CaptureView: View {
     private func handle(_ request: CaptureRouter.Request?) {
         guard let request, request.serial > handledSerial, scenePhase == .active else { return }
         handledSerial = request.serial
+        // Cleared outside the publisher's willSet, so that a recreated screen never replays it.
+        Task { @MainActor in router.consume() }
         viewModel.dismissDecision()
         pickingBatch = false
         switch request.mode {

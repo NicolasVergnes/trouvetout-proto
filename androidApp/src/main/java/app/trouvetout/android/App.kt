@@ -38,6 +38,12 @@ class App : Application() {
     /** Display preferences only (A5 history toggle); never business data (rule 3, H2 scope). */
     val uiPrefs: UiPrefs by lazy { UiPrefs(getSharedPreferences("ui", MODE_PRIVATE)) }
 
+    /**
+     * A question asked from the quick capture, waiting for the home screen (C5). Kept in process memory: no
+     * Intent extra, so no other app can send one and nothing is replayed after the process dies.
+     */
+    val searchRequest = MutableStateFlow<String?>(null)
+
     /** Process-wide scope for work that must not die with an Activity (warm-up, later: reindexing). */
     val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

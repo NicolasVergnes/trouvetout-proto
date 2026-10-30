@@ -224,7 +224,9 @@ class CaptureViewModel(
                                 heardText = event.text
                                 submitFrom(EventSource.VOICE)
                             }
-                            is SpeechEvent.Failed -> _state.update { it.copy(voiceNotice = noticeOf(event.error)) }
+                            is SpeechEvent.Failed -> _state.update {
+                                it.copy(voiceNotice = noticeOf(event.error), listening = false)
+                            }
                         }
                     }
                 } catch (cancelled: CancellationException) {

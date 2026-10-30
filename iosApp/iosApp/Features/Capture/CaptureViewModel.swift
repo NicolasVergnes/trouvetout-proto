@@ -369,6 +369,9 @@ extension CaptureViewModel {
         case let .failed(failure):
             listening = false
             voiceNotice = failure == .noMatch ? .noMatch : .failed
+            if !input.isEmpty {
+                heardText = input
+            }
         }
     }
 }

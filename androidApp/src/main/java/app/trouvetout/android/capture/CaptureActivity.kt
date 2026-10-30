@@ -29,7 +29,7 @@ class CaptureActivity : ComponentActivity() {
     }
 
     private fun openSearch(query: String) {
-        startActivity(MainActivity.searchIntent(this, query))
+        MainActivity.openSearch(this, query)
         finish()
     }
 

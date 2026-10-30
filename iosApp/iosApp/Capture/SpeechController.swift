@@ -143,6 +143,9 @@ final class SpeechController: SpeechListening {
             if heard.isEmpty {
                 // Silence ends with an error from the recogniser: nothing heard, not a failure.
                 onEvent(.failed(.noMatch))
+            } else if failed {
+                // Cut short: the words heard stay in the field (last partial), never recorded on their own.
+                onEvent(.failed(.failed))
             } else {
                 onEvent(.final(heard))
             }
@@ -194,8 +197,7 @@ final class SpeechController: SpeechListening {
     private static func locale(_ lang: Lang) -> Locale {
         let code = lang == .fr ? "fr" : "en"
         let current = Locale.current
-        let supported = SFSpeechRecognizer.supportedLocales().contains { $0.identifier == current.identifier }
-        if supported, current.language.languageCode?.identifier == code {
+        if current.language.languageCode?.identifier == code, SFSpeechRecognizer(locale: current) != nil {
             return current
         }
         return Locale(identifier: lang == .fr ? "fr-FR" : "en-US")
