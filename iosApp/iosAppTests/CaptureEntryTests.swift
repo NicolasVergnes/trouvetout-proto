@@ -35,7 +35,7 @@ final class CaptureEntryTests: XCTestCase {
     func testAnIntentRequestReachesTheRouter() async throws {
         let router = CaptureRouter.shared
         router.consume()
-        var intent = CaptureIntent()
+        let intent = CaptureIntent()
         intent.mode = .text
         _ = try await intent.perform()
         XCTAssertEqual(router.request?.mode, .text)
