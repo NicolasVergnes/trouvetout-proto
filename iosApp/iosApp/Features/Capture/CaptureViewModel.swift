@@ -2,48 +2,6 @@ import Combine
 import Foundation
 import Shared
 
-/// A question the card must ask before anything is written (B7 place, A14 duplicate, movement target).
-enum PendingDecision {
-    case place(proposal: CaptureProposal, resolution: PlaceResolution)
-    /// `answers` holds the choices given so far, one per asked target.
-    case item(
-        proposal: CaptureProposal,
-        placeChoice: PlaceChoice?,
-        index: Int,
-        target: ItemTarget,
-        answers: [ItemChoice]
-    )
-}
-
-/// What was just recorded, shown for three seconds (B6); tapping it puts the sentence back in the field.
-struct ConfirmationCard {
-    let intent: Intent
-    let itemNames: [String]
-    let placeText: String?
-    let person: String?
-    let rawInput: String
-    /// Exactly what this capture wrote: « Défaire » reverts these and nothing else.
-    let events: [Event]
-    /// How the sentence came in (A4), also the source of the inverse events of « Défaire ».
-    let source: EventSource
-    let token: Int
-}
-
-/// Why the microphone is not listening; shown under the field, typing always works (B2, H9).
-enum VoiceNotice {
-    case notOnDevice
-    case noRecognizer
-    case noMatch
-    case permissionDenied
-    case failed
-}
-
-/// B10 « je range » : the place or container every sentence without a place of its own goes into.
-struct BatchTarget {
-    let ref: LocationRef
-    let label: String
-}
-
 /// Capture by text or voice (B1, B4, B6, B7, B10): the core parses and decides; this class only sequences the
 /// microphone, the questions and the card.
 @MainActor
@@ -142,108 +100,6 @@ final class CaptureViewModel: ObservableObject {
 
     func submit() {
         submit(from: heardText != nil && input == heardText ? .voice : .text)
-    }
-
-    /// Microphone button: listens when the device can do it on the phone, otherwise says why (B2).
-    /// `recordWhenHeard` is false for a capture opened by a URL, which any app can send.
-    func micTapped(recordWhenHeard: Bool = true) {
-        if listening {
-            stopListening()
-            return
-        }
-        self.recordWhenHeard = recordWhenHeard
-        switch SpeechController.availability(lang: uiLang()) {
-        case .onDevice:
-            break
-        case .noRecognizer:
-            voiceNotice = .noRecognizer
-            return
-        default:
-            voiceNotice = .notOnDevice
-            return
-        }
-        switch SpeechController.permission() {
-        case .granted: startListening()
-        case .denied: voiceNotice = .permissionDenied
-        case .undetermined:
-            voiceNotice = nil
-            askMicPermission = true
-        }
-    }
-
-    func micRationaleContinue() {
-        askMicPermission = false
-        Task { [weak self] in
-            let granted = await SpeechController.requestPermission()
-            guard let self else { return }
-            if granted {
-                startListening()
-            } else {
-                voiceNotice = .permissionDenied
-            }
-        }
-    }
-
-    func dismissMicRationale() {
-        askMicPermission = false
-    }
-
-    /// The app left the foreground or the button was tapped again: the microphone closes at once.
-    func stopListening() {
-        speech.cancel()
-        listening = false
-    }
-
-    func startBatch(_ ref: LocationRef) {
-        let label: String? =
-            if let place = ref as? LocationRefInPlace {
-                places.first { $0.id == place.placeId }?.name
-            } else if let box = ref as? LocationRefInContainer {
-                containers.first { $0.id == box.containerId }?.label
-            } else {
-                nil
-            }
-        guard let label else { return }
-        batch = BatchTarget(ref: ref, label: label)
-    }
-
-    func stopBatch() {
-        batch = nil
-    }
-
-    private func startListening() {
-        stopListening()
-        input = ""
-        voiceNotice = nil
-        problem = nil
-        searchQuery = nil
-        do {
-            try speech.start(lang: uiLang()) { [weak self] event in
-                self?.heard(event)
-            }
-            listening = true
-        } catch {
-            speech.cancel()
-            voiceNotice = .failed
-        }
-    }
-
-    private func heard(_ event: SpeechEvent) {
-        switch event {
-        case let .partial(text):
-            input = text
-        case let .final(text):
-            listening = false
-            input = text
-            if recordWhenHeard {
-                submit(from: .voice)
-            } else {
-                heardText = text
-            }
-        case let .failed(failure):
-            listening = false
-            voiceNotice = failure == .noMatch ? .noMatch : .failed
-        }
     }
 
     private func submit(from origin: EventSource) {
@@ -400,6 +256,112 @@ final class CaptureViewModel: ObservableObject {
                 problem = .commandRejected
             }
             busy = false
+        }
+    }
+}
+
+// MARK: - Voice (B1, B2, H9) and batch mode (B10)
+
+extension CaptureViewModel {
+    /// Microphone button: listens when the device can do it on the phone, otherwise says why (B2).
+    /// `recordWhenHeard` is false for a capture opened by a URL, which any app can send.
+    func micTapped(recordWhenHeard: Bool = true) {
+        if listening {
+            stopListening()
+            return
+        }
+        self.recordWhenHeard = recordWhenHeard
+        switch SpeechController.availability(lang: uiLang()) {
+        case .onDevice:
+            break
+        case .noRecognizer:
+            voiceNotice = .noRecognizer
+            return
+        default:
+            voiceNotice = .notOnDevice
+            return
+        }
+        switch SpeechController.permission() {
+        case .granted: startListening()
+        case .denied: voiceNotice = .permissionDenied
+        case .undetermined:
+            voiceNotice = nil
+            askMicPermission = true
+        }
+    }
+
+    func micRationaleContinue() {
+        askMicPermission = false
+        Task { [weak self] in
+            let granted = await SpeechController.requestPermission()
+            guard let self else { return }
+            if granted {
+                startListening()
+            } else {
+                voiceNotice = .permissionDenied
+            }
+        }
+    }
+
+    func dismissMicRationale() {
+        askMicPermission = false
+    }
+
+    /// The app left the foreground or the button was tapped again: the microphone closes at once.
+    func stopListening() {
+        speech.cancel()
+        listening = false
+    }
+
+    func startBatch(_ ref: LocationRef) {
+        let label: String? =
+            if let place = ref as? LocationRefInPlace {
+                places.first { $0.id == place.placeId }?.name
+            } else if let box = ref as? LocationRefInContainer {
+                containers.first { $0.id == box.containerId }?.label
+            } else {
+                nil
+            }
+        guard let label else { return }
+        batch = BatchTarget(ref: ref, label: label)
+    }
+
+    func stopBatch() {
+        batch = nil
+    }
+
+    private func startListening() {
+        stopListening()
+        input = ""
+        voiceNotice = nil
+        problem = nil
+        searchQuery = nil
+        do {
+            try speech.start(lang: uiLang()) { [weak self] event in
+                self?.heard(event)
+            }
+            listening = true
+        } catch {
+            speech.cancel()
+            voiceNotice = .failed
+        }
+    }
+
+    private func heard(_ event: SpeechEvent) {
+        switch event {
+        case let .partial(text):
+            input = text
+        case let .final(text):
+            listening = false
+            input = text
+            if recordWhenHeard {
+                submit(from: .voice)
+            } else {
+                heardText = text
+            }
+        case let .failed(failure):
+            listening = false
+            voiceNotice = failure == .noMatch ? .noMatch : .failed
         }
     }
 }
