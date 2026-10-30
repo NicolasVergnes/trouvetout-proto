@@ -267,6 +267,7 @@ extension CaptureViewModel {
     /// `recordWhenHeard` is false for a capture opened by a URL, which any app can send.
     func micTapped(recordWhenHeard: Bool = true) {
         if listening {
+            // What was heard so far stays in the field, to send as is or to correct.
             stopListening()
             return
         }
@@ -307,9 +308,13 @@ extension CaptureViewModel {
         askMicPermission = false
     }
 
-    /// The app left the foreground or the button was tapped again: the microphone closes at once.
+    /// The app left the foreground, the screen went away or the button was tapped again: the microphone closes
+    /// at once, and the words heard so far stay in the field as a voice sentence.
     func stopListening() {
         speech.cancel()
+        if listening, !input.isEmpty {
+            heardText = input
+        }
         listening = false
     }
 
@@ -336,13 +341,15 @@ extension CaptureViewModel {
         voiceNotice = nil
         problem = nil
         searchQuery = nil
+        // Set first: a recogniser that cannot start reports it synchronously and clears it.
+        listening = true
         do {
             try speech.start(lang: uiLang()) { [weak self] event in
                 self?.heard(event)
             }
-            listening = true
         } catch {
             speech.cancel()
+            listening = false
             voiceNotice = .failed
         }
     }
@@ -354,10 +361,10 @@ extension CaptureViewModel {
         case let .final(text):
             listening = false
             input = text
+            // Kept if the sentence cannot be sent now (busy, or opened by a URL): « Envoyer » still sends voice.
+            heardText = text
             if recordWhenHeard {
                 submit(from: .voice)
-            } else {
-                heardText = text
             }
         case let .failed(failure):
             listening = false

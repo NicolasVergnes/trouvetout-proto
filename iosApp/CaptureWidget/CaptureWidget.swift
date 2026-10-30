@@ -96,6 +96,7 @@ struct CaptureWidgetView: View {
         VStack(spacing: 8) {
             Image(systemName: symbol)
                 .font(.largeTitle)
+                .accessibilityHidden(true)
             Text(title)
                 .font(.headline)
                 .multilineTextAlignment(.center)

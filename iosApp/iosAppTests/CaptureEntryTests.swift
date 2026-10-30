@@ -40,9 +40,12 @@ final class CaptureEntryTests: XCTestCase {
         _ = try await intent.perform()
         XCTAssertEqual(router.request?.mode, .text)
         XCTAssertEqual(router.request?.fromURL, false, "an intent is the user's own gesture")
-        router.open(.voice, fromURL: true)
-        XCTAssertEqual(router.request?.fromURL, true)
         router.consume()
+        // A fresh router: the shared one is watched by the host app's screen.
+        let other = CaptureRouter()
+        other.open(.voice, fromURL: true)
+        XCTAssertEqual(other.request?.fromURL, true)
+        XCTAssertEqual(other.request?.serial, 1)
     }
 
     func testABatchSentenceGoesIntoTheChosenPlaceAsAVoiceCapture() async throws {

@@ -22,12 +22,13 @@ struct ContentView: View {
             .navigationDestination(for: ItemRoute.self) { route in
                 ItemSheetView(container: container, itemId: route.id)
             }
+            .navigationDestination(for: SettingsRoute.self) { _ in
+                SettingsView(container: container)
+            }
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     NavigationLink("places_title", value: BrowseTarget.root)
-                    NavigationLink("settings_title") {
-                        SettingsView(container: container)
-                    }
+                    NavigationLink("settings_title", value: SettingsRoute())
                 }
             }
             .navigationTitle(Text(verbatim: "TrouveTout"))
@@ -41,6 +42,9 @@ struct ContentView: View {
         }
     }
 }
+
+/// The settings screen as a value route, so that a capture request can pop it like any other screen.
+struct SettingsRoute: Hashable {}
 
 private struct StorageUnavailableView: View {
     var body: some View {

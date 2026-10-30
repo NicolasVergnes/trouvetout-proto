@@ -28,8 +28,21 @@ final class CaptureVoiceTests: XCTestCase {
         XCTAssertFalse(viewModel.listening, "a second tap stops listening")
 
         viewModel.micTapped()
-        speech.say("tournevis dans la cave")
+        // A question: it goes straight to the core but never writes into the host app's store.
+        speech.say("où est le tournevis")
         XCTAssertTrue(viewModel.busy, "the sentence went straight to the capture")
+    }
+
+    @MainActor
+    func testStoppingKeepsTheWordsHeardSoFar() {
+        let speech = FakeSpeech()
+        let viewModel = CaptureViewModel(container: AppContainer(), speech: speech)
+        viewModel.micTapped()
+        speech.hear("clés dans")
+        viewModel.micTapped()
+        XCTAssertFalse(viewModel.listening)
+        XCTAssertEqual(viewModel.input, "clés dans", "kept to correct or send")
+        XCTAssertFalse(viewModel.busy)
     }
 
     @MainActor
@@ -69,6 +82,10 @@ private final class FakeSpeech: SpeechListening {
 
     func cancel() {
         onEvent = nil
+    }
+
+    func hear(_ partial: String) {
+        onEvent?(.partial(partial))
     }
 
     func say(_ text: String) {

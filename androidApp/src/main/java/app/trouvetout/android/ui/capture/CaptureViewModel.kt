@@ -130,6 +130,9 @@ class CaptureViewModel(
     /** Source of the sentence being decided: the questions that follow it commit with the same one. */
     private var source = EventSource.TEXT
 
+    /** The words heard last, left in the field: sending them unchanged still counts as voice (A4). */
+    private var heardText: String? = null
+
     fun onInputChange(text: String) {
         _state.update { it.copy(input = text, problem = null, searchQuery = null, voiceNotice = null) }
         suggestionJob?.cancel()
@@ -152,7 +155,10 @@ class CaptureViewModel(
         _state.update { it.copy(input = completed, suggestions = emptyList()) }
     }
 
-    fun submit() = submitFrom(EventSource.TEXT)
+    fun submit() {
+        val heard = heardText != null && _state.value.input == heardText
+        submitFrom(if (heard) EventSource.VOICE else EventSource.TEXT)
+    }
 
     /** Microphone button: listens when the device can do it on the phone, otherwise says why (B2). */
     fun onMic(permissionGranted: Boolean) {
@@ -184,6 +190,8 @@ class CaptureViewModel(
     fun stopListening() {
         listenJob?.cancel()
         listenJob = null
+        // The words heard so far stay in the field, to send as is or to correct.
+        _state.value.input.takeIf { _state.value.listening && it.isNotBlank() }?.let { heardText = it }
     }
 
     fun startBatch(ref: LocationRef) {
@@ -212,6 +220,8 @@ class CaptureViewModel(
                             is SpeechEvent.Partial -> _state.update { it.copy(input = event.text) }
                             is SpeechEvent.Final -> {
                                 _state.update { it.copy(input = event.text, listening = false) }
+                                // Kept if the sentence cannot be sent now (busy): sending it later is still voice.
+                                heardText = event.text
                                 submitFrom(EventSource.VOICE)
                             }
                             is SpeechEvent.Failed -> _state.update { it.copy(voiceNotice = noticeOf(event.error)) }
@@ -239,6 +249,7 @@ class CaptureViewModel(
         val text = _state.value.input.trim()
         if (text.isEmpty() || _state.value.busy) return
         source = from
+        heardText = null
         val batch = _state.value.batch
         run {
             val proposal =

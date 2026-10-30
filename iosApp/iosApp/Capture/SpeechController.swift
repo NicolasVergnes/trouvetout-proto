@@ -43,6 +43,7 @@ final class SpeechController: SpeechListening {
     private static let silenceAfterSpeech: UInt64 = 1_500_000_000
     private static let silenceBeforeSpeech: UInt64 = 5_000_000_000
 
+    private var recognizer: SFSpeechRecognizer?
     private var engine: AVAudioEngine?
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
@@ -104,6 +105,7 @@ final class SpeechController: SpeechListening {
         engine.prepare()
         try engine.start()
 
+        self.recognizer = recognizer
         self.engine = engine
         self.request = request
         self.onEvent = onEvent
@@ -126,6 +128,7 @@ final class SpeechController: SpeechListening {
         lastText = ""
         task?.cancel()
         task = nil
+        recognizer = nil
         stopAudio()
     }
 
@@ -138,7 +141,8 @@ final class SpeechController: SpeechListening {
             let heard = lastText
             cancel()
             if heard.isEmpty {
-                onEvent(.failed(failed ? .failed : .noMatch))
+                // Silence ends with an error from the recogniser: nothing heard, not a failure.
+                onEvent(.failed(.noMatch))
             } else {
                 onEvent(.final(heard))
             }
@@ -189,8 +193,10 @@ final class SpeechController: SpeechListening {
     /// most likely installed.
     private static func locale(_ lang: Lang) -> Locale {
         let code = lang == .fr ? "fr" : "en"
-        if Locale.current.language.languageCode?.identifier == code {
-            return Locale.current
+        let current = Locale.current
+        if current.language.languageCode?.identifier == code,
+           SFSpeechRecognizer.supportedLocales().contains(where: { $0.identifier == current.identifier }) {
+            return current
         }
         return Locale(identifier: lang == .fr ? "fr-FR" : "en-US")
     }

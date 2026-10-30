@@ -8,6 +8,8 @@ struct CaptureView: View {
     @Environment(\.scenePhase) private var scenePhase
     @FocusState private var fieldFocused: Bool
     @State private var pickingBatch = false
+    /// Requests are replayed to every new subscriber: each serial is handled once.
+    @State private var handledSerial = 0
 
     init(container: AppContainer) {
         _viewModel = StateObject(wrappedValue: CaptureViewModel(container: container))
@@ -57,21 +59,30 @@ struct CaptureView: View {
             Text("voice_rationale_text")
         }
         .onChange(of: scenePhase) { phase in
-            if phase != .active {
+            if phase == .active {
+                handle(router.request)
+            } else {
                 viewModel.stopListening()
             }
         }
-        .onReceive(router.$request) { request in
-            guard let request else { return }
-            router.consume()
-            switch request.mode {
-            case .voice:
-                if !viewModel.listening {
-                    viewModel.micTapped(recordWhenHeard: !request.fromURL)
-                }
-            case .text:
-                fieldFocused = true
+        .onReceive(router.$request) { handle($0) }
+        .onDisappear { viewModel.stopListening() }
+    }
+
+    /// A capture asked by a widget, a URL or the App Intent, once the app is really in front (the audio session
+    /// cannot start in the background); the questions and pickers in the way are closed first.
+    private func handle(_ request: CaptureRouter.Request?) {
+        guard let request, request.serial > handledSerial, scenePhase == .active else { return }
+        handledSerial = request.serial
+        viewModel.dismissDecision()
+        pickingBatch = false
+        switch request.mode {
+        case .voice:
+            if !viewModel.listening {
+                viewModel.micTapped(recordWhenHeard: !request.fromURL)
             }
+        case .text:
+            fieldFocused = true
         }
     }
 
@@ -88,10 +99,12 @@ struct CaptureView: View {
                 )
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             .accessibilityHint("batch_stop")
         } else if !viewModel.places.isEmpty {
             Button("batch_start") { pickingBatch = true }
                 .buttonStyle(.bordered)
+                .controlSize(.large)
                 .sheet(isPresented: $pickingBatch) {
                     LocationPickerSheet(
                         title: "batch_picker_title",
@@ -278,9 +291,9 @@ private struct VoiceStatusView: View {
                     .foregroundStyle(.secondary)
                 if notice == .permissionDenied {
                     Button("action_phone_settings", action: onOpenSettings)
+                        .frame(minHeight: 44)
                 }
             }
-            .accessibilityElement(children: .combine)
         }
     }
 
