@@ -195,7 +195,8 @@ final class SpeechController: SpeechListening {
         let code = lang == .fr ? "fr" : "en"
         let current = Locale.current
         if current.language.languageCode?.identifier == code,
-           SFSpeechRecognizer.supportedLocales().contains(where: { $0.identifier == current.identifier }) {
+           SFSpeechRecognizer.supportedLocales().contains(where: { $0.identifier == current.identifier })
+        {
             return current
         }
         return Locale(identifier: lang == .fr ? "fr-FR" : "en-US")
