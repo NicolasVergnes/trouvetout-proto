@@ -149,6 +149,33 @@ public class CaptureService internal constructor(
     ): List<LocationCandidate> = withContext(dispatcher) { PlaceResolver(locations()).suggest(prefix, limit) }
 
     /**
+     * B10 « je range » : the sentence goes into [location] unless it names a place itself; a bare list of
+     * objects (« marteau, tournevis ») is a store there. Movements and questions are unchanged. When [location]
+     * no longer exists the plain proposal is returned (the host then asks, as for any sentence without a place).
+     */
+    public suspend fun proposeIn(
+        text: String,
+        location: LocationRef,
+        lang: Lang? = null,
+    ): CaptureProposal {
+        val proposal = propose(text, lang)
+        if (proposal.problem != null || proposal.parse.intent != Intent.STORE || proposal.place != null) return proposal
+        val candidate = withContext(dispatcher) { candidateOf(location) } ?: return proposal
+        return proposal.copy(place = PlaceResolution.Resolved(LocationMatch(candidate, 1.0)))
+    }
+
+    private fun candidateOf(location: LocationRef): LocationCandidate? = when (location) {
+        is LocationRef.InPlace ->
+            db.placeQueries.selectById(location.placeId).executeAsOneOrNull()?.toPlace()
+                ?.takeIf { it.deletedAt == null && it.mergedInto == null }
+                ?.let { LocationCandidate(it.id, it.name, it.aliases, it.parentId, isContainer = false) }
+        is LocationRef.InContainer ->
+            db.containerQueries.selectById(location.containerId).executeAsOneOrNull()?.toContainer()
+                ?.takeIf { it.deletedAt == null }
+                ?.let { LocationCandidate(it.id, it.label, emptyList(), it.placeId, isContainer = true) }
+    }
+
+    /**
      * Writes the proposal. [placeChoice] is required when [CaptureProposal.needsPlaceDecision]; [itemChoices] gives,
      * per target, the existing item to act on (null = create for STORE, = ask for movements).
      */
