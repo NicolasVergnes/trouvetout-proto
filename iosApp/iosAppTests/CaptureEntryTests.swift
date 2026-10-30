@@ -39,6 +39,9 @@ final class CaptureEntryTests: XCTestCase {
         intent.mode = .text
         _ = try await intent.perform()
         XCTAssertEqual(router.request?.mode, .text)
+        XCTAssertEqual(router.request?.fromURL, false, "an intent is the user's own gesture")
+        router.open(.voice, fromURL: true)
+        XCTAssertEqual(router.request?.fromURL, true)
         router.consume()
     }
 

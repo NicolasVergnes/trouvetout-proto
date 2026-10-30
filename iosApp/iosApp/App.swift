@@ -11,10 +11,11 @@ struct TrouveToutApp: App {
             ContentView()
                 .environmentObject(container)
                 .environmentObject(router)
-                // Widgets open trouvetout-proto://capture?mode=… (B5); any other URL is ignored.
+                // Widgets open trouvetout-proto://capture?mode=… (B5); any other URL is ignored. Another app
+                // can open it too, so nothing heard after a URL is recorded without the user's tap (ADR-020).
                 .onOpenURL { url in
                     if let mode = CaptureRouter.mode(from: url) {
-                        router.open(mode)
+                        router.open(mode, fromURL: true)
                     }
                 }
         }

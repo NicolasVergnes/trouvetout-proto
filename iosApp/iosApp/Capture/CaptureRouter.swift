@@ -11,6 +11,8 @@ final class CaptureRouter: ObservableObject {
 
     struct Request: Equatable {
         let mode: Mode
+        /// Any app can open the URL scheme: a sentence heard after a URL waits for the user's tap to be recorded.
+        let fromURL: Bool
         let serial: Int
     }
 
@@ -20,9 +22,9 @@ final class CaptureRouter: ObservableObject {
     @Published private(set) var request: Request?
     private var serial = 0
 
-    func open(_ mode: Mode) {
+    func open(_ mode: Mode, fromURL: Bool = false) {
         serial += 1
-        request = Request(mode: mode, serial: serial)
+        request = Request(mode: mode, fromURL: fromURL, serial: serial)
     }
 
     func consume() {

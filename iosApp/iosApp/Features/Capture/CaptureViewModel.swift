@@ -73,6 +73,10 @@ final class CaptureViewModel: ObservableObject {
     private var readiness: AnyCancellable?
     /// Source of the sentence being decided: the questions that follow it commit with the same one.
     private var source: EventSource = .text
+    /// False when the listening came from a URL: the sentence then waits in the field for « Envoyer ».
+    private var recordWhenHeard = true
+    /// The last transcript left in the field, so that sending it unchanged still counts as voice.
+    private var heardText: String?
 
     init(container: AppContainer) {
         self.container = container
@@ -137,15 +141,17 @@ final class CaptureViewModel: ObservableObject {
     }
 
     func submit() {
-        submit(from: .text)
+        submit(from: heardText != nil && input == heardText ? .voice : .text)
     }
 
     /// Microphone button: listens when the device can do it on the phone, otherwise says why (B2).
-    func micTapped() {
+    /// `recordWhenHeard` is false for a capture opened by a URL, which any app can send.
+    func micTapped(recordWhenHeard: Bool = true) {
         if listening {
             stopListening()
             return
         }
+        self.recordWhenHeard = recordWhenHeard
         switch SpeechController.availability(lang: uiLang()) {
         case .onDevice:
             break
@@ -229,7 +235,11 @@ final class CaptureViewModel: ObservableObject {
         case let .final(text):
             listening = false
             input = text
-            submit(from: .voice)
+            if recordWhenHeard {
+                submit(from: .voice)
+            } else {
+                heardText = text
+            }
         case let .failed(failure):
             listening = false
             voiceNotice = failure == .noMatch ? .noMatch : .failed
@@ -240,6 +250,7 @@ final class CaptureViewModel: ObservableObject {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !busy else { return }
         source = origin
+        heardText = nil
         let batch = batch
         perform { [self] in
             let proposal: CaptureProposal

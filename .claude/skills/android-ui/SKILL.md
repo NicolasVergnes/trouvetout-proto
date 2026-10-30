@@ -33,9 +33,8 @@ androidApp/src/main/
 
 ## Capture vocale hors ligne (B2)
 ```kotlin
-val available = SpeechRecognizer.isOnDeviceRecognitionAvailable(context) // API 31+
-val recognizer = if (available) SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
-                 else SpeechRecognizer.createSpeechRecognizer(context)
+// API 31+ seulement, après SpeechPolicy (shared) : jamais createSpeechRecognizer (ADR-020).
+val recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
 val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
   putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
   putExtra(RecognizerIntent.EXTRA_LANGUAGE, locale.toLanguageTag())
@@ -43,7 +42,7 @@ val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
   putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
 }
 ```
-- Sur API 29–30, `EXTRA_PREFER_OFFLINE` suffit mais ne garantit pas le hors ligne : tester en mode avion au premier lancement et mémoriser le résultat ; si la reconnaissance échoue hors ligne, basculer sur la saisie texte avec une explication (jamais de reconnaissance réseau).
+- Sur API 29–30, pas de voix : `EXTRA_PREFER_OFFLINE` n'est qu'un indice et le service système peut envoyer l'audio à un serveur ; saisie texte avec une explication (ADR-020). Implémentation : `capture/SpeechController.kt`.
 - Le texte transcrit part dans `shared.capture.Parser` ; l'audio n'est jamais stocké.
 - Repli Whisper (pack optionnel) seulement si la mesure du lot 5 montre un taux d'indisponibilité élevé.
 

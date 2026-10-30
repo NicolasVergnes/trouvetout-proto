@@ -67,7 +67,7 @@ struct CaptureView: View {
             switch request.mode {
             case .voice:
                 if !viewModel.listening {
-                    viewModel.micTapped()
+                    viewModel.micTapped(recordWhenHeard: !request.fromURL)
                 }
             case .text:
                 fieldFocused = true
