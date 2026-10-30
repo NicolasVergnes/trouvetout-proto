@@ -17,7 +17,7 @@ final class CaptureRouter: ObservableObject {
     }
 
     static let shared = CaptureRouter()
-    static let scheme = "trouvetout-proto"
+    nonisolated static let scheme = "trouvetout-proto"
 
     @Published private(set) var request: Request?
     private var serial = 0
