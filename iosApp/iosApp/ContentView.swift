@@ -4,9 +4,11 @@ import SwiftUI
 /// storage could not be prepared, the screen says so instead of touching a core that refuses to open.
 struct ContentView: View {
     @EnvironmentObject private var container: AppContainer
+    @EnvironmentObject private var router: CaptureRouter
+    @State private var path = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if container.storageFailure != nil {
                     StorageUnavailableView()
@@ -31,6 +33,12 @@ struct ContentView: View {
             .navigationTitle(Text(verbatim: "TrouveTout"))
             .navigationBarTitleDisplayMode(.inline)
         }
+        // A capture asked from a widget or the Action button happens on the home screen.
+        .onReceive(router.$request) { request in
+            if request != nil {
+                path = NavigationPath()
+            }
+        }
     }
 }
 
@@ -53,6 +61,7 @@ private struct StorageUnavailableView: View {
         static var previews: some View {
             ContentView()
                 .environmentObject(AppContainer())
+                .environmentObject(CaptureRouter.shared)
         }
     }
 #endif

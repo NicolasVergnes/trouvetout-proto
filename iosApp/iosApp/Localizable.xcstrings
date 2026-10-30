@@ -33,6 +33,22 @@
         }
       }
     },
+    "action_continue": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer"
+          }
+        }
+      }
+    },
     "action_ok": {
       "localizations": {
         "en": {
@@ -45,6 +61,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "OK"
+          }
+        }
+      }
+    },
+    "action_phone_settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglages"
           }
         }
       }
@@ -77,6 +109,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "Défaire"
+          }
+        }
+      }
+    },
+    "batch_active": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Putting away into %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je range dans %@"
+          }
+        }
+      }
+    },
+    "batch_picker_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Put everything into"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout ranger dans"
+          }
+        }
+      }
+    },
+    "batch_start": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Putting away…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je range…"
+          }
+        }
+      }
+    },
+    "batch_stop": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop putting away"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter le rangement"
           }
         }
       }
@@ -333,6 +429,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Quel « %@ » ?"
+          }
+        }
+      }
+    },
+    "capture_listening": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listening… for example “passport in the top drawer”"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "J’écoute… par exemple « passeport dans le tiroir du haut »"
+          }
+        }
+      }
+    },
+    "capture_mic": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speak"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dicter"
+          }
+        }
+      }
+    },
+    "capture_mic_stop": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop listening"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter l’écoute"
           }
         }
       }
@@ -829,6 +973,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Modifié"
+          }
+        }
+      }
+    },
+    "intent_capture_description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens TrouveTout ready to record where you put something."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre TrouveTout prêt à noter où vous rangez quelque chose."
+          }
+        }
+      }
+    },
+    "intent_capture_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Put something away"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranger quelque chose"
+          }
+        }
+      }
+    },
+    "intent_mode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode"
+          }
+        }
+      }
+    },
+    "intent_mode_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Texte"
+          }
+        }
+      }
+    },
+    "intent_mode_voice": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voix"
           }
         }
       }
@@ -1965,6 +2189,118 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stockage indisponible"
+          }
+        }
+      }
+    },
+    "voice_failed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dictation did not work. Try again, or type."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La dictée n’a pas fonctionné. Réessayez, ou tapez."
+          }
+        }
+      }
+    },
+    "voice_no_match": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing heard. Try again, or type."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien entendu. Réessayez, ou tapez."
+          }
+        }
+      }
+    },
+    "voice_no_recognizer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This iPhone has no speech recognition for this language. Type your sentence instead."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet iPhone n’a pas de reconnaissance vocale pour cette langue. Tapez votre phrase."
+          }
+        }
+      }
+    },
+    "voice_not_on_device": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline dictation is not available for this language on this iPhone, so the microphone is off. Type your sentence instead."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La dictée hors ligne n’est pas disponible pour cette langue sur cet iPhone : le micro est désactivé. Tapez votre phrase."
+          }
+        }
+      }
+    },
+    "voice_permission_denied": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The microphone or speech recognition is not allowed. You can allow them in Settings, or type your sentence."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le micro ou la reconnaissance vocale n’est pas autorisé. Vous pouvez les autoriser dans Réglages, ou taper votre phrase."
+          }
+        }
+      }
+    },
+    "voice_rationale_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TrouveTout turns your sentence into text on this phone. The audio never leaves the device and is not kept."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TrouveTout transforme votre phrase en texte sur ce téléphone. Le son ne quitte jamais l’appareil et n’est pas conservé."
+          }
+        }
+      }
+    },
+    "voice_rationale_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the microphone?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utiliser le micro ?"
           }
         }
       }

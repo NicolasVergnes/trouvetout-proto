@@ -4,6 +4,10 @@ import SwiftUI
 /// Home screen since lot 3: one field to say where things go, a confirmation card, the objects below.
 struct CaptureView: View {
     @StateObject private var viewModel: CaptureViewModel
+    @EnvironmentObject private var router: CaptureRouter
+    @Environment(\.scenePhase) private var scenePhase
+    @FocusState private var fieldFocused: Bool
+    @State private var pickingBatch = false
 
     init(container: AppContainer) {
         _viewModel = StateObject(wrappedValue: CaptureViewModel(container: container))
@@ -13,6 +17,12 @@ struct CaptureView: View {
         VStack(alignment: .leading, spacing: 8) {
             Group {
                 field
+                VoiceStatusView(
+                    listening: viewModel.listening,
+                    notice: viewModel.voiceNotice,
+                    onOpenSettings: openAppSettings
+                )
+                batchRow
                 if !viewModel.suggestions.isEmpty {
                     suggestionRow
                 }
@@ -40,6 +50,76 @@ struct CaptureView: View {
                 DecisionSheet(pending: pending, viewModel: viewModel)
             }
         }
+        .alert("voice_rationale_title", isPresented: rationalePresented) {
+            Button("action_continue") { viewModel.micRationaleContinue() }
+            Button("action_cancel", role: .cancel) { viewModel.dismissMicRationale() }
+        } message: {
+            Text("voice_rationale_text")
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase != .active {
+                viewModel.stopListening()
+            }
+        }
+        .onReceive(router.$request) { request in
+            guard let request else { return }
+            router.consume()
+            switch request.mode {
+            case .voice:
+                if !viewModel.listening {
+                    viewModel.micTapped()
+                }
+            case .text:
+                fieldFocused = true
+            }
+        }
+    }
+
+    /// B10: « Je range… » picks a destination; every sentence without a place then goes there until closed.
+    @ViewBuilder
+    private var batchRow: some View {
+        if let batch = viewModel.batch {
+            Button {
+                viewModel.stopBatch()
+            } label: {
+                Label(
+                    String(format: NSLocalizedString("batch_active", comment: ""), batch.label),
+                    systemImage: "xmark.circle.fill"
+                )
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityHint("batch_stop")
+        } else if !viewModel.places.isEmpty {
+            Button("batch_start") { pickingBatch = true }
+                .buttonStyle(.bordered)
+                .sheet(isPresented: $pickingBatch) {
+                    LocationPickerSheet(
+                        title: "batch_picker_title",
+                        places: viewModel.places,
+                        containers: viewModel.containers
+                    ) { ref in
+                        viewModel.startBatch(ref)
+                        pickingBatch = false
+                    }
+                }
+        }
+    }
+
+    private var rationalePresented: Binding<Bool> {
+        Binding(
+            get: { viewModel.askMicPermission },
+            set: { presented in
+                if !presented {
+                    viewModel.dismissMicRationale()
+                }
+            }
+        )
+    }
+
+    private func openAppSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
     }
 
     private var typedText: Binding<String> {
@@ -53,7 +133,18 @@ struct CaptureView: View {
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
                 .submitLabel(.done)
+                .focused($fieldFocused)
+                .disabled(viewModel.listening)
                 .onSubmit { viewModel.submit() }
+            Button {
+                viewModel.micTapped()
+            } label: {
+                Image(systemName: viewModel.listening ? "stop.circle.fill" : "mic.fill")
+                    .font(.title2)
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityLabel(viewModel.listening ? "capture_mic_stop" : "capture_mic")
+            .disabled(viewModel.busy && !viewModel.listening)
             Button {
                 viewModel.submit()
             } label: {
@@ -62,7 +153,9 @@ struct CaptureView: View {
                     .frame(minWidth: 44, minHeight: 44)
             }
             .accessibilityLabel("capture_send")
-            .disabled(viewModel.input.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.busy)
+            .disabled(
+                viewModel.input.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.busy || viewModel.listening
+            )
         }
     }
 
@@ -162,6 +255,42 @@ struct CaptureView: View {
         case .personMissing: "capture_problem_person"
         case .inputTooLong: "capture_problem_too_long"
         default: "capture_problem_rejected"
+        }
+    }
+}
+
+/// « J'écoute… » while the microphone is open, otherwise why it is not (with the way out).
+private struct VoiceStatusView: View {
+    let listening: Bool
+    let notice: VoiceNotice?
+    let onOpenSettings: () -> Void
+
+    var body: some View {
+        if listening {
+            Text("capture_listening")
+                .font(.callout)
+                .foregroundStyle(.tint)
+                .accessibilityAddTraits(.updatesFrequently)
+        } else if let notice {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(key(notice))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                if notice == .permissionDenied {
+                    Button("action_phone_settings", action: onOpenSettings)
+                }
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    private func key(_ notice: VoiceNotice) -> LocalizedStringKey {
+        switch notice {
+        case .notOnDevice: "voice_not_on_device"
+        case .noRecognizer: "voice_no_recognizer"
+        case .noMatch: "voice_no_match"
+        case .permissionDenied: "voice_permission_denied"
+        case .failed: "voice_failed"
         }
     }
 }

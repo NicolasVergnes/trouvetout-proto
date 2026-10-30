@@ -1,6 +1,5 @@
 {
   "sourceLanguage": "en",
-  "version": "1.0",
   "strings": {
     "NSCameraUsageDescription": {
       "localizations": {
@@ -17,6 +16,39 @@
           }
         }
       }
+    },
+    "NSMicrophoneUsageDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To turn the sentence you say into text, on this phone. The audio never leaves the device and is not kept."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour transformer la phrase que vous dites en texte, sur ce téléphone. Le son ne quitte jamais l’appareil et n’est pas conservé."
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sentence is recognised on this phone only, never by a server, then turned into an object and a place."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre phrase est reconnue sur ce téléphone uniquement, jamais par un serveur, puis transformée en objet et en lieu."
+          }
+        }
+      }
     }
-  }
+  },
+  "version": "1.0"
 }

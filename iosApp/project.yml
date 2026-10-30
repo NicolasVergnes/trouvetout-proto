@@ -23,6 +23,9 @@ targets:
     platform: iOS
     sources:
       - path: iosApp
+    dependencies:
+      # Embedded widget extension (B5); it links neither the core nor any package.
+      - target: CaptureWidget
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.trouvetout.proto
@@ -39,6 +42,18 @@ targets:
           export JAVA_HOME="${JAVA_HOME:-$(/usr/libexec/java_home -v 17)}"
           cd "$SRCROOT/.."
           sh ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+  CaptureWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: CaptureWidget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.trouvetout.proto.CaptureWidget
+        INFOPLIST_FILE: CaptureWidget/Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: "YES"
   iosAppTests:
     type: bundle.unit-test
     platform: iOS
