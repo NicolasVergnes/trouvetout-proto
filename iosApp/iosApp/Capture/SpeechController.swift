@@ -21,11 +21,24 @@ enum SpeechPermission {
     case undetermined
 }
 
+/// What the capture screen needs from dictation; a fake replaces it in tests.
+@MainActor
+protocol SpeechListening: AnyObject {
+    func availability(lang: Lang) -> SpeechAvailability
+    func permission() -> SpeechPermission
+    /// Shows the system prompts; true when dictation may start.
+    func requestPermission() async -> Bool
+    /// Events arrive on the main actor until a final result, a failure or `cancel()`.
+    func start(lang: Lang, onEvent: @escaping (SpeechEvent) -> Void) throws
+    /// Closes the microphone at once; nothing more is reported.
+    func cancel()
+}
+
 /// On-device dictation (B2): `requiresOnDeviceRecognition` is always set and never relaxed; without an on-device
 /// model for the language the host offers text. The audio is never written anywhere; the transcript goes to the
 /// core parser like a typed sentence.
 @MainActor
-final class SpeechController {
+final class SpeechController: SpeechListening {
     /// A pause this long after the last words ends the sentence; before any word, the longer one applies.
     private static let silenceAfterSpeech: UInt64 = 1_500_000_000
     private static let silenceBeforeSpeech: UInt64 = 5_000_000_000
@@ -37,15 +50,15 @@ final class SpeechController {
     private var onEvent: ((SpeechEvent) -> Void)?
     private var lastText = ""
 
-    static func availability(lang: Lang) -> SpeechAvailability {
-        let recognizer = SFSpeechRecognizer(locale: locale(lang))
+    func availability(lang: Lang) -> SpeechAvailability {
+        let recognizer = SFSpeechRecognizer(locale: Self.locale(lang))
         let onDevice = recognizer.map { KotlinBoolean(bool: $0.supportsOnDeviceRecognition) }
         return SpeechPolicy.shared.decide(onDeviceSupported: onDevice, recognizerInstalled: recognizer != nil)
     }
 
-    static func permission() -> SpeechPermission {
+    func permission() -> SpeechPermission {
         let speech = SFSpeechRecognizer.authorizationStatus()
-        let microphone = microphonePermission()
+        let microphone = Self.microphonePermission()
         if speech == .denied || speech == .restricted || microphone == .denied {
             return .denied
         }
@@ -53,7 +66,7 @@ final class SpeechController {
     }
 
     /// Shows the two system prompts (speech, then microphone); true when both are granted.
-    static func requestPermission() async -> Bool {
+    func requestPermission() async -> Bool {
         let speech = await withCheckedContinuation { continuation in
             SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0) }
         }
@@ -67,7 +80,6 @@ final class SpeechController {
         }
     }
 
-    /// Starts listening; events arrive on the main actor until a final result, a failure or `cancel()`.
     func start(lang: Lang, onEvent: @escaping (SpeechEvent) -> Void) throws {
         cancel()
         guard let recognizer = SFSpeechRecognizer(locale: Self.locale(lang)),
@@ -107,7 +119,6 @@ final class SpeechController {
         armSilenceTimer(Self.silenceBeforeSpeech)
     }
 
-    /// Closes the microphone at once; nothing more is reported.
     func cancel() {
         silenceTimer?.cancel()
         silenceTimer = nil
@@ -161,20 +172,26 @@ final class SpeechController {
     private static func microphonePermission() -> SpeechPermission {
         if #available(iOS 17.0, *) {
             switch AVAudioApplication.shared.recordPermission {
-            case .granted: return .granted
-            case .denied: return .denied
-            default: return .undetermined
+            case .granted: .granted
+            case .denied: .denied
+            default: .undetermined
             }
         } else {
             switch AVAudioSession.sharedInstance().recordPermission {
-            case .granted: return .granted
-            case .denied: return .denied
-            default: return .undetermined
+            case .granted: .granted
+            case .denied: .denied
+            default: .undetermined
             }
         }
     }
 
+    /// The user's own variant when it is the capture language (fr-CA, en-GB…), whose on-device model is the one
+    /// most likely installed.
     private static func locale(_ lang: Lang) -> Locale {
-        Locale(identifier: lang == .fr ? "fr-FR" : "en-US")
+        let code = lang == .fr ? "fr" : "en"
+        if Locale.current.language.languageCode?.identifier == code {
+            return Locale.current
+        }
+        return Locale(identifier: lang == .fr ? "fr-FR" : "en-US")
     }
 }

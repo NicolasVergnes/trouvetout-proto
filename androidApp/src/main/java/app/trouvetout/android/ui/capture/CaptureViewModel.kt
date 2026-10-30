@@ -217,6 +217,11 @@ class CaptureViewModel(
                             is SpeechEvent.Failed -> _state.update { it.copy(voiceNotice = noticeOf(event.error)) }
                         }
                     }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // A recogniser that refuses to start (vendor quirk, revoked permission): typing still works.
+                    _state.update { it.copy(voiceNotice = VoiceNotice.FAILED) }
                 } finally {
                     _state.update { it.copy(listening = false) }
                 }

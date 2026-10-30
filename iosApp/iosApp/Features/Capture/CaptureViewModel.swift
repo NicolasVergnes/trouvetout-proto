@@ -24,7 +24,7 @@ final class CaptureViewModel: ObservableObject {
     @Published private(set) var containers: [Container_] = []
 
     private let container: AppContainer
-    private let speech = SpeechController()
+    private let speech: SpeechListening
     private var cardToken = 0
     private let flows = FlowSubscriptions()
     private var suggestionTask: Task<Void, Never>?
@@ -36,8 +36,9 @@ final class CaptureViewModel: ObservableObject {
     /// The last transcript left in the field, so that sending it unchanged still counts as voice.
     private var heardText: String?
 
-    init(container: AppContainer) {
+    init(container: AppContainer, speech: SpeechListening? = nil) {
         self.container = container
+        self.speech = speech ?? SpeechController()
         // The list follows the cores whose store opened: after a total wipe the container swaps the core.
         readiness = container.$ready.sink { [weak self] ready in
             self?.observeItems(ready ? container.shared : nil)
@@ -109,11 +110,10 @@ final class CaptureViewModel: ObservableObject {
         heardText = nil
         let batch = batch
         perform { [self] in
-            let proposal: CaptureProposal
-            if let batch {
-                proposal = try await container.shared.capture.proposeIn(text: text, location: batch.ref, lang: uiLang())
+            let proposal: CaptureProposal = if let batch {
+                try await container.shared.capture.proposeIn(text: text, location: batch.ref, lang: uiLang())
             } else {
-                proposal = try await container.shared.capture.propose(text: text, lang: uiLang())
+                try await container.shared.capture.propose(text: text, lang: uiLang())
             }
             if let refused = proposal.problem {
                 problem = refused
@@ -271,7 +271,7 @@ extension CaptureViewModel {
             return
         }
         self.recordWhenHeard = recordWhenHeard
-        switch SpeechController.availability(lang: uiLang()) {
+        switch speech.availability(lang: uiLang()) {
         case .onDevice:
             break
         case .noRecognizer:
@@ -281,7 +281,7 @@ extension CaptureViewModel {
             voiceNotice = .notOnDevice
             return
         }
-        switch SpeechController.permission() {
+        switch speech.permission() {
         case .granted: startListening()
         case .denied: voiceNotice = .permissionDenied
         case .undetermined:
@@ -293,8 +293,8 @@ extension CaptureViewModel {
     func micRationaleContinue() {
         askMicPermission = false
         Task { [weak self] in
-            let granted = await SpeechController.requestPermission()
             guard let self else { return }
+            let granted = await speech.requestPermission()
             if granted {
                 startListening()
             } else {

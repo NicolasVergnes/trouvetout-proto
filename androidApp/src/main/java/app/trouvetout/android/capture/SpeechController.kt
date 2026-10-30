@@ -13,6 +13,7 @@ import app.trouvetout.core.capture.SpeechPolicy
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import java.util.Locale
 
 /** What the recogniser reports during one listening run. */
 sealed interface SpeechEvent {
@@ -91,7 +92,7 @@ class SpeechController(
         recognizer.startListening(
             android.content.Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (lang == Lang.FR) "fr-FR" else "en-US")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag(lang))
                 putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
@@ -100,6 +101,19 @@ class SpeechController(
         awaitClose {
             recognizer.cancel()
             recognizer.destroy()
+        }
+    }
+
+    /** The user's own variant when it is the capture language (fr-CA, en-GB…): its offline pack is the likely one. */
+    private fun languageTag(lang: Lang): String {
+        val code = if (lang == Lang.FR) "fr" else "en"
+        val current = Locale.getDefault()
+        return if (current.language == code) {
+            current.toLanguageTag()
+        } else if (lang == Lang.FR) {
+            "fr-FR"
+        } else {
+            "en-US"
         }
     }
 

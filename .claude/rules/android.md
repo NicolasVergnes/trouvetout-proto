@@ -10,8 +10,8 @@ paths:
 - Manifeste : `android:allowBackup="false"`, pas de `INTERNET` sans ADR (hook), `exported="false"` par défaut, `FLAG_SECURE` optionnel (H3).
 - Fichiers : base et photos dans `context.noBackupFilesDir` ; jamais dans le stockage externe ni la galerie ; pas de `FileProvider` sur la base.
 - Clés : `AndroidKeyStore`, AES-256-GCM, `setIsStrongBoxBacked(true)` avec repli ; jamais de clé en dur.
-- Parole : `SpeechRecognizer` avec `EXTRA_PREFER_OFFLINE=true` ; vérifier la disponibilité hors ligne avant d'écouter ; si indisponible, proposer la saisie texte ; ne jamais utiliser l'intent `RecognizerIntent` réseau.
-- Widgets Glance / `TileService` : contenu réduit à l'action « capturer » et aux objets non sensibles ; jamais d'objet `sensitive`.
+- Parole : uniquement `SpeechRecognizer.createOnDeviceSpeechRecognizer` (API 31+), après `isOnDeviceRecognitionAvailable` et `SpeechPolicy` ; jamais `createSpeechRecognizer` ; API 29–30 : saisie texte avec explication (ADR-020).
+- Widget (RemoteViews) / `TileService` : contenu réduit à l'action « capturer » et aux objets non sensibles ; jamais d'objet `sensitive`.
 - Notifications : canal dédié, contenu sans objet sensible ; `POST_NOTIFICATIONS` demandé au premier rappel, pas au lancement.
 - Permissions demandées au moment de l'usage avec une explication dans l'UI (H9) ; l'app reste utilisable si refusées.
 - Play Billing : `BillingClient` v6+, vérification de signature locale, `queryPurchasesAsync` au démarrage pour la restauration ; aucun serveur.

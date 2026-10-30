@@ -26,6 +26,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -65,7 +66,8 @@ fun QuickCaptureRoute(
                 // The card went away on its own: the capture is done.
                 onDismissCard = { token ->
                     viewModel.dismissCard(token)
-                    onClose()
+                    val now = viewModel.state.value
+                    if (!now.listening && now.input.isBlank() && now.pending == null) onClose()
                 },
                 onEditLast = viewModel::editLast,
                 onUndo = viewModel::undo,
@@ -76,7 +78,12 @@ fun QuickCaptureRoute(
                 mic = mic,
             )
         }
-    QuickCaptureScreen(state, callbacks, focusField = !startWithVoice, onClose = onClose)
+    QuickCaptureScreen(
+        state,
+        callbacks,
+        focusField = !startWithVoice || state.voiceNotice != null,
+        onClose = onClose,
+    )
 }
 
 @Composable
@@ -95,7 +102,8 @@ fun QuickCaptureScreen(
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .clickable(interactionSource = null, indication = null, onClick = onClose),
+                    .clickable(interactionSource = null, indication = null, onClick = onClose)
+                    .clearAndSetSemantics {},
         )
         Surface(
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),

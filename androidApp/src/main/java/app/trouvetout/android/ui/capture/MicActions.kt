@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +50,8 @@ fun rememberMicActions(viewModel: CaptureViewModel): MicActions {
             viewModel.onMicPermissionResult(granted)
         }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.stopListening() }
+    // Navigating away removes the screen before its entry reaches ON_STOP: the view model outlives it.
+    DisposableEffect(viewModel) { onDispose { viewModel.stopListening() } }
     return remember(viewModel, context, launcher) {
         MicActions(
             onMic = { viewModel.onMic(micGranted(context)) },
@@ -98,11 +101,11 @@ internal fun VoiceStatus(
 ) {
     val live = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
     if (state.listening) {
+        // Not a live region: TalkBack reading it aloud would be heard by the recogniser.
         Text(
             stringResource(R.string.capture_listening),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
-            modifier = live,
         )
         return
     }
