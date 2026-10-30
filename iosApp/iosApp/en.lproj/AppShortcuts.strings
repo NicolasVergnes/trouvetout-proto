@@ -1,0 +1,3 @@
+/* App Shortcuts phrases (iOS 16: .strings, not .xcstrings). */
+"Put something away with ${applicationName}" = "Put something away with ${applicationName}";
+"Record where I put something in ${applicationName}" = "Record where I put something in ${applicationName}";

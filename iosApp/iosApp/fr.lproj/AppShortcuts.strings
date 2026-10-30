@@ -1,0 +1,3 @@
+/* Phrases des App Shortcuts (iOS 16 : .strings, pas .xcstrings). */
+"Put something away with ${applicationName}" = "Ranger quelque chose avec ${applicationName}";
+"Record where I put something in ${applicationName}" = "Noter où je range quelque chose dans ${applicationName}";

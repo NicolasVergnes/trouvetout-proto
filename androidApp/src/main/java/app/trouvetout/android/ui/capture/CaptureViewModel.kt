@@ -1,8 +1,12 @@
 package app.trouvetout.android.ui.capture
 
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.trouvetout.android.App
+import app.trouvetout.android.capture.SpeechController
+import app.trouvetout.android.capture.SpeechError
+import app.trouvetout.android.capture.SpeechEvent
 import app.trouvetout.core.capture.CaptureOutcome
 import app.trouvetout.core.capture.CaptureProblem
 import app.trouvetout.core.capture.CaptureProposal
@@ -13,10 +17,14 @@ import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.capture.LocationCandidate
 import app.trouvetout.core.capture.PlaceChoice
 import app.trouvetout.core.capture.PlaceResolution
+import app.trouvetout.core.capture.SpeechAvailability
 import app.trouvetout.core.data.repository.ItemView
+import app.trouvetout.core.domain.model.Container
 import app.trouvetout.core.domain.model.Event
 import app.trouvetout.core.domain.model.EventSource
+import app.trouvetout.core.domain.model.Place
 import app.trouvetout.core.domain.usecase.CommandResult
+import app.trouvetout.core.domain.usecase.LocationRef
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -57,7 +65,18 @@ data class ConfirmationCard(
     val rawInput: String,
     /** Exactly what this capture wrote: « Défaire » reverts these and nothing else. */
     val events: List<Event>,
+    /** How the sentence came in (A4), also the source of the inverse events of « Défaire ». */
+    val source: EventSource,
     val token: Long,
+)
+
+/** Why the microphone is not listening; shown under the field, typing always works (B2, H9). */
+enum class VoiceNotice { NOT_ON_DEVICE, NO_RECOGNIZER, LANGUAGE_UNAVAILABLE, NO_MATCH, PERMISSION_DENIED, FAILED }
+
+/** B10 « je range » : the place or container every sentence without a place of its own goes into. */
+data class BatchTarget(
+    val ref: LocationRef,
+    val label: String,
 )
 
 data class CaptureUiState(
@@ -68,9 +87,17 @@ data class CaptureUiState(
     val searchQuery: String? = null,
     val busy: Boolean = false,
     val problem: CaptureProblem? = null,
+    val listening: Boolean = false,
+    /** The explanation shown before the system microphone prompt (H9). */
+    val askMicPermission: Boolean = false,
+    val voiceNotice: VoiceNotice? = null,
+    val batch: BatchTarget? = null,
 )
 
-/** Text capture screen (B4, B6, B7): the core parses and decides; this class only sequences the questions. */
+/**
+ * Capture by text or voice (B1, B4, B6, B7, B10): the core parses and decides; this class only sequences the
+ * microphone, the questions and the card. Shared by the home screen and the quick capture of the widget and tile.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CaptureViewModel(
     private val app: App,
@@ -84,11 +111,30 @@ class CaptureViewModel(
             .flatMapLatest { it.itemRepository.observeActive() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
 
+    /** Destinations of the « je range » picker. */
+    val places: StateFlow<List<Place>> =
+        app.readyShared
+            .flatMapLatest { it.placeRepository.observeActive() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
+
+    val containers: StateFlow<List<Container>> =
+        app.readyShared
+            .flatMapLatest { it.containerRepository.observeActive() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
+
+    private val speech = SpeechController(app)
     private var cardToken = 0L
     private var suggestionJob: Job? = null
+    private var listenJob: Job? = null
+
+    /** Source of the sentence being decided: the questions that follow it commit with the same one. */
+    private var source = EventSource.TEXT
+
+    /** The words heard last, left in the field: sending them unchanged still counts as voice (A4). */
+    private var heardText: String? = null
 
     fun onInputChange(text: String) {
-        _state.update { it.copy(input = text, problem = null, searchQuery = null) }
+        _state.update { it.copy(input = text, problem = null, searchQuery = null, voiceNotice = null) }
         suggestionJob?.cancel()
         val prefix = text.substringAfterLast('@', missingDelimiterValue = "").trim()
         if (prefix.isEmpty()) {
@@ -110,10 +156,110 @@ class CaptureViewModel(
     }
 
     fun submit() {
+        val heard = heardText != null && _state.value.input == heardText
+        submitFrom(if (heard) EventSource.VOICE else EventSource.TEXT)
+    }
+
+    /** Microphone button: listens when the device can do it on the phone, otherwise says why (B2). */
+    fun onMic(permissionGranted: Boolean) {
+        if (_state.value.listening) {
+            stopListening()
+            return
+        }
+        val notice =
+            when (speech.availability()) {
+                SpeechAvailability.ON_DEVICE -> null
+                SpeechAvailability.NOT_ON_DEVICE -> VoiceNotice.NOT_ON_DEVICE
+                SpeechAvailability.NO_RECOGNIZER -> VoiceNotice.NO_RECOGNIZER
+            }
+        when {
+            notice != null -> _state.update { it.copy(voiceNotice = notice) }
+            permissionGranted -> startListening()
+            else -> _state.update { it.copy(askMicPermission = true, voiceNotice = null) }
+        }
+    }
+
+    fun onMicPermissionResult(granted: Boolean) {
+        _state.update { it.copy(askMicPermission = false) }
+        if (granted) startListening() else _state.update { it.copy(voiceNotice = VoiceNotice.PERMISSION_DENIED) }
+    }
+
+    fun dismissMicRationale() = _state.update { it.copy(askMicPermission = false) }
+
+    /** The screen left the foreground or the button was tapped again: the microphone closes at once. */
+    fun stopListening() {
+        listenJob?.cancel()
+        listenJob = null
+        // The words heard so far stay in the field, to send as is or to correct.
+        _state.value.input.takeIf { _state.value.listening && it.isNotBlank() }?.let { heardText = it }
+    }
+
+    fun startBatch(ref: LocationRef) {
+        val label =
+            when (ref) {
+                is LocationRef.InPlace -> places.value.firstOrNull { it.id == ref.placeId }?.name
+                is LocationRef.InContainer -> containers.value.firstOrNull { it.id == ref.containerId }?.label
+            } ?: return
+        _state.update { it.copy(batch = BatchTarget(ref, label)) }
+    }
+
+    fun stopBatch() = _state.update { it.copy(batch = null) }
+
+    /** A question asked from the quick capture is answered on the home screen (C5). */
+    fun showSearch(query: String) = _state.update { it.copy(searchQuery = query, input = "", problem = null) }
+
+    private fun startListening() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        stopListening()
+        _state.update { it.copy(listening = true, input = "", voiceNotice = null, problem = null, searchQuery = null) }
+        listenJob =
+            viewModelScope.launch {
+                try {
+                    speech.listen(uiLang()).collect { event ->
+                        when (event) {
+                            is SpeechEvent.Partial -> _state.update { it.copy(input = event.text) }
+                            is SpeechEvent.Final -> {
+                                _state.update { it.copy(input = event.text, listening = false) }
+                                // Kept if the sentence cannot be sent now (busy): sending it later is still voice.
+                                heardText = event.text
+                                submitFrom(EventSource.VOICE)
+                            }
+                            is SpeechEvent.Failed -> _state.update {
+                                it.copy(voiceNotice = noticeOf(event.error), listening = false)
+                            }
+                        }
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // A recogniser that refuses to start (vendor quirk, revoked permission): typing still works.
+                    _state.update { it.copy(voiceNotice = VoiceNotice.FAILED) }
+                } finally {
+                    _state.update { it.copy(listening = false) }
+                }
+            }
+    }
+
+    private fun noticeOf(error: SpeechError): VoiceNotice = when (error) {
+        SpeechError.NO_MATCH -> VoiceNotice.NO_MATCH
+        SpeechError.LANGUAGE_UNAVAILABLE -> VoiceNotice.LANGUAGE_UNAVAILABLE
+        SpeechError.PERMISSION -> VoiceNotice.PERMISSION_DENIED
+        SpeechError.BUSY, SpeechError.OTHER -> VoiceNotice.FAILED
+    }
+
+    private fun submitFrom(from: EventSource) {
         val text = _state.value.input.trim()
         if (text.isEmpty() || _state.value.busy) return
+        source = from
+        heardText = null
+        val batch = _state.value.batch
         run {
-            val proposal = app.shared.capture.propose(text, uiLang())
+            val proposal =
+                if (batch != null) {
+                    app.shared.capture.proposeIn(text, batch.ref, uiLang())
+                } else {
+                    app.shared.capture.propose(text, uiLang())
+                }
             when {
                 proposal.problem != null -> _state.update { it.copy(problem = proposal.problem) }
                 proposal.parse.intent == Intent.QUERY -> _state.update {
@@ -172,7 +318,7 @@ class CaptureViewModel(
 
     private fun revert(card: ConfirmationCard) {
         run {
-            val result = app.shared.undo.undo(card.events, EventSource.TEXT)
+            val result = app.shared.undo.undo(card.events, card.source)
             if (result is CommandResult.Rejected) _state.update { it.copy(problem = CaptureProblem.COMMAND_REJECTED) }
         }
     }
@@ -190,7 +336,7 @@ class CaptureViewModel(
             }
             return
         }
-        when (val outcome = app.shared.capture.commit(proposal, placeChoice, answers)) {
+        when (val outcome = app.shared.capture.commit(proposal, placeChoice, answers, source)) {
             is CaptureOutcome.Recorded -> recorded(proposal, outcome)
             is CaptureOutcome.Refused -> _state.update { it.copy(problem = outcome.problem) }
             is CaptureOutcome.Search -> _state.update { it.copy(searchQuery = outcome.query, input = "") }
@@ -208,15 +354,15 @@ class CaptureViewModel(
                 null
             } else {
                 ConfirmationCard(
-                    parse.intent,
-                    parse.items.map {
-                        it.name
-                    },
-                    parse.place,
-                    parse.person,
-                    parse.input,
-                    outcome.events,
-                    ++cardToken,
+                    intent = parse.intent,
+                    itemNames = parse.items.map { it.name },
+                    // A batch sentence has no place of its own: the card names the batch destination.
+                    placeText = parse.place ?: (proposal.place as? PlaceResolution.Resolved)?.match?.candidate?.name,
+                    person = parse.person,
+                    rawInput = parse.input,
+                    events = outcome.events,
+                    source = source,
+                    token = ++cardToken,
                 )
             }
         _state.update { it.copy(input = "", suggestions = emptyList(), card = card) }

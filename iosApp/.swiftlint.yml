@@ -1,6 +1,7 @@
 included:
   - iosApp
   - iosAppTests
+  - CaptureWidget
 excluded:
   - iosApp.xcodeproj
   - build

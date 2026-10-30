@@ -17,12 +17,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -33,7 +36,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -54,13 +60,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
+import app.trouvetout.android.ui.common.LocationPickerDialog
 import app.trouvetout.android.ui.theme.AppTheme
 import app.trouvetout.core.capture.CaptureProblem
 import app.trouvetout.core.capture.Intent
 import app.trouvetout.core.capture.PlaceChoice
 import app.trouvetout.core.capture.PlaceResolution
 import app.trouvetout.core.data.repository.ItemView
+import app.trouvetout.core.domain.model.Container
 import app.trouvetout.core.domain.model.LocationStatus
+import app.trouvetout.core.domain.model.Place
+import app.trouvetout.core.domain.usecase.LocationRef
 import kotlinx.coroutines.delay
 
 /** Home screen since lot 3: one field to say where things go, a confirmation card, the objects below. */
@@ -70,13 +80,25 @@ fun CaptureRoute(
     onOpenPlaces: () -> Unit,
     onOpenItem: (String) -> Unit,
     modifier: Modifier = Modifier,
+    /** A question asked from the quick capture (widget, tile), shown here as a search (C5). */
+    searchRequest: String? = null,
+    onSearchRequestHandled: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as App
     val viewModel: CaptureViewModel = viewModel { CaptureViewModel(app) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val items by viewModel.items.collectAsStateWithLifecycle()
+    val places by viewModel.places.collectAsStateWithLifecycle()
+    val containers by viewModel.containers.collectAsStateWithLifecycle()
+    val mic = rememberMicActions(viewModel)
+    LaunchedEffect(searchRequest) {
+        searchRequest?.let {
+            viewModel.showSearch(it)
+            onSearchRequestHandled()
+        }
+    }
     val callbacks =
-        remember(viewModel, onOpenSettings, onOpenPlaces, onOpenItem) {
+        remember(viewModel, mic, onOpenSettings, onOpenPlaces, onOpenItem) {
             CaptureCallbacks(
                 onInputChange = viewModel::onInputChange,
                 onSubmit = viewModel::submit,
@@ -91,9 +113,19 @@ fun CaptureRoute(
                 onOpenSettings = onOpenSettings,
                 onOpenPlaces = onOpenPlaces,
                 onOpenItem = onOpenItem,
+                mic = mic,
+                onStartBatch = viewModel::startBatch,
+                onStopBatch = viewModel::stopBatch,
             )
         }
-    CaptureScreen(state = state, items = items, callbacks = callbacks, modifier = modifier)
+    CaptureScreen(
+        state = state,
+        items = items,
+        callbacks = callbacks,
+        modifier = modifier,
+        places = places,
+        containers = containers,
+    )
 }
 
 /** All the screen can do, grouped to keep the composable signature readable. */
@@ -111,6 +143,9 @@ data class CaptureCallbacks(
     val onOpenSettings: () -> Unit,
     val onOpenPlaces: () -> Unit,
     val onOpenItem: (String) -> Unit,
+    val mic: MicActions = MicActions({}, {}, {}, {}),
+    val onStartBatch: (LocationRef) -> Unit = {},
+    val onStopBatch: () -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,6 +155,8 @@ fun CaptureScreen(
     items: List<ItemView>,
     callbacks: CaptureCallbacks,
     modifier: Modifier = Modifier,
+    places: List<Place> = emptyList(),
+    containers: List<Container> = emptyList(),
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -142,6 +179,8 @@ fun CaptureScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             CaptureField(state, callbacks)
+            VoiceStatus(state, callbacks.mic.onOpenAppSettings)
+            BatchRow(state, places, containers, callbacks)
             if (state.suggestions.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(state.suggestions, key = { it.id }) { candidate ->
@@ -163,28 +202,87 @@ fun CaptureScreen(
             ItemList(state, items, callbacks)
         }
     }
+    CaptureDialogs(state, callbacks)
+}
+
+/** The questions of a capture (B7, A14) and the explanation before the microphone prompt (H9). */
+@Composable
+internal fun CaptureDialogs(
+    state: CaptureUiState,
+    callbacks: CaptureCallbacks,
+) {
     state.pending?.let { pending ->
         when (pending) {
             is PendingDecision.Place -> PlaceDecisionDialog(pending, callbacks)
             is PendingDecision.Item -> ItemDecisionDialog(pending, callbacks)
         }
     }
+    if (state.askMicPermission) MicRationaleDialog(callbacks.mic)
+}
+
+/** B10: « Je range… » picks a destination; every sentence without a place then goes there until closed. */
+@Composable
+private fun BatchRow(
+    state: CaptureUiState,
+    places: List<Place>,
+    containers: List<Container>,
+    callbacks: CaptureCallbacks,
+) {
+    var picking by rememberSaveable { mutableStateOf(false) }
+    val batch = state.batch
+    if (batch == null) {
+        if (places.isNotEmpty()) {
+            FilterChip(
+                selected = false,
+                onClick = { picking = true },
+                label = { Text(stringResource(R.string.batch_start)) },
+            )
+        }
+    } else {
+        val stop = stringResource(R.string.batch_stop)
+        InputChip(
+            selected = true,
+            onClick = callbacks.onStopBatch,
+            label = { Text(stringResource(R.string.batch_active, batch.label)) },
+            trailingIcon = { Icon(Icons.Filled.Close, contentDescription = stop) },
+        )
+    }
+    if (picking) {
+        LocationPickerDialog(
+            title = stringResource(R.string.batch_picker_title),
+            places = places,
+            containers = containers,
+            onPick = {
+                picking = false
+                callbacks.onStartBatch(it)
+            },
+            onDismiss = { picking = false },
+        )
+    }
 }
 
 @Composable
-private fun CaptureField(
+internal fun CaptureField(
     state: CaptureUiState,
     callbacks: CaptureCallbacks,
+    modifier: Modifier = Modifier,
 ) {
     OutlinedTextField(
         value = state.input,
         onValueChange = callbacks.onInputChange,
-        modifier = Modifier.fillMaxWidth().testTag(CAPTURE_FIELD_TAG),
+        modifier = modifier.fillMaxWidth().testTag(CAPTURE_FIELD_TAG),
         placeholder = { Text(stringResource(R.string.capture_hint)) },
         singleLine = true,
+        readOnly = state.listening,
         trailingIcon = {
-            IconButton(onClick = callbacks.onSubmit, enabled = state.input.isNotBlank() && !state.busy) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.capture_send))
+            Row {
+                MicButton(state.listening, enabled = !state.busy, onMic = callbacks.mic.onMic)
+                IconButton(
+                    onClick = callbacks.onSubmit,
+                    enabled = state.input.isNotBlank() && !state.busy && !state.listening,
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.capture_send))
+                }
             }
         },
         // Object and place names are not dictionary words: no autocorrection, no capitalisation.
@@ -199,7 +297,7 @@ private fun CaptureField(
 }
 
 @Composable
-private fun ConfirmationCardView(
+internal fun ConfirmationCardView(
     card: ConfirmationCard,
     callbacks: CaptureCallbacks,
 ) {
@@ -419,7 +517,7 @@ private fun ItemDecisionDialog(
 }
 
 @Composable
-private fun problemText(problem: CaptureProblem): String = stringResource(
+internal fun problemText(problem: CaptureProblem): String = stringResource(
     when (problem) {
         CaptureProblem.NOTHING_UNDERSTOOD -> R.string.capture_problem_nothing
         CaptureProblem.PLACE_UNDECIDED -> R.string.capture_problem_place

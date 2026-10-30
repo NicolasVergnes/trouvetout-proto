@@ -137,4 +137,27 @@
     <string name="history_restored">Restauré</string>
     <string name="history_photo_attached">Photo ajoutée</string>
     <string name="history_photo_detached">Photo retirée</string>
+    <!-- Lot 5 : capture vocale, mode « je range », widget et tuile -->
+    <string name="action_continue">Continuer</string>
+    <string name="action_phone_settings">Réglages du téléphone</string>
+    <string name="capture_mic">Dicter</string>
+    <string name="capture_mic_stop">Arrêter l’écoute</string>
+    <string name="capture_listening">J’écoute… par exemple « passeport dans le tiroir du haut »</string>
+    <string name="voice_rationale_title">Utiliser le micro ?</string>
+    <string name="voice_rationale_text">TrouveTout transforme votre phrase en texte sur ce téléphone. Le son ne quitte jamais l’appareil et n’est pas conservé.</string>
+    <string name="voice_not_on_device">Ce téléphone ne garantit pas une dictée sans serveur : le micro est désactivé. Tapez votre phrase.</string>
+    <string name="voice_no_recognizer">Ce téléphone n’a pas de reconnaissance vocale. Tapez votre phrase.</string>
+    <string name="voice_language_unavailable">La reconnaissance vocale hors ligne n’est pas installée pour cette langue. Ajoutez-la dans les réglages du téléphone, ou tapez votre phrase.</string>
+    <string name="voice_no_match">Rien entendu. Réessayez, ou tapez.</string>
+    <string name="voice_permission_denied">Le micro n’est pas autorisé. Vous pouvez l’autoriser dans les réglages du téléphone, ou taper votre phrase.</string>
+    <string name="voice_failed">La dictée n’a pas fonctionné. Réessayez, ou tapez.</string>
+    <string name="batch_start">Je range…</string>
+    <string name="batch_picker_title">Tout ranger dans</string>
+    <string name="batch_active">Je range dans %1$s</string>
+    <string name="batch_stop">Arrêter le rangement</string>
+    <string name="quick_capture_label">Capture rapide</string>
+    <string name="widget_description">Dites ou tapez où vous rangez quelque chose</string>
+    <string name="widget_voice">Dire où je range quelque chose</string>
+    <string name="widget_text">Taper où je range quelque chose</string>
+    <string name="tile_label">Ranger</string>
 </resources>

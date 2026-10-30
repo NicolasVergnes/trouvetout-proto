@@ -29,6 +29,21 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.trouvetout.proto.capture</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>trouvetout-proto</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>To turn the sentence you say into text, on this phone. The audio never leaves the device and is not kept.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Your sentence is recognised on this phone only, never by a server, then turned into an object and a place.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>To photograph an object or a place. Photos stay in the app, on this device: never in your photo library, never online.</string>
 	<key>UILaunchScreen</key>

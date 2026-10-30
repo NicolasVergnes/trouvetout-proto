@@ -285,4 +285,45 @@ class CaptureServiceTest {
         val resolved = assertIs<PlaceResolution.Resolved>(proposal.place, "still known: ${proposal.place}")
         assertEquals(boxId, resolved.match.candidate.id)
     }
+
+    @Test
+    fun should_store_a_bare_list_of_objects_in_the_batch_location_B10() = runTest {
+        val cave = placeId("Cave")
+        val box =
+            assertIs<CommandResult.Done>(ContainerCommands(ctx).create("Carton 7", cave, source = EventSource.TEXT))
+        val boxId = (box.events.single().payload as EventPayload.ContainerCreated).containerId
+
+        val proposal = service.proposeIn("marteau et tournevis", LocationRef.InContainer(boxId))
+        val resolved = assertIs<PlaceResolution.Resolved>(proposal.place)
+        assertEquals(boxId, resolved.match.candidate.id)
+        assertEquals(listOf("marteau", "tournevis"), proposal.parse.items.map { it.name })
+        val outcome = assertIs<CaptureOutcome.Recorded>(service.commit(proposal, source = EventSource.VOICE))
+        assertEquals(LocationRef.InContainer(boxId), outcome.location)
+        assertTrue(outcome.events.all { it.source == EventSource.VOICE })
+
+        // A sentence that names its own place keeps it; a movement or a question is untouched.
+        val elsewhere = service.proposeIn("clés dans la cave", LocationRef.InContainer(boxId))
+        assertEquals(cave, assertIs<PlaceResolution.Resolved>(elsewhere.place).match.candidate.id)
+        assertEquals(Intent.QUERY, service.proposeIn("où est le marteau", LocationRef.InContainer(boxId)).parse.intent)
+        assertEquals(null, service.proposeIn("je prends le marteau", LocationRef.InContainer(boxId)).place)
+    }
+
+    @Test
+    fun should_fall_back_to_a_plain_proposal_when_the_batch_location_is_gone() = runTest {
+        val cave = placeId("Cave")
+        val box =
+            assertIs<CommandResult.Done>(ContainerCommands(ctx).create("Carton 7", cave, source = EventSource.TEXT))
+        val boxId = (box.events.single().payload as EventPayload.ContainerCreated).containerId
+        assertIs<CommandResult.Done>(ContainerCommands(ctx).delete(boxId, EventSource.TEXT))
+
+        assertEquals(null, service.proposeIn("marteau", LocationRef.InContainer(boxId)).place)
+    }
+
+    private suspend fun placeId(name: String): String {
+        val created =
+            assertIs<CommandResult.Done>(
+                PlaceCommands(ctx).create(name, kind = PlaceKind.ROOT, source = EventSource.TEXT),
+            )
+        return (created.events.single().payload as EventPayload.PlaceCreated).placeId
+    }
 }

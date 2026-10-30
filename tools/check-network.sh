@@ -17,6 +17,32 @@ else
   echo "OK : aucun client réseau hors ModelPackDownloader / Billing."
 fi
 
+echo "== Reconnaissance vocale sur l'appareil seulement (B2, ADR-020) =="
+# The speech service is another process: no network counter of the app would see a server recogniser, so the
+# guarantee is checked in the code itself.
+SERVER_SPEECH=$(grep -rnF "createSpeechRecognizer(" "$ROOT/androidApp/src/main" "$ROOT/shared/src" --include='*.kt' 2>/dev/null || true)
+if [ -n "$SERVER_SPEECH" ]; then
+  echo "VIOLATION : reconnaissance vocale sans garantie hors ligne (createOnDeviceSpeechRecognizer seulement) :"
+  echo "$SERVER_SPEECH"; status=1
+fi
+RELAXED=$(grep -rnF "requiresOnDeviceRecognition = false" "$ROOT/iosApp" --include='*.swift' 2>/dev/null || true)
+if [ -n "$RELAXED" ]; then
+  echo "VIOLATION : requiresOnDeviceRecognition relâché :"; echo "$RELAXED"; status=1
+fi
+for f in $(grep -rlF "SFSpeechAudioBufferRecognitionRequest(" "$ROOT/iosApp" --include='*.swift' 2>/dev/null || true); do
+  if ! grep -qF "requiresOnDeviceRecognition = true" "$f"; then
+    echo "VIOLATION : requête de reconnaissance sans requiresOnDeviceRecognition = true dans $f"; status=1
+  fi
+done
+
+echo "== Widgets sans accès aux données (H4) =="
+if grep -rqF "import Shared" "$ROOT/iosApp/CaptureWidget" --include='*.swift' 2>/dev/null; then
+  echo "VIOLATION : l'extension widget iOS importe le noyau"; status=1
+fi
+if grep -rqE "Repository|SharedFactory|readyShared" "$ROOT/androidApp/src/main/java/app/trouvetout/android/widget" 2>/dev/null; then
+  echo "VIOLATION : le widget ou la tuile Android lit des données"; status=1
+fi
+
 echo "== Manifeste / plist =="
 if grep -rq 'android.permission.INTERNET' "$ROOT/androidApp" --include=AndroidManifest.xml 2>/dev/null && [ ! -f "$ROOT/docs/adr-permissions.ok" ]; then
   echo "VIOLATION : permission INTERNET sans ADR"; status=1
@@ -26,11 +52,11 @@ case "${1:-}" in
   --android)
     echo "== Test dynamique Android (nécessite un émulateur/appareil en débogage) =="
     echo "Procédure : adb shell settings put global http_proxy 127.0.0.1:1 ; lancer les parcours U1/U3/U8 ; adb shell dumpsys netstats detail | grep <uid>."
-    echo "À automatiser au lot 5 (test instrumenté + vérification des compteurs réseau de l'UID)." ;;
+    echo "Parcours complet automatisé au lot 12 (tools/check-* en CI) ; la voix est couverte par la garde statique ci-dessus (ADR-020)." ;;
   --ios)
     echo "== Test dynamique iOS (simulateur) =="
     echo "Procédure : lancer mitmproxy en mode blocage ou Network Link Conditioner 100 % perte ; rejouer U1/U3/U8 ; vérifier zéro requête."
-    echo "À automatiser au lot 5." ;;
+    echo "Parcours complet automatisé au lot 12 ; la voix est couverte par la garde statique ci-dessus (ADR-020)." ;;
 esac
 
 [ $status -eq 0 ] && echo "OK" || echo "ÉCHEC"

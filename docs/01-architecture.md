@@ -152,7 +152,7 @@ Pipeline : `entrée (voix|texte) → texte → Parser → Intent → confirmatio
 
 ### 4.1 Transcription (B2)
 - iOS : `SFSpeechRecognizer` avec `requiresOnDeviceRecognition = true` (fr-FR, en-US) ; si indisponible pour la langue/appareil, repli Whisper embarqué (`whisper.cpp`, modèle `base` multilingue, pack optionnel) ; sinon saisie texte.
-- Android : `SpeechRecognizer` avec `EXTRA_PREFER_OFFLINE = true` ; vérifier `isOnDeviceRecognitionAvailable` ; même repli Whisper.
+- Android : `SpeechRecognizer.createOnDeviceSpeechRecognizer` seulement, après `isOnDeviceRecognitionAvailable` (API 31+) ; Android 10–11 : saisie texte, car `EXTRA_PREFER_OFFLINE` n'est qu'un indice (ADR-020) ; même repli Whisper si la mesure le justifie.
 - Jamais de reconnaissance réseau : si seul le mode réseau est disponible, l'app propose la saisie texte et explique pourquoi.
 
 ### 4.2 Parseur (`shared/capture`) — règles, pas de LLM en v1

@@ -1,6 +1,7 @@
 package app.trouvetout.android.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -14,7 +15,19 @@ import app.trouvetout.android.ui.places.BrowseTarget
 import app.trouvetout.android.ui.settings.SettingsRoute
 
 @Composable
-fun AppNavigation(controller: NavHostController = rememberNavController()) {
+fun AppNavigation(
+    controller: NavHostController = rememberNavController(),
+    searchRequest: String? = null,
+    onSearchRequestHandled: () -> Unit = {},
+) {
+    // A question from the quick capture is answered on the home screen, whatever screen was open.
+    LaunchedEffect(searchRequest) {
+        if (searchRequest !=
+            null
+        ) {
+            controller.popBackStack(Routes.CAPTURE, inclusive = false)
+        }
+    }
     val browse =
         BrowseNavigation(
             onBack = { controller.popBackStack() },
@@ -28,6 +41,8 @@ fun AppNavigation(controller: NavHostController = rememberNavController()) {
                 onOpenSettings = { controller.navigate(Routes.SETTINGS) },
                 onOpenPlaces = { controller.navigate(Routes.PLACES) },
                 onOpenItem = { controller.navigate(Routes.item(it)) },
+                searchRequest = searchRequest,
+                onSearchRequestHandled = onSearchRequestHandled,
             )
         }
         composable(Routes.SETTINGS) { SettingsRoute(onBack = { controller.popBackStack() }) }

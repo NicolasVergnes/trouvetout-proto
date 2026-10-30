@@ -4,9 +4,11 @@ import SwiftUI
 /// storage could not be prepared, the screen says so instead of touching a core that refuses to open.
 struct ContentView: View {
     @EnvironmentObject private var container: AppContainer
+    @EnvironmentObject private var router: CaptureRouter
+    @State private var path = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if container.storageFailure != nil {
                     StorageUnavailableView()
@@ -20,19 +22,29 @@ struct ContentView: View {
             .navigationDestination(for: ItemRoute.self) { route in
                 ItemSheetView(container: container, itemId: route.id)
             }
+            .navigationDestination(for: SettingsRoute.self) { _ in
+                SettingsView(container: container)
+            }
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     NavigationLink("places_title", value: BrowseTarget.root)
-                    NavigationLink("settings_title") {
-                        SettingsView(container: container)
-                    }
+                    NavigationLink("settings_title", value: SettingsRoute())
                 }
             }
             .navigationTitle(Text(verbatim: "TrouveTout"))
             .navigationBarTitleDisplayMode(.inline)
         }
+        // A capture asked from a widget or the Action button happens on the home screen.
+        .onReceive(router.$request) { request in
+            if request != nil {
+                path = NavigationPath()
+            }
+        }
     }
 }
+
+/// The settings screen as a value route, so that a capture request can pop it like any other screen.
+struct SettingsRoute: Hashable {}
 
 private struct StorageUnavailableView: View {
     var body: some View {
@@ -53,6 +65,7 @@ private struct StorageUnavailableView: View {
         static var previews: some View {
             ContentView()
                 .environmentObject(AppContainer())
+                .environmentObject(CaptureRouter.shared)
         }
     }
 #endif
