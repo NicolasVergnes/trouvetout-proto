@@ -6,31 +6,28 @@ public enum class SpeechAvailability {
     ON_DEVICE,
 
     /**
-     * Android 10–11: the recogniser only takes a « prefer offline » hint. Allowed until a run fails for lack of
-     * network, after which the host remembers it and falls back to text.
+     * A recogniser exists but nothing guarantees it stays on the device (Android 10–11 only take a « prefer
+     * offline » hint; iOS without an on-device model for the language): the host offers text and says why.
      */
-    LEGACY_PREFER_OFFLINE,
+    NOT_ON_DEVICE,
 
-    /** No usable recogniser: the host offers text and says why. */
-    UNAVAILABLE,
+    /** No recogniser at all (some emulators, devices without a speech service): the host offers text. */
+    NO_RECOGNIZER,
 }
 
 /** Pure decision shared by both hosts; the platform supplies the facts. */
 public object SpeechPolicy {
     /**
-     * @param onDeviceSupported the platform's own answer when it has one; null when it cannot tell (Android 10–11).
-     * @param recognizerInstalled false when no speech service exists at all (some emulators, de-Googled devices).
-     * @param legacyOfflineFailed true once a « prefer offline » run ended with a network error.
+     * @param onDeviceSupported the platform's own answer; null when it cannot tell (Android 10–11), which is
+     *   never taken as a yes.
+     * @param recognizerInstalled false when no speech service exists at all.
      */
     public fun decide(
         onDeviceSupported: Boolean?,
         recognizerInstalled: Boolean,
-        legacyOfflineFailed: Boolean,
     ): SpeechAvailability = when {
-        !recognizerInstalled -> SpeechAvailability.UNAVAILABLE
+        !recognizerInstalled -> SpeechAvailability.NO_RECOGNIZER
         onDeviceSupported == true -> SpeechAvailability.ON_DEVICE
-        onDeviceSupported == false -> SpeechAvailability.UNAVAILABLE
-        legacyOfflineFailed -> SpeechAvailability.UNAVAILABLE
-        else -> SpeechAvailability.LEGACY_PREFER_OFFLINE
+        else -> SpeechAvailability.NOT_ON_DEVICE
     }
 }

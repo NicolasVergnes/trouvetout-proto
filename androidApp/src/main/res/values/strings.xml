@@ -137,4 +137,27 @@
     <string name="history_restored">Restored</string>
     <string name="history_photo_attached">Photo added</string>
     <string name="history_photo_detached">Photo removed</string>
+    <!-- Lot 5: voice capture, batch mode, widget and tile -->
+    <string name="action_continue">Continue</string>
+    <string name="action_phone_settings">Phone settings</string>
+    <string name="capture_mic">Speak</string>
+    <string name="capture_mic_stop">Stop listening</string>
+    <string name="capture_listening">Listening… for example "passport in the top drawer"</string>
+    <string name="voice_rationale_title">Use the microphone?</string>
+    <string name="voice_rationale_text">TrouveTout turns your sentence into text on this phone. The audio never leaves the device and is not kept.</string>
+    <string name="voice_not_on_device">This phone cannot guarantee that dictation stays on the device, so the microphone is off. Type your sentence instead.</string>
+    <string name="voice_no_recognizer">This phone has no speech recognition. Type your sentence instead.</string>
+    <string name="voice_language_unavailable">Offline speech recognition is not installed for this language. Add it in the phone settings, or type your sentence.</string>
+    <string name="voice_no_match">Nothing heard. Try again, or type.</string>
+    <string name="voice_permission_denied">The microphone is not allowed. You can allow it in the phone settings, or type your sentence.</string>
+    <string name="voice_failed">Dictation did not work. Try again, or type.</string>
+    <string name="batch_start">Putting away…</string>
+    <string name="batch_picker_title">Put everything into</string>
+    <string name="batch_active">Putting away into %1$s</string>
+    <string name="batch_stop">Stop putting away</string>
+    <string name="quick_capture_label">Quick capture</string>
+    <string name="widget_description">Say or type where you put something</string>
+    <string name="widget_voice">Say where you put something</string>
+    <string name="widget_text">Type where you put something</string>
+    <string name="tile_label">Put away</string>
 </resources>
