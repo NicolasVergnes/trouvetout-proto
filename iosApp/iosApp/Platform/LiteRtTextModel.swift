@@ -79,9 +79,10 @@ final class LiteRtTextEmbedder: CallbackTextEmbedder {
                     contentsBatch: texts.map { [LiteRTLM.Content.text($0)] },
                     options: options
                 )
-                completion(responses.map { response in
+                let vectors = responses.map { response in
                     response.embedding.withUnsafeBufferPointer { Data(buffer: $0) }
-                }, nil)
+                }
+                completion(vectors, nil)
             } catch {
                 completion(nil, String(describing: type(of: error)))
             }

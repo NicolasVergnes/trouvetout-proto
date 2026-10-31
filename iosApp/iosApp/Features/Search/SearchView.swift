@@ -64,7 +64,7 @@ struct SearchView: View {
     private var modeBanner: some View {
         if let indexing = viewModel.mode as? SearchModeIndexing {
             VStack(alignment: .leading, spacing: 4) {
-                Text(String(format: NSLocalizedString("search_mode_indexing", comment: ""), indexing.done, indexing.total))
+                Text(localized("search_mode_indexing", indexing.done, indexing.total))
                 if indexing.total > 0 {
                     ProgressView(value: Double(indexing.done), total: Double(indexing.total))
                 }
@@ -194,7 +194,7 @@ struct SearchView: View {
         if query.isEmpty {
             return NSLocalizedString(result.filters.isEmpty ? "search_start" : "search_empty_filters", comment: "")
         }
-        return String(format: NSLocalizedString("search_empty", comment: ""), query)
+        return localized("search_empty", query)
     }
 
     private func photoPath(_ fileName: String) -> String {
@@ -256,11 +256,11 @@ private struct AnswerRow: View {
         let when = relativeDate(answer.since)
         let state: String
         switch answer.status {
-        case .taken: state = String(format: NSLocalizedString("search_answer_taken", comment: ""), when)
-        case .lent: state = String(format: NSLocalizedString("search_answer_lent", comment: ""), answer.lentTo ?? "", when)
-        default: state = String(format: NSLocalizedString("search_answer_stored", comment: ""), when)
+        case .taken: state = localized("search_answer_taken", when)
+        case .lent: state = localized("search_answer_lent", answer.lentTo ?? "", when)
+        default: state = localized("search_answer_stored", when)
         }
-        return answer.archived ? String(format: NSLocalizedString("search_answer_archived", comment: ""), state) : state
+        return answer.archived ? localized("search_answer_archived", state) : state
     }
 }
 
@@ -279,11 +279,18 @@ private struct ItemSummary: View {
     private var whereText: String {
         switch view.location.status {
         case .taken: NSLocalizedString("state_taken", comment: "")
-        case .lent: String(format: NSLocalizedString("state_lent", comment: ""), view.location.lentTo ?? "")
+        case .lent: localized("state_lent", view.location.lentTo ?? "")
         default:
-            view.path.isUnknown
-                ? NSLocalizedString("state_unknown_place", comment: "")
-                : view.path.labels.joined(separator: " › ")
+            if view.path.isUnknown {
+                NSLocalizedString("state_unknown_place", comment: "")
+            } else {
+                view.path.labels.joined(separator: " › ")
+            }
         }
     }
+}
+
+/// A localized format string filled with its arguments.
+private func localized(_ key: String, _ arguments: CVarArg...) -> String {
+    String(format: NSLocalizedString(key, comment: ""), arguments: arguments)
 }
