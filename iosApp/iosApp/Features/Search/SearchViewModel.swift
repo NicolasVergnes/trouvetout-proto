@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import Shared
+import UIKit
 
 /// Period offered by the « moved recently » filter (C11), in days.
 enum SincePeriod: Int, CaseIterable, Identifiable {
@@ -28,10 +29,21 @@ final class SearchViewModel: ObservableObject {
     @Published var query: String {
         didSet {
             if query != oldValue {
+                if !query.isEmpty {
+                    photo = nil
+                    photoData = nil
+                }
                 refresh(debounce: true)
             }
         }
     }
+
+    /// C10: the photo searched for instead of the text, previewed only (never stored).
+    @Published private(set) var photo: UIImage?
+    @Published private(set) var photoTooLarge = false
+    /// Offered on ≥ 6 GB phones with the photo model and the setting on (ADR-022).
+    @Published private(set) var photoSearch = false
+    private var photoData: Data?
 
     @Published private(set) var result: SearchResult?
     @Published private(set) var suggestions: [Suggestion] = []
@@ -82,7 +94,32 @@ final class SearchViewModel: ObservableObject {
         flows.watch(shared.browse.observeTags(), scope: scope) { [weak self] (list: NSArray) in
             self?.tags = (list as? [String]) ?? []
         }
+        flows.watch(shared.modelSettings.state, scope: scope) { [weak self] (state: PhotoModelState) in
+            self?.photoSearch = state.photoSearchAvailable
+        }
         shared.search.prepare()
+        refresh(debounce: false)
+    }
+
+    /// C10: the photo becomes the question; typing goes back to text.
+    func search(byPhoto data: Data) {
+        guard data.count <= Int(PhotoStore.companion.MAX_SOURCE_BYTES) else {
+            photoTooLarge = true
+            return
+        }
+        guard let image = UIImage(data: data), image.size.width > 0 else { return }
+        photoTooLarge = false
+        photo = image.preparingThumbnail(of: CGSize(width: 160, height: 160 * image.size.height / image.size.width))
+        photoData = data
+        query = ""
+        result = nil
+        refresh(debounce: false)
+    }
+
+    func clearPhoto() {
+        photo = nil
+        photoData = nil
+        result = nil
         refresh(debounce: false)
     }
 
@@ -128,6 +165,7 @@ final class SearchViewModel: ObservableObject {
         guard container.ready else { return }
         let search = container.shared.search
         let text = query
+        let photoBytes = photoData.map { BytesKt.bytesOf(data: $0) }
         let filters = SearchFilters(
             placeId: placeId,
             containerId: containerId,
@@ -143,7 +181,11 @@ final class SearchViewModel: ObservableObject {
             let completions = await SearchViewModel.completions(of: text, in: search)
             let found: SearchResult
             do {
-                found = try await search.search(query: text, filters: filters, limit: 20)
+                found = if let photoBytes {
+                    try await search.searchByPhoto(photo: photoBytes, filters: filters, limit: 20)
+                } else {
+                    try await search.search(query: text, filters: filters, limit: 20)
+                }
             } catch {
                 return
             }

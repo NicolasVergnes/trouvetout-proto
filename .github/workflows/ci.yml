@@ -62,7 +62,7 @@ jobs:
           retention-days: 7
 
   search-eval:
-    name: Search quality with the real model (N2, N3)
+    name: Search and photo quality with the real models (N2, N3, B8)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -85,12 +85,23 @@ jobs:
       - run: chmod +x gradlew
       - name: Replay corpus/recherche.jsonl (keyword, semantic, hybrid) and measure latency over 5 000 items
         run: ./gradlew :tools:evalSearch -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64
-      - name: Upload the evaluation report
+      - name: Cache the CC BY evaluation photos (never committed; each checksum verified at every run)
+        if: always()
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: build/eval-photos
+          key: eval-photos-${{ hashFiles('corpus/photos-cc.jsonl') }}
+      - name: Name the CC BY photos of corpus/photos-cc.jsonl with the text+vision model (B8, lot 7)
+        if: always()
+        run: ./gradlew :tools:evalPhotos -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64
+      - name: Upload the evaluation reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: search-eval
-          path: build/reports/eval/search.json
+          path: |
+            build/reports/eval/search.json
+            build/reports/eval/photos.json
           retention-days: 30
 
   android-device:
@@ -172,7 +183,7 @@ jobs:
           echo "Simulator: $UDID"
           echo "IOS_SIMULATOR_DEVICE=$UDID" >> "$GITHUB_ENV"
       - name: Kotlin/Native tests, framework and embedding model
-        run: ./gradlew :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64 :models:fetchTextModel
+        run: ./gradlew :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64 :models:fetchModels
       - name: Generate Xcode project
         working-directory: iosApp
         run: xcodegen generate

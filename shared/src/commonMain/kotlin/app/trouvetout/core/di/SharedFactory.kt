@@ -27,10 +27,10 @@ import app.trouvetout.core.domain.usecase.PlaceCommands
 import app.trouvetout.core.domain.usecase.UndoService
 import app.trouvetout.core.log.LogLevel
 import app.trouvetout.core.ml.ModelRuntime
-import app.trouvetout.core.ml.ModelSelector
-import app.trouvetout.core.ml.ModelVariant
+import app.trouvetout.core.ml.ModelSettings
 import app.trouvetout.core.platform.FileStore
 import app.trouvetout.core.platform.createFileStore
+import app.trouvetout.core.search.PhotoFiles
 import app.trouvetout.core.search.SearchService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -101,7 +101,21 @@ public class SharedFactory(
         BrowseRepository(database, config.dispatchers, itemRepository, eventStore)
     }
 
-    private val modelRuntime = lazy { ModelRuntime(config.textModel, config.logger) }
+    /** The photo side of the model (B8, C10): device memory, bundled file, the user's two settings (ADR-022). */
+    public val modelSettings: ModelSettings by lazy {
+        ModelSettings(
+            database,
+            config.deviceInfo.totalRamBytes,
+            bundled = config.textModel?.imageModelId != null,
+            io = config.dispatchers.io,
+        ).also { settings ->
+            // Another model is loaded at the next use; the search computes what the new one needs.
+            settings.onModelChange = { if (searchService.isInitialized()) searchService.value.release() }
+        }
+    }
+
+    private val modelRuntime =
+        lazy { ModelRuntime(config.textModel, config.logger) { modelSettings.state.value.imagesActive } }
     private val searchService =
         lazy {
             SearchService(
@@ -111,14 +125,12 @@ public class SharedFactory(
                 config.clock,
                 config.dispatchers,
                 config.logger,
+                PhotoFiles(config.imageCodec) { name -> photoStore.read(name) },
             )
         }
 
-    /** Hybrid search (lot 6): keywords, synonyms and the embedded model, with a keyword-only fallback. */
+    /** Hybrid search (lots 6 and 7): keywords, meaning and photos, with a keyword-only fallback. */
     public val search: SearchService by searchService
-
-    /** Variant of the model for this device (ADR-003), chosen from its memory once and kept in `meta`. */
-    public val modelVariant: ModelVariant by lazy { ModelSelector.ensure(database, config.deviceInfo.totalRamBytes) }
 
     private val photoIds: MonotonicUlidGenerator by lazy { MonotonicUlidGenerator(config.clock, config.random) }
     private val photoIdLock = Mutex()

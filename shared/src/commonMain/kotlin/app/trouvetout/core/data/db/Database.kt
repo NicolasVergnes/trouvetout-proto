@@ -10,6 +10,8 @@ public object MetaKeys {
     public const val SCHEMA_VERSION: String = "schema_version"
     public const val DEVICE_ID: String = "device_id"
     public const val MODEL_VARIANT: String = "model_variant"
+    public const val FORCE_TEXT_ONLY: String = "force_text_only"
+    public const val PHOTO_SEARCH: String = "photo_search"
 }
 
 /** Opens (creating or migrating) the SQLite database; implemented per platform, the caller owns the driver. */

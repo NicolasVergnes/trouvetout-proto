@@ -51,6 +51,23 @@ public data class SearchTuning(
     val frequencyBonus: Double = 0.1,
     /** Archived items still answer, behind the others (D11). */
     val archivedFactor: Double = 0.8,
+    /** In a search by photo, share of the photo-to-photo strength; the rest is photo-to-text (C10). */
+    val photoShare: Double = 0.6,
+    /**
+     * C10: an item photo must pass this cosine with the question photo. On the CC set two photos of the same kind of
+     * object sit at 0.79 (median), as do the closest photos of other kinds: only a photo of the same object rises
+     * clearly above (ADR-022).
+     */
+    val photoFloor: Float = 0.8f,
+    /**
+     * C10: an item text must pass this cosine with the question photo. On the CC set the right item's text sits at
+     * 0.73 (median) and the best wrong one at 0.70 (ADR-022).
+     */
+    val photoTextFloor: Float = 0.7f,
+    /** C10: image cosines sit close together; a cosine this far above its floor counts fully. */
+    val photoGap: Float = 0.05f,
+    /** A label must reach this cosine with the photo to be proposed as a name (B8). */
+    val labelFloor: Float = 0f,
     /** Search with the keyword list only (evaluation of the no-model mode). */
     val keywordOnly: Boolean = false,
     /** Search with the semantic list only (evaluation). */

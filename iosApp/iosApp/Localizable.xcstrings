@@ -481,6 +481,134 @@
         }
       }
     },
+    "capture_photo_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The photo goes with the object of the next sentence."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La photo ira avec l’objet de la prochaine phrase."
+          }
+        }
+      }
+    },
+    "capture_photo_naming": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking at the photo…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyse de la photo…"
+          }
+        }
+      }
+    },
+    "capture_photo_no_names_build": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This version of the app does not suggest names: type the name."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette version de l’app ne suggère pas de noms : tapez le nom."
+          }
+        }
+      }
+    },
+    "capture_photo_no_names_found": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No name found for this photo: type it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun nom trouvé pour cette photo : tapez-le."
+          }
+        }
+      }
+    },
+    "capture_photo_no_names_memory": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name suggestions need an iPhone with 6 GB of memory: type the name."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les noms suggérés demandent un iPhone de 6 Go de mémoire : tapez le nom."
+          }
+        }
+      }
+    },
+    "capture_photo_no_names_off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name suggestions are turned off in Settings › Photos: type the name."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les noms suggérés sont désactivés dans Réglages › Photos : tapez le nom."
+          }
+        }
+      }
+    },
+    "capture_photo_remove": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove the photo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer la photo"
+          }
+        }
+      }
+    },
+    "capture_photo_several": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This sentence names several objects, so the photo was not added. Say one object to add it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette phrase nomme plusieurs objets : la photo n’a pas été ajoutée. Dites un seul objet pour l’ajouter."
+          }
+        }
+      }
+    },
     "capture_place_attach": {
       "localizations": {
         "en": {
@@ -1937,6 +2065,54 @@
         }
       }
     },
+    "search_photo_clear": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search with words again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chercher de nouveau avec des mots"
+          }
+        }
+      }
+    },
+    "search_photo_empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No object looks like this photo. Objects with a photo or a description are found best."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun objet ne ressemble à cette photo. Les objets qui ont une photo ou une description sont les mieux trouvés."
+          }
+        }
+      }
+    },
+    "search_photo_question": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objects that look like this photo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objets qui ressemblent à cette photo"
+          }
+        }
+      }
+    },
     "search_since_month": {
       "localizations": {
         "en": {
@@ -2349,6 +2525,118 @@
           "stringUnit": {
             "state": "translated",
             "value": "Import refusé"
+          }
+        }
+      }
+    },
+    "settings_photos_absent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This version of the app does not include the photo model."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette version de l’app n’inclut pas le modèle photo."
+          }
+        }
+      }
+    },
+    "settings_photos_memory": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naming objects from a photo needs an iPhone with 6 GB of memory. Photos are still added to objects and search works with words."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nommer les objets d’après une photo demande un iPhone de 6 Go de mémoire. Les photos restent ajoutées aux objets et la recherche fonctionne avec des mots."
+          }
+        }
+      }
+    },
+    "settings_photos_model": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name objects from their photo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nommer les objets d’après leur photo"
+          }
+        }
+      }
+    },
+    "settings_photos_model_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turned off, the app uses less memory; photos are still added to objects."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactivé, l’app utilise moins de mémoire ; les photos restent ajoutées aux objets."
+          }
+        }
+      }
+    },
+    "settings_photos_search": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search with a photo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chercher avec une photo"
+          }
+        }
+      }
+    },
+    "settings_photos_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos"
+          }
+        }
+      }
+    },
+    "settings_photos_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On this iPhone, photos are understood by a second model included in the app: it suggests a name for a photographed object and finds objects from a photo. Everything stays on the iPhone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sur cet iPhone, un second modèle inclus dans l’app comprend les photos : il propose un nom pour un objet photographié et retrouve des objets à partir d’une photo. Tout reste sur l’iPhone."
           }
         }
       }

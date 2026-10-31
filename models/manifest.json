@@ -10,6 +10,17 @@
       "bytes": 164626432,
       "license": "Apache-2.0",
       "source": "litert-community/embeddinggemma-2-text-270m-litert-lm@9be6e8b90982095dc05c2bd162e4b954ee4dbac7"
+    },
+    {
+      "id": "embeddinggemma-2-text-vision-440m",
+      "variant": "OMNIMODAL",
+      "file": "models/embeddinggemma-2-text-vision-440m.litertlm",
+      "url": "https://huggingface.co/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/resolve/e301f74d5551b0c2641bd5cb4652a76239d5c5f8/embeddinggemma-2-text-vision-440m.litertlm",
+      "sha256": "92dcbea108899e5d6e30d919b0744f90d9967e80c67a4ab5503ac16d54f62eb0",
+      "bytes": 387710976,
+      "license": "Apache-2.0",
+      "source": "litert-community/embeddinggemma-2-text-vision-440m-litert-lm@e301f74d5551b0c2641bd5cb4652a76239d5c5f8",
+      "visionTokensPerImage": 70
     }
   ]
 }

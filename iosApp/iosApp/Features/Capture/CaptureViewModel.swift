@@ -22,8 +22,16 @@ final class CaptureViewModel: ObservableObject {
     /// Destinations of the « je range » picker.
     @Published private(set) var places: [Place_] = []
     @Published private(set) var containers: [Container_] = []
+    /// B8: the photo for the next sentence, and why one could not be used.
+    @Published var photo: CapturePhoto?
+    @Published var photoNotice: PhotoNotice?
+    /// What the photo side can do here (names need the text+vision model, ≥ 6 GB, ADR-022).
+    @Published private(set) var photoModel: PhotoModelState?
+    /// The bytes of `photo`, attached to the object once the sentence is recorded.
+    var photoData: Data?
+    var namingTask: Task<Void, Never>?
 
-    private let container: AppContainer
+    let container: AppContainer
     private let speech: SpeechListening
     private var cardToken = 0
     private let flows = FlowSubscriptions()
@@ -64,6 +72,9 @@ final class CaptureViewModel: ObservableObject {
         }
         flows.watch(shared.containerRepository.observeActive(), scope: scope) { [weak self] (list: NSArray) in
             self?.containers = (list as? [Container_]) ?? []
+        }
+        flows.watch(shared.modelSettings.state, scope: scope) { [weak self] (state: PhotoModelState) in
+            self?.photoModel = state
         }
     }
 
@@ -209,7 +220,8 @@ final class CaptureViewModel: ObservableObject {
             source: source
         )
         if let recorded = outcome as? CaptureOutcomeRecorded {
-            recordedOutcome(proposal, recorded)
+            let photoEvents = try await attachPhoto(to: recorded)
+            recordedOutcome(proposal, recorded, photoEvents: photoEvents)
         } else if let refused = outcome as? CaptureOutcomeRefused {
             problem = refused.problem
         } else if let search = outcome as? CaptureOutcomeSearch {
@@ -218,12 +230,16 @@ final class CaptureViewModel: ObservableObject {
         }
     }
 
-    private func recordedOutcome(_ proposal: CaptureProposal, _ recorded: CaptureOutcomeRecorded) {
+    private func recordedOutcome(
+        _ proposal: CaptureProposal,
+        _ recorded: CaptureOutcomeRecorded,
+        photoEvents: [Event]
+    ) {
         let parse = proposal.parse
         input = ""
         suggestions = []
         // Nothing written (the object was already there): nothing to confirm or to undo.
-        guard !recorded.events.isEmpty else {
+        guard !recorded.events.isEmpty || !photoEvents.isEmpty else {
             card = nil
             return
         }
@@ -236,14 +252,14 @@ final class CaptureViewModel: ObservableObject {
             placeText: parse.place ?? resolved,
             person: parse.person,
             rawInput: parse.input,
-            events: recorded.events,
+            events: recorded.events + photoEvents,
             source: source,
             token: cardToken
         )
     }
 
     /// The UI language at the time of the call.
-    private func uiLang() -> Lang {
+    func uiLang() -> Lang {
         Locale.current.language.languageCode?.identifier == "fr" ? .fr : .en
     }
 

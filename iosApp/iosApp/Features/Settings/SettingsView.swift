@@ -49,12 +49,14 @@ struct SettingsView: View {
             } header: {
                 Text("settings_search_section")
             }
+            photoSection
             if viewModel.busy {
                 ProgressView("settings_busy")
                     .frame(maxWidth: .infinity)
             }
         }
         .navigationTitle("settings_title")
+        .onAppear { viewModel.refreshPhotoModel() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.zip, .data]) { result in
             if case let .success(url) = result {
                 viewModel.importArchive(from: url)
@@ -70,6 +72,38 @@ struct SettingsView: View {
             Button("action_ok") { viewModel.message = nil }
         } message: {
             Text(messageText)
+        }
+    }
+
+    /// « Photos » (B8, C10): the switches on a phone that can run the photo model, otherwise why not.
+    @ViewBuilder
+    private var photoSection: some View {
+        if let model = viewModel.photoModel {
+            Section {
+                if !model.bundled {
+                    Text("settings_photos_absent").font(.footnote)
+                } else if !model.deviceCapable {
+                    Text("settings_photos_memory").font(.footnote)
+                } else {
+                    Text("settings_photos_text").font(.footnote)
+                    Toggle(isOn: Binding(get: { !model.forceTextOnly }, set: { viewModel.setNamePhotos($0) })) {
+                        VStack(alignment: .leading) {
+                            Text("settings_photos_model")
+                            Text("settings_photos_model_hint").font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
+                    Toggle(
+                        "settings_photos_search",
+                        isOn: Binding(
+                            get: { model.photoSearch && model.imagesActive },
+                            set: { viewModel.setPhotoSearch($0) }
+                        )
+                    )
+                    .disabled(!model.imagesActive)
+                }
+            } header: {
+                Text("settings_photos_section")
+            }
         }
     }
 

@@ -1,12 +1,16 @@
 package app.trouvetout.android.ui.capture
 
 import android.os.Build
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.trouvetout.android.App
 import app.trouvetout.android.capture.SpeechController
 import app.trouvetout.android.capture.SpeechError
 import app.trouvetout.android.capture.SpeechEvent
+import app.trouvetout.android.ui.common.PhotoAttachment
+import app.trouvetout.android.ui.common.PhotoBytes
+import app.trouvetout.android.ui.common.previewOf
 import app.trouvetout.core.capture.CaptureOutcome
 import app.trouvetout.core.capture.CaptureProblem
 import app.trouvetout.core.capture.CaptureProposal
@@ -22,15 +26,20 @@ import app.trouvetout.core.data.repository.ItemView
 import app.trouvetout.core.domain.model.Container
 import app.trouvetout.core.domain.model.Event
 import app.trouvetout.core.domain.model.EventSource
+import app.trouvetout.core.domain.model.PhotoOwnerType
 import app.trouvetout.core.domain.model.Place
 import app.trouvetout.core.domain.usecase.CommandResult
 import app.trouvetout.core.domain.usecase.LocationRef
+import app.trouvetout.core.domain.usecase.Rejection
+import app.trouvetout.core.ml.PhotoModelState
+import app.trouvetout.core.search.NameSuggestion
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -73,6 +82,17 @@ data class ConfirmationCard(
 /** Why the microphone is not listening; shown under the field, typing always works (B2, H9). */
 enum class VoiceNotice { NOT_ON_DEVICE, NO_RECOGNIZER, LANGUAGE_UNAVAILABLE, NO_MATCH, PERMISSION_DENIED, FAILED }
 
+/** Why a photo of the capture could not be used (B8, A10). */
+enum class PhotoNotice { TOO_LARGE, UNREADABLE, UNSUPPORTED, SEVERAL_ITEMS }
+
+/** The photo taken with the sentence, not stored before the sentence is recorded (B8). */
+data class CapturePhoto(
+    val preview: ImageBitmap,
+    /** Up to three names proposed by the text+vision model, in the UI language; empty on a text-only phone. */
+    val names: List<NameSuggestion> = emptyList(),
+    val naming: Boolean = false,
+)
+
 /** B10 « je range » : the place or container every sentence without a place of its own goes into. */
 data class BatchTarget(
     val ref: LocationRef,
@@ -92,6 +112,8 @@ data class CaptureUiState(
     val askMicPermission: Boolean = false,
     val voiceNotice: VoiceNotice? = null,
     val batch: BatchTarget? = null,
+    val photo: CapturePhoto? = null,
+    val photoNotice: PhotoNotice? = null,
 )
 
 /**
@@ -99,6 +121,7 @@ data class CaptureUiState(
  * microphone, the questions and the card. Shared by the home screen and the quick capture of the widget and tile.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("TooManyFunctions") // one entry point per action of the screen (text, voice, batch, photo), no logic
 class CaptureViewModel(
     private val app: App,
 ) : ViewModel() {
@@ -122,7 +145,17 @@ class CaptureViewModel(
             .flatMapLatest { it.containerRepository.observeActive() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
 
+    /** What the photo side can do here (names need the text+vision model, ≥ 6 GB, ADR-022). */
+    val photoModel: StateFlow<PhotoModelState?> =
+        app.readyShared
+            .flatMapLatest { it.modelSettings.state }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+
     private val speech = SpeechController(app)
+
+    /** The bytes of [CaptureUiState.photo], attached to the object once the sentence is recorded. */
+    private var photoBytes: ByteArray? = null
+    private var namingJob: Job? = null
     private var cardToken = 0L
     private var suggestionJob: Job? = null
     private var listenJob: Job? = null
@@ -193,6 +226,43 @@ class CaptureViewModel(
         // The words heard so far stay in the field, to send as is or to correct.
         _state.value.input.takeIf { _state.value.listening && it.isNotBlank() }?.let { heardText = it }
     }
+
+    /** A photo for the next sentence: previewed, named by the model when it can (B8), stored only once recorded. */
+    fun addPhoto(attachment: PhotoAttachment) {
+        namingJob?.cancel()
+        namingJob =
+            viewModelScope.launch {
+                val bytes =
+                    when (val read = attachment.read()) {
+                        is PhotoBytes.Ok -> read.bytes
+                        PhotoBytes.TooLarge -> return@launch photoProblem(PhotoNotice.TOO_LARGE)
+                        PhotoBytes.Unreadable -> return@launch photoProblem(PhotoNotice.UNREADABLE)
+                    }
+                val preview = previewOf(bytes) ?: return@launch photoProblem(PhotoNotice.UNSUPPORTED)
+                photoBytes = bytes
+                val naming = photoModel.value?.imagesActive == true
+                _state.update { it.copy(photo = CapturePhoto(preview, naming = naming), photoNotice = null) }
+                if (naming) {
+                    val names = app.readyShared.first().search.suggestNames(bytes, uiLang())
+                    _state.update { s -> s.copy(photo = s.photo?.copy(names = names, naming = false)) }
+                }
+            }
+    }
+
+    fun removePhoto() {
+        namingJob?.cancel()
+        photoBytes = null
+        _state.update { it.copy(photo = null, photoNotice = null) }
+    }
+
+    /** A proposed name starts the sentence; the user completes the place and sends. */
+    fun useName(name: String) {
+        val input = _state.value.input.trim()
+        val text = if (input.isEmpty()) "$name @ " else "$name $input"
+        onInputChange(text)
+    }
+
+    private fun photoProblem(notice: PhotoNotice) = _state.update { it.copy(photoNotice = notice) }
 
     fun startBatch(ref: LocationRef) {
         val label =
@@ -337,20 +407,52 @@ class CaptureViewModel(
             return
         }
         when (val outcome = app.shared.capture.commit(proposal, placeChoice, answers, source)) {
-            is CaptureOutcome.Recorded -> recorded(proposal, outcome)
+            is CaptureOutcome.Recorded -> recorded(proposal, outcome, attachPhoto(outcome))
             is CaptureOutcome.Refused -> _state.update { it.copy(problem = outcome.problem) }
             is CaptureOutcome.Search -> _state.update { it.copy(searchQuery = outcome.query, input = "") }
+        }
+    }
+
+    /**
+     * The photo of the sentence goes to the object the core names (B8); its events join the card so that « Défaire »
+     * removes it too. Kept for the next sentence when the outcome names several objects.
+     */
+    private suspend fun attachPhoto(outcome: CaptureOutcome.Recorded): List<Event> {
+        val bytes = photoBytes ?: return emptyList()
+        val itemId = outcome.photoItemId
+        if (itemId == null) {
+            photoProblem(PhotoNotice.SEVERAL_ITEMS)
+            return emptyList()
+        }
+        photoBytes = null
+        _state.update { it.copy(photo = null) }
+        return when (
+            val result = app.shared.photoAttacher.attach(
+                PhotoOwnerType.ITEM,
+                itemId,
+                bytes,
+                EventSource.PHOTO,
+            )
+        ) {
+            is CommandResult.Done -> result.events
+            is CommandResult.Rejected -> {
+                photoProblem(
+                    if (result.reason == Rejection.IMAGE_TOO_LARGE) PhotoNotice.TOO_LARGE else PhotoNotice.UNSUPPORTED,
+                )
+                emptyList()
+            }
         }
     }
 
     private fun recorded(
         proposal: CaptureProposal,
         outcome: CaptureOutcome.Recorded,
+        photoEvents: List<Event>,
     ) {
         val parse = proposal.parse
         // Nothing written (the object was already there): nothing to confirm or to undo.
         val card =
-            if (outcome.events.isEmpty()) {
+            if (outcome.events.isEmpty() && photoEvents.isEmpty()) {
                 null
             } else {
                 ConfirmationCard(
@@ -360,7 +462,7 @@ class CaptureViewModel(
                     placeText = parse.place ?: (proposal.place as? PlaceResolution.Resolved)?.match?.candidate?.name,
                     person = parse.person,
                     rawInput = parse.input,
-                    events = outcome.events,
+                    events = outcome.events + photoEvents,
                     source = source,
                     token = ++cardToken,
                 )

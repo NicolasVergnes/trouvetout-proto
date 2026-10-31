@@ -54,6 +54,7 @@ fun SettingsRoute(
     val app = context.applicationContext as App
     val viewModel: SettingsViewModel = viewModel { SettingsViewModel(app) }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val photoModel by viewModel.photoModel.collectAsStateWithLifecycle()
     val picker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) viewModel.import(uri)
@@ -74,6 +75,7 @@ fun SettingsRoute(
         onWipe = viewModel::wipeAll,
         onDismissMessage = viewModel::dismissMessage,
         modifier = modifier,
+        photo = PhotoSettings(photoModel, viewModel::setForceTextOnly, viewModel::setPhotoSearch),
     )
 }
 
@@ -87,6 +89,7 @@ fun SettingsScreen(
     onWipe: () -> Unit,
     onDismissMessage: () -> Unit,
     modifier: Modifier = Modifier,
+    photo: PhotoSettings = PhotoSettings(null, {}, {}),
 ) {
     var confirmWipe by remember { mutableStateOf(false) }
     Scaffold(
@@ -143,6 +146,7 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            PhotoSection(photo)
         }
     }
     if (confirmWipe) {

@@ -69,6 +69,15 @@ class CaptureServiceTest {
     }
 
     @Test
+    fun a_photo_goes_to_the_only_object_of_the_sentence_B8() = runTest {
+        val one = assertIs<CaptureOutcome.Recorded>(say("tente dans le garage"))
+        assertEquals(one.itemIds.single(), one.photoItemId)
+        val two = assertIs<CaptureOutcome.Recorded>(say("pompe et piquets dans le garage"))
+        assertEquals(2, two.itemIds.size)
+        assertEquals(null, two.photoItemId, "several objects: the host keeps the photo rather than guess")
+    }
+
+    @Test
     fun should_reuse_a_known_place_and_walk_down_to_a_new_container() = runTest {
         say("vélo dans la cave")
         say("skis dans la cave")

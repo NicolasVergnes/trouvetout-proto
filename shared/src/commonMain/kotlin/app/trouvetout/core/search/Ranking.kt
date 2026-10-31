@@ -52,6 +52,34 @@ internal object Ranking {
         return out
     }
 
+    /**
+     * C10: items found by a photo, through their own photos (image to image) and through their descriptions (image
+     * to text). Each kind of cosine is measured from its own absolute floor, calibrated on the CC set (the two do
+     * not share a scale, and image cosines sit close together: a mean of the candidates would rank at random). A
+     * household with one photo still answers; a photo nothing looks like answers nothing.
+     */
+    fun combinePhoto(
+        byPhoto: List<Pair<String, Float>>,
+        byText: List<Pair<String, Float>>,
+        tuning: SearchTuning,
+    ): Map<String, Double> {
+        val out = HashMap<String, Double>()
+
+        fun add(
+            list: List<Pair<String, Float>>,
+            floor: Float,
+            share: Double,
+        ) {
+            for ((id, cosine) in list) {
+                val strength = ((cosine - floor).toDouble() / tuning.photoGap).coerceIn(0.0, 1.0)
+                if (strength > 0) out[id] = (out[id] ?: 0.0) + share * strength
+            }
+        }
+        add(byPhoto, tuning.photoFloor, tuning.photoShare)
+        add(byText, tuning.photoTextFloor, 1 - tuning.photoShare)
+        return out
+    }
+
     /** 1-based competition ranks of a list sorted best first (« 1, 1, 3 »). */
     fun ranks(sorted: List<Pair<String, Double>>): List<Pair<String, Int>> {
         var rank = 0

@@ -43,6 +43,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -51,8 +53,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -62,6 +66,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
 import app.trouvetout.android.ui.common.LocationPickerDialog
+import app.trouvetout.android.ui.common.PhotoAttachment
 import app.trouvetout.android.ui.theme.AppTheme
 import app.trouvetout.core.capture.CaptureProblem
 import app.trouvetout.core.capture.Intent
@@ -72,6 +77,7 @@ import app.trouvetout.core.domain.model.Container
 import app.trouvetout.core.domain.model.LocationStatus
 import app.trouvetout.core.domain.model.Place
 import app.trouvetout.core.domain.usecase.LocationRef
+import app.trouvetout.core.ml.PhotoModelState
 import kotlinx.coroutines.delay
 
 /** Home screen since lot 3: one field to say where things go, a confirmation card, the objects below. */
@@ -93,6 +99,7 @@ fun CaptureRoute(
     val items by viewModel.items.collectAsStateWithLifecycle()
     val places by viewModel.places.collectAsStateWithLifecycle()
     val containers by viewModel.containers.collectAsStateWithLifecycle()
+    val photoModel by viewModel.photoModel.collectAsStateWithLifecycle()
     val mic = rememberMicActions(viewModel)
     LaunchedEffect(searchRequest) {
         searchRequest?.let {
@@ -126,6 +133,9 @@ fun CaptureRoute(
                 mic = mic,
                 onStartBatch = viewModel::startBatch,
                 onStopBatch = viewModel::stopBatch,
+                onAddPhoto = viewModel::addPhoto,
+                onRemovePhoto = viewModel::removePhoto,
+                onUseName = viewModel::useName,
             )
         }
     CaptureScreen(
@@ -135,6 +145,7 @@ fun CaptureRoute(
         modifier = modifier,
         places = places,
         containers = containers,
+        photoModel = photoModel,
     )
 }
 
@@ -157,6 +168,9 @@ data class CaptureCallbacks(
     val onStartBatch: (LocationRef) -> Unit = {},
     val onStopBatch: () -> Unit = {},
     val onOpenSearch: () -> Unit = {},
+    val onAddPhoto: (PhotoAttachment) -> Unit = {},
+    val onRemovePhoto: () -> Unit = {},
+    val onUseName: (String) -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -168,6 +182,7 @@ fun CaptureScreen(
     modifier: Modifier = Modifier,
     places: List<Place> = emptyList(),
     containers: List<Container> = emptyList(),
+    photoModel: PhotoModelState? = null,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -192,9 +207,11 @@ fun CaptureScreen(
                     .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            CaptureField(state, callbacks)
+            val field = remember { FocusRequester() }
+            CaptureField(state, callbacks, Modifier.focusRequester(field))
             VoiceStatus(state, callbacks.mic.onOpenAppSettings)
             BatchRow(state, places, containers, callbacks)
+            CapturePhotoRow(state, photoModel, callbacks, onNameUsed = { field.requestFocus() })
             if (state.suggestions.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(state.suggestions, key = { it.id }) { candidate ->
@@ -281,9 +298,16 @@ internal fun CaptureField(
     callbacks: CaptureCallbacks,
     modifier: Modifier = Modifier,
 ) {
+    // A text set by the app (a proposed name, a transcript, a cleared field) puts the cursor at its end; what the user
+    // types keeps the cursor where it is.
+    var typed by remember { mutableStateOf(TextFieldValue(state.input, TextRange(state.input.length))) }
+    val value = if (typed.text == state.input) typed else TextFieldValue(state.input, TextRange(state.input.length))
     OutlinedTextField(
-        value = state.input,
-        onValueChange = callbacks.onInputChange,
+        value = value,
+        onValueChange = {
+            typed = it
+            callbacks.onInputChange(it.text)
+        },
         modifier = modifier.fillMaxWidth().testTag(CAPTURE_FIELD_TAG),
         placeholder = { Text(stringResource(R.string.capture_hint)) },
         singleLine = true,

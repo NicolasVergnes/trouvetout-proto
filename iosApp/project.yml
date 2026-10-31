@@ -32,9 +32,15 @@ targets:
     platform: iOS
     sources:
       - path: iosApp
-      # The embedding model, fetched and verified by `:models:fetchTextModel` (ADR-021), never committed.
+      # The embedding models, fetched and verified by `:models:fetchModels` (ADR-021, ADR-022), never committed.
       - path: ../models/build/bundled/models/embeddinggemma-2-text-270m.litertlm
         optional: true
+        buildPhase: resources
+      - path: ../models/build/bundled/models/embeddinggemma-2-text-vision-440m.litertlm
+        optional: true
+        buildPhase: resources
+      # The label vectors of photo naming (B8), computed by `:tools:genLabels` and committed (no weights).
+      - path: ../models/labels_fr_en.catalog
         buildPhase: resources
       # Its manifest, so that the app identifies the model by checksum like Android does.
       - path: ../models/manifest.json
@@ -59,7 +65,7 @@ targets:
         script: |
           export JAVA_HOME="${JAVA_HOME:-$(/usr/libexec/java_home -v 17)}"
           cd "$SRCROOT/.."
-          sh ./gradlew :shared:embedAndSignAppleFrameworkForXcode :models:fetchTextModel
+          sh ./gradlew :shared:embedAndSignAppleFrameworkForXcode :models:fetchModels
   CaptureWidget:
     type: app-extension
     platform: iOS

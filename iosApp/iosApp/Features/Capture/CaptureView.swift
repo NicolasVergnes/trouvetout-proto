@@ -29,6 +29,7 @@ struct CaptureView: View {
                     onOpenSettings: openAppSettings
                 )
                 batchRow
+                CapturePhotoRow(viewModel: viewModel) { fieldFocused = true }
                 if !viewModel.suggestions.isEmpty {
                     suggestionRow
                 }
