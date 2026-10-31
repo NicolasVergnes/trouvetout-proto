@@ -53,7 +53,9 @@ class SearchCorpusTest {
         factory.close()
         val fr = report.score { it.lang == "fr" }
         val en = report.score { it.lang == "en" }
-        val summary = "keyword only: fr ${fr.top1}/${fr.total} top-1, ${fr.top3} top-3; en ${en.top1}/${en.total}, ${en.top3}"
+        val summary =
+            "keyword only: fr ${fr.top1}/${fr.total} top-1, ${fr.top3} top-3; " +
+                "en ${en.top1}/${en.total} top-1, ${en.top3} top-3"
         println(summary)
         // Measured at the end of lot 6 (fr 62.7 % / 73.3 %, en 76.7 % / 81.7 %); a floor, never lowered.
         assertTrue(fr.top1Rate >= FR_TOP1 && fr.top3Rate >= FR_TOP3, summary)
