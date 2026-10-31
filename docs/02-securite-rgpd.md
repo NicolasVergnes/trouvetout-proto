@@ -5,7 +5,7 @@ Objectif : que la fiche « App Privacy » (Apple) et « Data safety » (Google) 
 ## 1. Position RGPD
 
 - TrouveTout ne traite **aucune donnée personnelle côté éditeur** : pas de serveur, pas de compte, pas de télémétrie, pas d'identifiant publicitaire. L'éditeur n'est pas responsable de traitement pour les données saisies, qui restent sous le contrôle exclusif de l'utilisateur sur son appareil.
-- Conséquences pratiques : pas de bannière de consentement, pas de registre de traitement pour l'app elle-même, mais une **politique de confidentialité** publique (obligatoire sur les deux magasins) qui dit exactement cela et décrit les seuls flux réseau : téléchargement optionnel des packs de modèles (domaine, ce qui est envoyé : rien d'autre que la requête HTTP), achats via les magasins (données gérées par Apple/Google), sauvegarde optionnelle A9 dans l'espace cloud **de l'utilisateur** (chiffrée par l'app avant envoi).
+- Conséquences pratiques : pas de bannière de consentement, pas de registre de traitement pour l'app elle-même, mais une **politique de confidentialité** publique (obligatoire sur les deux magasins) qui dit exactement cela et décrit les seuls flux réseau : achats via les magasins (données gérées par Apple/Google), sauvegarde optionnelle A9 dans l'espace cloud **de l'utilisateur** (chiffrée par l'app avant envoi). Le modèle de recherche est livré avec l'app (ADR-021) : l'app ne télécharge rien.
 - Droits des personnes (accès, portabilité, effacement) sont satisfaits par construction : export complet lisible (A7), suppression totale (H6).
 - Si un jour un relais (F9) ou une télémétrie opt-in apparaît, cette analyse est à refaire **avant** le développement.
 
@@ -26,8 +26,8 @@ Objectif : que la fiche « App Privacy » (Apple) et « Data safety » (Google) 
 ## 3. Règles de développement (à appliquer par Claude Code et vérifiées en revue)
 
 ### Réseau
-- **Aucun appel réseau** dans `shared` en dehors de `ml/ModelPackDownloader`. Un test d'intégration lance l'app derrière un proxy bloquant et vérifie zéro requête en usage normal.
-- Android : pas de permission `INTERNET` tant que le téléchargement de pack n'est pas implémenté via Play Asset Delivery ; si téléchargement HTTPS direct, `network_security_config` avec `cleartextTrafficPermitted="false"` et domaine unique.
+- **Aucun appel réseau** dans `shared` ni dans les apps (le modèle est livré avec l'app, ADR-021 ; `ml/ModelPackDownloader` reste l'unique emplacement autorisé si un pack téléchargé revenait un jour, après ADR). Un test d'intégration lance l'app derrière un proxy bloquant et vérifie zéro requête en usage normal, recherche avec le modèle chargé comprise.
+- Android : pas de permission `INTERNET` (une livraison Play *fast-follow* n'en demande pas) ; si un téléchargement HTTPS direct était un jour décidé, `network_security_config` avec `cleartextTrafficPermitted="false"` et domaine unique.
 - iOS : pas d'`NSAppTransportSecurity` assoupli.
 - Interdits absolus (bloqués par hook) : SDK Firebase Analytics/Crashlytics, Google Analytics, Facebook SDK, Sentry, Mixpanel, Amplitude, AppsFlyer, Adjust, Branch, OneSignal, tout SDK publicitaire.
 
@@ -48,14 +48,14 @@ Objectif : que la fiche « App Privacy » (Apple) et « Data safety » (Google) 
 - Les objets `sensitive` n'apparaissent ni dans les widgets, ni dans les notifications, ni dans les suggestions de requête (C12), ni dans l'index système (G3, P3).
 
 ### Dépendances et chaîne de build
-- Versions épinglées (`gradle/libs.versions.toml`, Swift Package `Package.resolved`), vérification des sommes des packs de modèles, pas de scripts de build qui téléchargent du code à la volée.
+- Versions épinglées (`gradle/libs.versions.toml`, Swift Package `Package.resolved`), vérification des sommes des packs de modèles, pas de scripts de build qui téléchargent du code à la volée. Seule exception, des données et non du code : le fichier du modèle d'embeddings, téléchargé au build depuis une révision épinglée et refusé si son SHA-256 diffère de `models/manifest.json` (ADR-021).
 - `./gradlew dependencies` revu à chaque ajout ; un hook refuse l'ajout d'une dépendance de la liste interdite.
 - Signature : clé de release hors du dépôt (`*.jks`, `*.p12`, `*.mobileprovision` dans `.gitignore` et refusés en lecture à Claude Code).
 
 ## 4. Liste de contrôle avant chaque release
 
 - [ ] `tools/check-network.sh` : zéro requête en usage normal.
-- [ ] `tools/check-deps.sh` : aucune dépendance interdite ; permissions Android = micro, caméra, notifications (+ `INTERNET` seulement si téléchargement de pack hors magasin).
+- [ ] `tools/check-deps.sh` : aucune dépendance interdite ; permissions Android = micro, caméra, notifications ; jamais `INTERNET` (vérifier aussi le manifeste fusionné de la release, une bibliothèque pourrait l'ajouter).
 - [ ] Fiches App Privacy / Data safety : « aucune donnée collectée » ; politique de confidentialité en ligne (J7) à jour.
 - [ ] H6 testée : après suppression totale, `ls filesDir` vide, Keystore/Keychain vides, notifications annulées.
 - [ ] Export → réinstallation → import : identique (test automatisé, N9).
@@ -65,5 +65,6 @@ Objectif : que la fiche « App Privacy » (Apple) et « Data safety » (Google) 
 
 ## 5. Textes à fournir (J7)
 
-- Politique de confidentialité (FR/EN) : « L'application ne collecte aucune donnée. Vos objets, lieux et photos restent sur votre téléphone. Les seules connexions sortantes sont : (1) le téléchargement, à votre demande, d'un pack de modèle d'IA depuis <domaine>, (2) les achats intégrés gérés par Apple/Google, (3) si vous l'activez, une sauvegarde chiffrée dans votre propre iCloud Drive / Google Drive, que nous ne pouvons pas lire. »
+- Politique de confidentialité (FR/EN) : « L'application ne collecte aucune donnée. Vos objets, lieux et photos restent sur votre téléphone. La recherche, y compris son modèle d'intelligence artificielle, fonctionne entièrement sur votre téléphone ; le modèle est fourni avec l'application et ne télécharge rien. Les seules connexions sortantes sont : (1) les achats intégrés gérés par Apple/Google, (2) si vous l'activez, une sauvegarde chiffrée dans votre propre iCloud Drive / Google Drive, que nous ne pouvons pas lire. »
+- Recherche : « L'app compte, sur le téléphone, les fiches ouvertes depuis la recherche pour mieux les classer ; ce compteur n'est ni exporté ni envoyé, et la suppression totale l'efface. Le modèle de recherche (EmbeddingGemma 2, licence Apache 2.0) et son moteur LiteRT-LM (Apache 2.0, avec sa liste de composants tiers) sont mentionnés dans les réglages. »
 - Description du format d'export (schéma JSON) pour que l'utilisateur puisse lire ses données sans l'app.

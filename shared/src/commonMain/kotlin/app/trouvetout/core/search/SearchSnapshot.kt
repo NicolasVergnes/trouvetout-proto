@@ -1,0 +1,104 @@
+package app.trouvetout.core.search
+
+import app.trouvetout.core.data.db.TrouveToutDb
+import app.trouvetout.core.data.db.toContainer
+import app.trouvetout.core.data.db.toItem
+import app.trouvetout.core.data.db.toLocationState
+import app.trouvetout.core.data.db.toPlace
+import app.trouvetout.core.data.repository.ItemView
+import app.trouvetout.core.data.repository.LocationResolver
+import app.trouvetout.core.domain.model.LocationState
+import app.trouvetout.core.domain.model.LocationStatus
+
+/** Identifies a state of the journal: any append (even an out-of-order import) changes it. */
+internal data class JournalVersion(
+    val count: Long,
+    val headId: String?,
+)
+
+/** Every active item with its searchable text and its keyword index, for one state of the journal. */
+internal class SearchSnapshot(
+    val version: JournalVersion,
+    val views: List<ItemView>,
+    val documents: List<SearchDocument>,
+) {
+    val keyword: KeywordIndex = KeywordIndex(documents)
+    val indexOf: Map<String, Int> = views.withIndex().associate { (i, view) -> view.item.id to i }
+
+    companion object {
+        /** Sentences kept per item for the index: the latest ones say the most about it. */
+        private const val RAW_INPUTS_PER_ITEM = 2
+
+        fun version(db: TrouveToutDb): JournalVersion =
+            JournalVersion(db.eventQueries.count().executeAsOne(), db.eventQueries.head().executeAsOneOrNull()?.id)
+
+        /** Reads the projection in one pass (blocking: called on the IO dispatcher). */
+        fun load(db: TrouveToutDb): SearchSnapshot = db.transactionWithResult {
+            val version = version(db)
+            val items = db.itemQueries.selectActive().executeAsList().map { it.toItem() }
+            val locations = db.locationStateQueries.selectAll().executeAsList().associate {
+                it.item_id to it.toLocationState()
+            }
+            val resolver =
+                LocationResolver(
+                    db.placeQueries.selectAll().executeAsList().map { it.toPlace() },
+                    db.containerQueries.selectActive().executeAsList().map { it.toContainer() },
+                )
+            // A sentence about several items (« passeport et carnet de santé dans le tiroir ») would make each one
+            // answer for the other: only sentences about a single item are indexed with it.
+            val rows = db.eventSubjectQueries.itemRawInputs().executeAsList()
+            val itemsPerSentence = rows.groupBy({ it.raw_input }, { it.subject_id }).mapValues { (_, ids) ->
+                ids.toSet().size
+            }
+            val rawInputs = HashMap<String, MutableList<String>>()
+            for (row in rows) {
+                val text = row.raw_input
+                if (itemsPerSentence[text] != 1) continue
+                val list = rawInputs.getOrPut(row.subject_id) { ArrayList(RAW_INPUTS_PER_ITEM) }
+                if (list.size < RAW_INPUTS_PER_ITEM && text !in list) list += text
+            }
+            val views =
+                items.map { item ->
+                    val location =
+                        locations[item.id]
+                            ?: LocationState(item.id, null, null, LocationStatus.STORED, null, item.createdAt)
+                    ItemView(item, location, resolver.resolve(location))
+                }
+            val documents =
+                views.map { view ->
+                    SearchDocument(
+                        itemId = view.item.id,
+                        name = view.item.name,
+                        description = view.item.description,
+                        tags = view.item.tags,
+                        location = view.path.labels,
+                        rawInputs = rawInputs[view.item.id].orEmpty(),
+                    )
+                }
+            SearchSnapshot(version, views, documents)
+        }
+    }
+}
+
+/**
+ * The prompted text the model embeds for an item: what it is (name, description, tags) and the root place and room
+ * it is in, which gives a bare name its context (« Louche » in the kitchen). Deeper levels are left out so that a
+ * move inside a room recomputes nothing. A title slot or the capture sentence were measured and left out (ADR-021).
+ */
+internal fun SearchDocument.embeddingText(tuning: SearchTuning): String {
+    val place = location.take(EMBEDDED_PLACE_LEVELS).takeIf { it.isNotEmpty() }?.joinToString(", ")
+    val parts =
+        listOfNotNull(
+            name,
+            description?.takeIf { it.isNotBlank() },
+            tags.takeIf { it.isNotEmpty() }?.joinToString(", "),
+            place?.let { PLACE_LABEL + it },
+        )
+    return tuning.promptStyle.document(parts.joinToString(". "))
+}
+
+/** Root place and room. */
+private const val EMBEDDED_PLACE_LEVELS = 2
+
+/** Marks the place part of the embedded text (measured better than the bare path). */
+private const val PLACE_LABEL = "Rangé : "

@@ -30,6 +30,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
         with:
           validate-wrappers: true
+      - name: Cache the embedding model (its SHA-256 is verified at every build)
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: models/build/bundled
+          key: embedding-model-${{ hashFiles('models/manifest.json') }}
       - name: Make scripts executable
         run: chmod +x gradlew tools/*.sh .claude/hooks/*.sh
       - name: Build, test, lint
@@ -56,6 +61,38 @@ jobs:
             **/build/test-results/**
           retention-days: 7
 
+  search-eval:
+    name: Search quality with the real model (N2, N3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          # LiteRT-LM's JVM build needs 21 for the evaluation run; the build itself stays on 17 (listed last).
+          java-version: |
+            21
+            17
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
+        with:
+          validate-wrappers: true
+      - name: Cache the embedding model (its SHA-256 is verified at every build)
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: models/build/bundled
+          key: embedding-model-${{ hashFiles('models/manifest.json') }}
+      - run: chmod +x gradlew
+      - name: Replay corpus/recherche.jsonl (keyword, semantic, hybrid) and measure latency over 5 000 items
+        run: ./gradlew :tools:evalSearch -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64
+      - name: Upload the evaluation report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: search-eval
+          path: build/reports/eval/search.json
+          retention-days: 30
+
   android-device:
     name: Android platform tests (API 29 managed device)
     runs-on: ubuntu-latest
@@ -69,6 +106,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
         with:
           validate-wrappers: true
+      - name: Cache the embedding model (its SHA-256 is verified at every build)
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: models/build/bundled
+          key: embedding-model-${{ hashFiles('models/manifest.json') }}
       - name: Enable KVM for the emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -102,6 +144,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
         with:
           validate-wrappers: true
+      - name: Cache the embedding model (its SHA-256 is verified at every build)
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: models/build/bundled
+          key: embedding-model-${{ hashFiles('models/manifest.json') }}
       - name: Make scripts executable
         run: chmod +x gradlew tools/*.sh
       - name: Install XcodeGen, SwiftLint and SwiftFormat
@@ -124,8 +171,8 @@ jobs:
           test -n "$UDID" && test "$UDID" != "null"
           echo "Simulator: $UDID"
           echo "IOS_SIMULATOR_DEVICE=$UDID" >> "$GITHUB_ENV"
-      - name: Kotlin/Native tests and framework
-        run: ./gradlew :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64
+      - name: Kotlin/Native tests, framework and embedding model
+        run: ./gradlew :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64 :models:fetchTextModel
       - name: Generate Xcode project
         working-directory: iosApp
         run: xcodegen generate

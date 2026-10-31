@@ -39,6 +39,16 @@ struct SettingsView: View {
                 Button("settings_wipe", role: .destructive) { confirmWipe = true }
                     .disabled(viewModel.busy)
             }
+            // Lot 6: what runs the search, and the licences the bundled model and runtime require (Apache 2.0).
+            Section {
+                Text("settings_search_text")
+                    .font(.footnote)
+                Text("settings_search_licences")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("settings_search_section")
+            }
             if viewModel.busy {
                 ProgressView("settings_busy")
                     .frame(maxWidth: .infinity)

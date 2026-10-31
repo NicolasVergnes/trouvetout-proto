@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import app.trouvetout.android.R
 import app.trouvetout.core.domain.model.Container
 import app.trouvetout.core.domain.model.Place
+import app.trouvetout.core.domain.places.PlaceTree
 import app.trouvetout.core.domain.usecase.LocationRef
 
 /** A place or a container the user picks as a destination (move an item, move a container, merge a place). */
@@ -83,16 +84,7 @@ private fun flatten(
 fun descendantsOf(
     placeId: String,
     places: List<Place>,
-): Set<String> {
-    val byParent = places.groupBy { it.parentId }
-    val out = HashSet<String>()
-    val queue = ArrayDeque(listOf(placeId))
-    while (queue.isNotEmpty()) {
-        val id = queue.removeFirst()
-        if (out.add(id)) byParent[id]?.forEach { queue.addLast(it.id) }
-    }
-    return out
-}
+): Set<String> = PlaceTree.descendantIds(placeId, places)
 
 private const val INDENT_DP = 16
 

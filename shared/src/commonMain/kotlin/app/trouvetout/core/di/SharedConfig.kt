@@ -5,9 +5,11 @@ import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.data.db.DriverFactory
 import app.trouvetout.core.log.Logger
 import app.trouvetout.core.log.NoopLogger
+import app.trouvetout.core.ml.TextModelSource
 import app.trouvetout.core.platform.CoroutineDispatchers
 import app.trouvetout.core.platform.DeviceInfo
 import app.trouvetout.core.platform.ImageCodec
+import app.trouvetout.core.search.SearchTuning
 import kotlin.random.Random
 import kotlin.time.Clock
 
@@ -38,4 +40,10 @@ public class SharedConfig(
     public var clock: Clock = Clock.System
     public var dispatchers: CoroutineDispatchers = CoroutineDispatchers()
     public var random: Random = Random.Default
+
+    /** The embedded model (C2, ADR-021); null keeps the search on keywords only. */
+    public var textModel: TextModelSource? = null
+
+    /** Ranking knobs; the hosts keep the defaults, the evaluation tool varies them. */
+    public var searchTuning: SearchTuning = SearchTuning()
 }

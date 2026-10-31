@@ -1,0 +1,13 @@
+-- Fiches ouvertes depuis la recherche (signal de fréquence, C3) : cache local, jamais exporté.
+CREATE TABLE search_usage (
+  item_id TEXT NOT NULL PRIMARY KEY,
+  opened_count INTEGER NOT NULL,
+  last_opened_at INTEGER NOT NULL
+);
+
+recordOpened:
+INSERT INTO search_usage(item_id, opened_count, last_opened_at) VALUES (?, 1, ?)
+ON CONFLICT(item_id) DO UPDATE SET opened_count = opened_count + 1, last_opened_at = excluded.last_opened_at;
+
+selectAll:
+SELECT item_id, opened_count, last_opened_at FROM search_usage;

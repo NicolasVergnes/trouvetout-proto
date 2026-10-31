@@ -1,0 +1,15 @@
+{
+  "formatVersion": 1,
+  "models": [
+    {
+      "id": "embeddinggemma-2-text-270m",
+      "variant": "TEXT_ONLY",
+      "file": "models/embeddinggemma-2-text-270m.litertlm",
+      "url": "https://huggingface.co/litert-community/embeddinggemma-2-text-270m-litert-lm/resolve/9be6e8b90982095dc05c2bd162e4b954ee4dbac7/embeddinggemma-2-text-270m.litertlm",
+      "sha256": "2d079ee2f6f066b1f368e8d7c819f55214eaef1d0513b312321901f30ab286fb",
+      "bytes": 164626432,
+      "license": "Apache-2.0",
+      "source": "litert-community/embeddinggemma-2-text-270m-litert-lm@9be6e8b90982095dc05c2bd162e4b954ee4dbac7"
+    }
+  ]
+}

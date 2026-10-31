@@ -135,6 +135,14 @@ fun SettingsScreen(
                 val busyLabel = stringResource(R.string.settings_busy)
                 CircularProgressIndicator(Modifier.semantics { contentDescription = busyLabel })
             }
+            // Lot 6: what runs the search, and the licences the bundled model and runtime require (Apache 2.0).
+            Text(stringResource(R.string.settings_search_section), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_search_text), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                stringResource(R.string.settings_search_licences),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
     if (confirmWipe) {

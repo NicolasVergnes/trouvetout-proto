@@ -1,10 +1,12 @@
 import Shared
 import SwiftUI
+import UIKit
 
 @main
 struct TrouveToutApp: App {
     @StateObject private var container = AppContainer()
     @StateObject private var router = CaptureRouter.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -18,6 +20,12 @@ struct TrouveToutApp: App {
                         router.open(mode, fromURL: true)
                     }
                 }
+        }
+        // N6: the model only stays loaded in the foreground; the search computes no vector in the background.
+        .onChange(of: scenePhase) { phase in
+            if phase == .background {
+                container.releaseModel()
+            }
         }
     }
 }
@@ -33,11 +41,27 @@ final class AppContainer: ObservableObject {
     /// True once the current core opened its store; screens observe flows only then.
     @Published private(set) var ready = false
 
+    private var memoryWarning: NSObjectProtocol?
+
     init() {
         let prepared = AppDirectories.prepareDataDirectory()
         storageFailure = prepared.failure
         shared = AppContainer.makeShared(prepared)
         warmUp(shared)
+        memoryWarning = NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.releaseModel() }
+        }
+    }
+
+    /// Stops computing vectors and frees the embedding model (background, memory warning); reloaded on demand.
+    func releaseModel() {
+        guard ready else { return }
+        let search = shared.search
+        Task { try? await search.release() }
     }
 
     /// After a total wipe (H6) the spent factory is replaced by a fresh one over an empty directory.
@@ -61,6 +85,8 @@ final class AppContainer: ObservableObject {
             appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0",
             captureLang: Locale.current.language.languageCode?.identifier == "fr" ? .fr : .en
         )
+        // The bundled embedding model (ADR-021); without it the search runs on keywords only.
+        config.textModel = LiteRtTextModel()
         return SharedFactory(config: config)
     }
 

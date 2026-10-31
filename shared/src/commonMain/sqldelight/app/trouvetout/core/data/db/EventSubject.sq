@@ -17,3 +17,11 @@ FROM event e
 JOIN event_subject s ON s.event_id = e.id
 WHERE s.subject_type = ? AND s.subject_id = ?
 ORDER BY e.at, e.device_id, e.id;
+
+-- Phrases saisies au sujet des objets, les plus récentes d'abord (index de la recherche, lot 6).
+itemRawInputs:
+SELECT s.subject_id, e.raw_input
+FROM event e
+JOIN event_subject s ON s.event_id = e.id
+WHERE s.subject_type = 'ITEM' AND e.raw_input IS NOT NULL
+ORDER BY e.at DESC, e.id DESC;

@@ -25,7 +25,7 @@ Repositories (lecture seule)          → Flow<...> sur les tables projetées
 
 ## SQLDelight
 - Un fichier `.sq` par table ; requêtes nommées, paramétrées ; `SELECT *` interdit dans les requêtes de liste (projeter les colonnes).
-- FTS5 : table `item_fts` externe (content=''), alimentée par la projection ; requête utilisateur transformée en `"tok1"* "tok2"*` après suppression de `" * ( ) : ^ -` ; `remove_diacritics 2`.
+- Recherche par mots-clés : **pas de FTS5** (absent du SQLite système d'Android) ; index inversé en mémoire construit depuis la projection (`search/KeywordIndex`, ADR-021). Les tables `embedding` et `search_usage` sont des caches recalculables, hors journal, hors export.
 - Migrations `.sqm` additives ; `schema_version` dans `meta` ; test `MigrationTest` qui ouvre une base de chaque version passée.
 - Transactions pour toute écriture multi-tables ; WAL activé ; `PRAGMA foreign_keys=ON`.
 - Drivers : `AndroidSqliteDriver` / `NativeSqliteDriver` ; au lot 8, SQLCipher (clé Keystore/Keychain) via les drivers chiffrés, avec migration en place de la base claire.

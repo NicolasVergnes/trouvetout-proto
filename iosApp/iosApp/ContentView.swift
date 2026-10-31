@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Home: the capture screen (lot 3), with the places (lot 4) and the settings (lot 2) in the toolbar. When the private
-/// storage could not be prepared, the screen says so instead of touching a core that refuses to open.
+/// Home: the capture screen (lot 3), with the search (lot 6), the places (lot 4) and the settings (lot 2) in the
+/// toolbar. When the private storage could not be prepared, the screen says so instead of touching a core that refuses
+/// to open.
 struct ContentView: View {
     @EnvironmentObject private var container: AppContainer
     @EnvironmentObject private var router: CaptureRouter
@@ -13,7 +14,9 @@ struct ContentView: View {
                 if container.storageFailure != nil {
                     StorageUnavailableView()
                 } else {
-                    CaptureView(container: container)
+                    CaptureView(container: container) { query in
+                        path.append(SearchRoute(query: query))
+                    }
                 }
             }
             .navigationDestination(for: BrowseTarget.self) { target in
@@ -25,8 +28,15 @@ struct ContentView: View {
             .navigationDestination(for: SettingsRoute.self) { _ in
                 SettingsView(container: container)
             }
+            .navigationDestination(for: SearchRoute.self) { route in
+                SearchView(container: container, query: route.query)
+            }
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    NavigationLink(value: SearchRoute()) {
+                        Label("search_title", systemImage: "magnifyingglass")
+                    }
+                    .accessibilityIdentifier("open_search")
                     NavigationLink("places_title", value: BrowseTarget.root)
                     NavigationLink("settings_title", value: SettingsRoute())
                 }

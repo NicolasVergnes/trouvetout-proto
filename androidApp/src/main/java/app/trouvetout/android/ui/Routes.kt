@@ -9,9 +9,14 @@ object Routes {
     const val CONTAINER = "container/{id}"
     const val ITEM = "item/{id}"
 
+    /** Search (lot 6), optionally opened on a question; the text travels inside the app only. */
+    const val SEARCH = "search?q={q}"
+
     fun place(id: String) = "place/$id"
 
     fun container(id: String) = "container/$id"
 
     fun item(id: String) = "item/$id"
+
+    fun search(query: String) = "search?q=${android.net.Uri.encode(query)}"
 }

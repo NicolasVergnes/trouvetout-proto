@@ -26,8 +26,12 @@ import app.trouvetout.core.domain.usecase.ItemCommands
 import app.trouvetout.core.domain.usecase.PlaceCommands
 import app.trouvetout.core.domain.usecase.UndoService
 import app.trouvetout.core.log.LogLevel
+import app.trouvetout.core.ml.ModelRuntime
+import app.trouvetout.core.ml.ModelSelector
+import app.trouvetout.core.ml.ModelVariant
 import app.trouvetout.core.platform.FileStore
 import app.trouvetout.core.platform.createFileStore
+import app.trouvetout.core.search.SearchService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -97,6 +101,25 @@ public class SharedFactory(
         BrowseRepository(database, config.dispatchers, itemRepository, eventStore)
     }
 
+    private val modelRuntime = lazy { ModelRuntime(config.textModel, config.logger) }
+    private val searchService =
+        lazy {
+            SearchService(
+                database,
+                modelRuntime.value,
+                config.searchTuning,
+                config.clock,
+                config.dispatchers,
+                config.logger,
+            )
+        }
+
+    /** Hybrid search (lot 6): keywords, synonyms and the embedded model, with a keyword-only fallback. */
+    public val search: SearchService by searchService
+
+    /** Variant of the model for this device (ADR-003), chosen from its memory once and kept in `meta`. */
+    public val modelVariant: ModelVariant by lazy { ModelSelector.ensure(database, config.deviceInfo.totalRamBytes) }
+
     private val photoIds: MonotonicUlidGenerator by lazy { MonotonicUlidGenerator(config.clock, config.random) }
     private val photoIdLock = Mutex()
     public val photoStore: PhotoStore by lazy {
@@ -164,6 +187,7 @@ public class SharedFactory(
      * then builds a fresh [SharedFactory]: this one refuses to reopen. Returns the directories removed.
      */
     public suspend fun wipeAllData(): List<String> = withContext(config.dispatchers.io) {
+        if (searchService.isInitialized()) searchService.value.shutdown()
         close()
         wiped = true
         DATA_DIRECTORIES.filter { files.deleteDirectory(it) }
@@ -178,6 +202,8 @@ public class SharedFactory(
     /** Releases held resources (database connection, loaded models). */
     public fun close() {
         uiScope.cancel()
+        if (searchService.isInitialized()) searchService.value.close()
+        if (modelRuntime.isInitialized()) modelRuntime.value.closeNow()
         openedDriver?.close()
         openedDriver = null
     }

@@ -1,7 +1,18 @@
+import groovy.json.JsonSlurper
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
+
+/** `-Ptrouvetout.bundleModel=false` builds without the embedding model: keyword search only, lighter installs. */
+val bundleModel = providers.gradleProperty("trouvetout.bundleModel").map(String::toBoolean).getOrElse(true)
+
+@Suppress("UNCHECKED_CAST")
+val textModel =
+    (JsonSlurper().parse(rootProject.file("models/manifest.json")) as Map<String, Any>)["models"]
+        .let { it as List<Map<String, Any>> }
+        .single { it["variant"] == "TEXT_ONLY" }
 
 android {
     namespace = "app.trouvetout.android"
@@ -15,6 +26,20 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // The bundled model (ADR-021): asset path (null without it), identity (name + checksum prefix), size.
+        buildConfigField("String", "TEXT_MODEL_ASSET", if (bundleModel) "\"${textModel["file"]}\"" else "null")
+        buildConfigField(
+            "String",
+            "TEXT_MODEL_ID",
+            "\"${textModel["id"]}@${(textModel["sha256"] as String).take(12)}\"",
+        )
+        buildConfigField("long", "TEXT_MODEL_BYTES", "${textModel["bytes"]}L")
+    }
+
+    // Stored as is: LiteRT-LM needs the plain file, copied once from the APK on first use.
+    androidResources {
+        noCompress += "litertlm"
     }
 
     buildTypes {
@@ -50,6 +75,8 @@ android {
                     device = "Pixel 2"
                     apiLevel = 29
                     systemImageSource = "aosp"
+                    // x86_64 image: LiteRT-LM ships no 32-bit x86 native library (ADR-021).
+                    require64Bit = true
                 }
             }
         }
@@ -62,8 +89,50 @@ kotlin {
     }
 }
 
+/** The verified model directory produced by `:models:fetchTextModel`. */
+val bundledModels by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
+/** Copies the verified model into a generated assets directory of every variant. */
+abstract class CopyModelAssets : DefaultTask() {
+    @get:InputFiles
+    abstract val models: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        val out = outputDirectory.get().asFile
+        out.deleteRecursively()
+        // Only the verified model files (never a partial download left in the directory).
+        models.forEach { root ->
+            root.walkTopDown().filter { it.isFile && it.extension == "litertlm" }.forEach { file ->
+                file.copyTo(File(out, file.relativeTo(root).path), overwrite = true)
+            }
+        }
+    }
+}
+
+val copyModelAssets =
+    tasks.register<CopyModelAssets>("copyModelAssets") {
+        models.from(bundledModels)
+        outputDirectory.set(layout.buildDirectory.dir("generated/modelAssets"))
+    }
+
+if (bundleModel) {
+    androidComponents {
+        onVariants { variant ->
+            variant.sources.assets?.addGeneratedSourceDirectory(copyModelAssets, CopyModelAssets::outputDirectory)
+        }
+    }
+}
+
 dependencies {
     implementation(project(":shared"))
+    if (bundleModel) bundledModels(project(mapOf("path" to ":models", "configuration" to "bundledModels")))
 
     implementation(libs.androidx.core)
     implementation(libs.androidx.activity.compose)
