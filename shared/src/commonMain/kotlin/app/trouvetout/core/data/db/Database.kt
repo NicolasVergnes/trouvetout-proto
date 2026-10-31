@@ -3,12 +3,13 @@ package app.trouvetout.core.data.db
 import app.cash.sqldelight.db.SqlDriver
 
 /** Current schema version; written to `meta` so exports can state what produced them. */
-public const val SCHEMA_VERSION: Long = 1
+public const val SCHEMA_VERSION: Long = 2
 
 /** Keys of the `meta` table. */
 public object MetaKeys {
     public const val SCHEMA_VERSION: String = "schema_version"
     public const val DEVICE_ID: String = "device_id"
+    public const val MODEL_VARIANT: String = "model_variant"
 }
 
 /** Opens (creating or migrating) the SQLite database; implemented per platform, the caller owns the driver. */

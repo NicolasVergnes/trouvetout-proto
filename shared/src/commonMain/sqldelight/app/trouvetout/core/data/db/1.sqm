@@ -1,0 +1,16 @@
+-- Schéma 1 → 2 (lot 6) : caches de la recherche, additifs (ADR-021).
+CREATE TABLE embedding (
+  owner_type TEXT NOT NULL,
+  owner_id TEXT NOT NULL,
+  model_key TEXT NOT NULL,
+  dim INTEGER NOT NULL,
+  vector BLOB NOT NULL,
+  text_hash TEXT NOT NULL,
+  PRIMARY KEY (owner_type, owner_id, model_key)
+);
+
+CREATE TABLE search_usage (
+  item_id TEXT NOT NULL PRIMARY KEY,
+  opened_count INTEGER NOT NULL,
+  last_opened_at INTEGER NOT NULL
+);

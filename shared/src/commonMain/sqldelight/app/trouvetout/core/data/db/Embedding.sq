@@ -1,0 +1,31 @@
+-- Cache des vecteurs de la recherche sémantique (lot 6, ADR-021) : recalculable depuis les fiches,
+-- jamais exporté, jamais une source de vérité. model_key = identifiant du modèle + dimension.
+CREATE TABLE embedding (
+  owner_type TEXT NOT NULL,
+  owner_id TEXT NOT NULL,
+  model_key TEXT NOT NULL,
+  dim INTEGER NOT NULL,
+  vector BLOB NOT NULL,
+  text_hash TEXT NOT NULL,
+  PRIMARY KEY (owner_type, owner_id, model_key)
+);
+
+upsert:
+INSERT OR REPLACE INTO embedding(owner_type, owner_id, model_key, dim, vector, text_hash)
+VALUES (?, ?, ?, ?, ?, ?);
+
+hashes:
+SELECT owner_id, text_hash FROM embedding WHERE owner_type = ? AND model_key = ?;
+
+vectors:
+SELECT owner_id, vector FROM embedding WHERE owner_type = ? AND model_key = ? AND dim = ?;
+
+deleteOne:
+DELETE FROM embedding WHERE owner_type = ? AND owner_id = ? AND model_key = ?;
+
+-- Après une réindexation complète : les vecteurs d'un autre modèle ne servent plus.
+deleteOtherModels:
+DELETE FROM embedding WHERE model_key <> ?;
+
+countFor:
+SELECT COUNT(*) FROM embedding WHERE owner_type = ? AND model_key = ?;
