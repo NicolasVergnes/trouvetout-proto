@@ -32,6 +32,9 @@ internal class KeywordIndex(
     /** Indexed words by length, for the edit-distance lookup. */
     private val byLength: Map<Int, List<String>>
 
+    /** Indexed words by French phonetic key, for misspellings by sound. */
+    private val byPhonetics: Map<String, List<String>>
+
     init {
         documents.forEachIndexed { doc, d ->
             val weights = HashMap<String, Float>()
@@ -52,6 +55,10 @@ internal class KeywordIndex(
         }
         averageLength = if (documents.isEmpty()) 1f else lengths.average().toFloat().coerceAtLeast(1f)
         byLength = (postings.keys + Synonyms.vocabulary).groupBy { it.length }
+        byPhonetics =
+            postings.keys.filter {
+                it.length >= MIN_TYPO_LENGTH && !it.any(Char::isDigit)
+            }.groupBy(SearchText::phonetic)
     }
 
     /**
@@ -62,7 +69,18 @@ internal class KeywordIndex(
     fun search(
         query: String,
         prefixLast: Boolean = true,
-    ): Map<Int, Double> {
+    ): Map<Int, Double> = match(query, prefixLast).mapValues { it.value.score }
+
+    /** Score of a document and the share of the question's words it covers (1.0: every word found). */
+    class Match(
+        val score: Double,
+        val coverage: Double,
+    )
+
+    fun match(
+        query: String,
+        prefixLast: Boolean = true,
+    ): Map<Int, Match> {
         val terms = SearchText.terms(query).ifEmpty { SearchText.words(query).map(SearchText::stem) }.distinct()
         val scores = HashMap<Int, Double>()
         val matched = HashMap<Int, Int>()
@@ -83,7 +101,8 @@ internal class KeywordIndex(
         }
         // Covering every word of the question matters more than repeating one of them.
         return scores.mapValues { (doc, score) ->
-            score * (COVERAGE_FLOOR + (1 - COVERAGE_FLOOR) * (matched[doc] ?: 0) / terms.size)
+            val coverage = (matched[doc] ?: 0).toDouble() / terms.size
+            Match(score * (COVERAGE_FLOOR + (1 - COVERAGE_FLOOR) * coverage), coverage)
         }
     }
 
@@ -105,10 +124,17 @@ internal class KeywordIndex(
             for ((word, distance) in corrections(term)) offer(word, if (distance == 1) TYPO_1 else TYPO_2)
         }
         if (prefix) completions(term).forEach { (word, weight) -> offer(word, weight) }
+        soundAlikes(term).forEach { offer(it, TYPO_1) }
         for ((word, weight) in out.toList()) {
             for (synonym in Synonyms.of(word)) offer(synonym, weight * SYNONYM_WEIGHT)
         }
         return out
+    }
+
+    /** Indexed words that sound like an unknown [term] in French (« sizeaux » → « ciseaux »). */
+    private fun soundAlikes(term: String): List<String> {
+        if (term in postings || term.length < MIN_TYPO_LENGTH || term.any(Char::isDigit)) return emptyList()
+        return byPhonetics[SearchText.phonetic(term)].orEmpty()
     }
 
     /** Indexed words that [term] begins, weighted by how much of them is typed. */

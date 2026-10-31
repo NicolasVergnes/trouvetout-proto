@@ -107,7 +107,12 @@ abstract class CopyModelAssets : DefaultTask() {
     fun copy() {
         val out = outputDirectory.get().asFile
         out.deleteRecursively()
-        models.forEach { it.copyRecursively(out, overwrite = true) }
+        // Only the verified model files (never a partial download left in the directory).
+        models.forEach { root ->
+            root.walkTopDown().filter { it.isFile && it.extension == "litertlm" }.forEach { file ->
+                file.copyTo(File(out, file.relativeTo(root).path), overwrite = true)
+            }
+        }
     }
 }
 

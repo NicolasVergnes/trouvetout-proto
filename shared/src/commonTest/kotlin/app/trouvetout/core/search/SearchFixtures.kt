@@ -93,10 +93,17 @@ class FakeEmbedder(
     var texts = 0
     var closed = false
 
+    /** The next call throws, like a native error of the runtime. */
+    var failNext = false
+
     override suspend fun embed(
         texts: List<String>,
         dim: Int,
     ): List<FloatArray> {
+        if (failNext) {
+            failNext = false
+            error("native failure")
+        }
         calls++
         this.texts += texts.size
         return texts.map { vector(it, dim) }

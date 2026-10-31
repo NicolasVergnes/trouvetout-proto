@@ -52,10 +52,9 @@ class SearchServiceTest {
         val model = FakeModelSource(concepts)
         val world = SearchWorld(model, loose)
         val ids = world.household()
-        assertTrue(world.search.search("le Kindle").hits.isEmpty(), "no vectors yet: nothing semantic")
-        world.search.prepare()
-        assertEquals(SearchMode.Hybrid, world.search.mode.value)
+        // No prepare(): a search on a journal newer than the vectors computes them first.
         val result = world.search.search("le Kindle")
+        assertEquals(SearchMode.Hybrid, world.search.mode.value)
         assertEquals(ids["cable"], result.hits.first().view.item.id)
         assertEquals(MatchKind.SEMANTIC, result.hits.first().match)
     }
@@ -140,6 +139,14 @@ class SearchServiceTest {
     }
 
     @Test
+    fun a_pasted_page_is_cut_to_a_question() = runTest {
+        val world = SearchWorld()
+        val ids = world.household()
+        val pasted = "gants " + "lorem ipsum dolor sit amet ".repeat(400)
+        assertEquals(ids["gloves"], world.search.search(pasted).hits.first().view.item.id)
+    }
+
+    @Test
     fun an_opened_item_moves_up_among_equals_C3() = runTest {
         val world = SearchWorld()
         val house = world.place("Maison")
@@ -193,6 +200,30 @@ class SearchServiceTest {
         assertEquals(4, newer.embedder.texts)
         assertEquals(0L, world.db.embeddingQueries.countFor("item", SearchTuning().modelKey("old")).executeAsOne())
         assertEquals(4L, world.db.embeddingQueries.countFor("item", SearchTuning().modelKey("new")).executeAsOne())
+    }
+
+    @Test
+    fun a_failing_query_embedding_falls_back_to_keywords_rule_7() = runTest {
+        val model = FakeModelSource(concepts)
+        val world = SearchWorld(model, loose)
+        val ids = world.household()
+        world.search.prepare()
+        model.embedder.failNext = true
+        val result = world.search.search("cable")
+        assertEquals(ids["cable"], result.hits.first().view.item.id)
+        assertEquals(MatchKind.KEYWORD, result.hits.first().match)
+    }
+
+    @Test
+    fun a_sentence_about_several_items_is_not_indexed_with_them() = runTest {
+        val world = SearchWorld()
+        val house = world.place("Maison")
+        val sentence = "passeport et carnet de santé dans le tiroir"
+        val passport = world.item("Passeport", LocationRef.InPlace(house), rawInput = sentence)
+        world.item("Carnet de santé", LocationRef.InPlace(house), rawInput = sentence)
+        val alone = world.item("Gourde", LocationRef.InPlace(house), rawInput = "la gourde bleue du randonneur")
+        assertEquals(listOf(passport), world.search.search("passeport").hits.map { it.view.item.id })
+        assertEquals(listOf(alone), world.search.search("randonneur").hits.map { it.view.item.id }, "own sentence")
     }
 
     @Test

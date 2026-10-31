@@ -99,10 +99,13 @@ public class BrowseRepository internal constructor(
         ownerId: String,
     ): Flow<List<Photo>> = photosFlow(ownerType, ownerId)
 
-    /** Every tag in use, most used first (A11 suggestions). */
+    /**
+     * Every tag in use, most used first (A11 suggestions, C11 filters); never one that only a sensitive item carries
+     * (H4).
+     */
     public fun observeTags(): Flow<List<String>> = items.observeActive().map { list ->
         list
-            .filter { !it.item.archived }
+            .filter { !it.item.archived && !it.item.sensitive }
             .flatMap { it.item.tags }
             .groupingBy { it }
             .eachCount()

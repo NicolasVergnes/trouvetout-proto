@@ -80,13 +80,16 @@ class App : Application() {
     }
 
     /**
-     * Once no screen is visible, the search stops computing vectors and frees the model (N6: no background work;
-     * the model only stays resident while the app is in the foreground). The next search loads it again.
+     * Once no screen is visible, or memory runs critically low, the search stops computing vectors and frees the model
+     * (N6: no background work; the model only stays resident while the app is in the foreground). The next search
+     * loads it again.
      */
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         @Suppress("DEPRECATION") // the only signal of « UI hidden » that exists on API 29
-        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN ||
+            level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL
+        ) {
             val factory = readyState.value ?: return
             appScope.launch { factory.search.release() }
         }

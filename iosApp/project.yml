@@ -13,9 +13,10 @@ packages:
   # pinned by checksum in its own manifest. 0.18.1, not 0.19.0: the 0.19.0 tag ships Swift sources newer than the
   # 0.18.1 binary it points to (`LiteRtLmSpeculativeDecodingMode` missing); 0.18.1 is consistent and has the
   # EmbeddingGemma 2 fix.
+  # Pinned by commit (the v0.18.1 tag), not by the tag name: a moved tag cannot swap the binary and its checksum.
   LiteRTLM:
     url: https://github.com/google-ai-edge/LiteRT-LM
-    exactVersion: 0.18.1
+    revision: bda624851d74be34d4e1f7fac1fc4155939539c7
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -34,6 +35,9 @@ targets:
       # The embedding model, fetched and verified by `:models:fetchTextModel` (ADR-021), never committed.
       - path: ../models/build/bundled/models/embeddinggemma-2-text-270m.litertlm
         optional: true
+        buildPhase: resources
+      # Its manifest, so that the app identifies the model by checksum like Android does.
+      - path: ../models/manifest.json
         buildPhase: resources
     dependencies:
       # Embedded widget extension (B5); it links neither the core nor any package.

@@ -44,7 +44,7 @@ fun AppNavigation(
                 onOpenSettings = { controller.navigate(Routes.SETTINGS) },
                 onOpenPlaces = { controller.navigate(Routes.PLACES) },
                 onOpenItem = { controller.navigate(Routes.item(it)) },
-                onOpenSearch = { controller.navigate(Routes.search(it)) },
+                onOpenSearch = { controller.navigate(Routes.search(it)) { launchSingleTop = true } },
                 searchRequest = searchRequest,
                 onSearchRequestHandled = onSearchRequestHandled,
             )

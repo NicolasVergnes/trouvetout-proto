@@ -70,7 +70,8 @@ struct CaptureView: View {
             }
         }
         .onReceive(router.$request) { handle($0) }
-        .onReceive(viewModel.$searchQuery) { query in
+        // A change, not the current value: a new subscription must not replay an old question.
+        .onChange(of: viewModel.searchQuery) { query in
             guard let query else { return }
             viewModel.dismissMessages() // the search screen takes the question over
             onSearch(query)

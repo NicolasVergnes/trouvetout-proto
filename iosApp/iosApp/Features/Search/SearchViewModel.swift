@@ -86,12 +86,6 @@ final class SearchViewModel: ObservableObject {
         refresh(debounce: false)
     }
 
-    func pick(_ suggestion: Suggestion) {
-        query = suggestion.text
-        suggestions = []
-        refresh(debounce: false)
-    }
-
     func setLocation(placeId: String?, containerId: String?) {
         self.placeId = placeId
         self.containerId = containerId
@@ -120,8 +114,12 @@ final class SearchViewModel: ObservableObject {
         Task { try? await search.recordOpened(itemId: itemId) }
     }
 
-    /// Back on the screen: the journal may have changed (an item moved from its sheet).
+    /// Back on the screen: the journal may have changed (an item moved from its sheet), the vectors may need catching
+    /// up after the app went to the background.
     func reappeared() {
+        if container.ready {
+            container.shared.search.prepare()
+        }
         refresh(debounce: false)
     }
 

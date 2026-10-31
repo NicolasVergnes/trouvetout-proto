@@ -30,13 +30,29 @@ abstract class FetchModelTask : DefaultTask() {
         if (target.isFile && digest(target) == sha256.get()) return
         target.parentFile.mkdirs()
         val partial = File(target.parentFile, target.name + ".part")
-        URI(url.get()).toURL().openStream().use { input -> partial.outputStream().use { input.copyTo(it) } }
-        val actual = digest(partial)
-        if (actual != sha256.get()) {
+        val connection =
+            URI(url.get()).toURL().openConnection().apply {
+                connectTimeout = CONNECT_TIMEOUT_MS
+                readTimeout = READ_TIMEOUT_MS
+            }
+        try {
+            connection.getInputStream().use { input -> partial.outputStream().use { input.copyTo(it) } }
+            val actual = digest(partial)
+            if (actual != sha256.get()) {
+                throw GradleException(
+                    "Checksum mismatch for ${relativePath.get()}: got $actual, expected ${sha256.get()}",
+                )
+            }
+            Files.move(partial.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        } finally {
             partial.delete()
-            throw GradleException("Checksum mismatch for ${relativePath.get()}: got $actual, expected ${sha256.get()}")
         }
-        Files.move(partial.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+    }
+
+    private companion object {
+        /** A stalled download fails the build instead of hanging it (no partial file is ever used). */
+        const val CONNECT_TIMEOUT_MS = 30_000
+        const val READ_TIMEOUT_MS = 60_000
     }
 
     private fun digest(file: File): String {

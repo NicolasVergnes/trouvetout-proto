@@ -46,7 +46,13 @@ public class SearchService internal constructor(
     private val lock = Mutex()
     private var snapshot: SearchSnapshot? = null
     private val semantic = SemanticIndex(tuning.dimension)
+
+    /** Guards [indexing]: one indexing job at a time. */
+    private val indexLock = Mutex()
     private var indexing: Job? = null
+
+    /** The journal state whose vectors are all computed; a search on a newer state restarts the indexing. */
+    private var indexedVersion: JournalVersion? = null
 
     private val modeState = MutableStateFlow(idleMode())
 
@@ -61,7 +67,7 @@ public class SearchService internal constructor(
     /** [prepare], then waits until every vector is computed (evaluation tool, tests). */
     public suspend fun prepareAndWait() {
         startIndexing(fresh())
-        indexing?.join()
+        indexLock.withLock { indexing }?.join()
     }
 
     /**
@@ -74,15 +80,34 @@ public class SearchService internal constructor(
         limit: Int = DEFAULT_LIMIT,
     ): SearchResult {
         val snap = fresh()
+        // The journal changed since the vectors were computed (a capture, a return from the background): catch up.
+        if (snap.version != indexedVersion) startIndexing(snap)
         val allowed = allowedItems(snap, filters)
-        val text = query.trim()
+        // A pasted page must not freeze the screen: a question is a few words.
+        val text = query.trim().take(MAX_QUERY_CHARS)
         if (text.isEmpty()) return SearchResult(query, filters, listFiltered(snap, allowed, filters, limit), null)
 
         val keyword = if (tuning.semanticOnly) emptyList() else keywordRanking(snap, text, allowed)
+        // C1: an item that has every word of the question is a sure keyword answer; its share grows accordingly.
+        val sure = keyword.firstOrNull()?.let { it.coverage >= 1.0 } == true
+        val effective = if (sure) tuning.copy(keywordShare = tuning.fullMatchKeywordShare) else tuning
         val nearest = if (tuning.keywordOnly) emptyList() else nearest(text, allowed)
         if (keyword.isEmpty() && (nearest.firstOrNull()?.second ?: 0f) < tuning.semanticAnswerFloor) {
             return SearchResult(query, filters, emptyList(), null)
         }
+        val hits = rank(snap, keyword.map { it.id to it.score }, nearest, filters, limit, effective)
+        return SearchResult(query, filters, hits, hits.firstOrNull()?.view?.let { answerOf(it) })
+    }
+
+    /** Fusion, then recency, frequency and archive signals; equal scores keep a stable order. */
+    private suspend fun rank(
+        snap: SearchSnapshot,
+        keyword: List<Pair<String, Double>>,
+        nearest: List<Pair<String, Float>>,
+        filters: SearchFilters,
+        limit: Int,
+        tuning: SearchTuning,
+    ): List<SearchHit> {
         val semanticHits = Ranking.semanticCandidates(nearest, tuning)
         val semanticMean = nearest.map { it.second.toDouble() }.average().takeIf { !it.isNaN() } ?: 0.0
         val fused = Ranking.combine(keyword, semanticHits, tuning, semanticMean)
@@ -91,24 +116,26 @@ public class SearchService internal constructor(
         val keywordSet = keyword.mapTo(HashSet()) { it.first }
         val semanticSet = semanticHits.mapTo(HashSet()) { it.first }
         val archivedRequested = filters.state == ItemStateFilter.ARCHIVED
-        val hits =
-            fused.entries
-                .map { (id, score) ->
-                    val view = snap.views[snap.indexOf.getValue(id)]
-                    view to Ranking.adjust(score, view, opened[id] ?: 0, now, tuning, archivedRequested)
-                }.sortedByDescending { it.second }
-                .take(limit)
-                .map { (view, _) ->
-                    val id = view.item.id
-                    val kind =
-                        when {
-                            id in keywordSet && id in semanticSet -> MatchKind.BOTH
-                            id in keywordSet -> MatchKind.KEYWORD
-                            else -> MatchKind.SEMANTIC
-                        }
-                    SearchHit(view, kind)
-                }
-        return SearchResult(query, filters, hits, hits.firstOrNull()?.view?.let { answerOf(it) })
+        return fused.entries
+            .map { (id, score) ->
+                val view = snap.views[snap.indexOf.getValue(id)]
+                view to Ranking.adjust(score, view, opened[id] ?: 0, now, tuning, archivedRequested)
+            }.sortedWith(
+                // Equal scores: the most recently moved first, then a stable order.
+                compareByDescending<Pair<ItemView, Double>> { it.second }
+                    .thenByDescending { it.first.location.since }
+                    .thenBy { it.first.item.id },
+            ).take(limit)
+            .map { (view, _) ->
+                val id = view.item.id
+                val kind =
+                    when {
+                        id in keywordSet && id in semanticSet -> MatchKind.BOTH
+                        id in keywordSet -> MatchKind.KEYWORD
+                        else -> MatchKind.SEMANTIC
+                    }
+                SearchHit(view, kind)
+            }
     }
 
     /** Filters without a query: pinned first, then the most recently moved. */
@@ -126,17 +153,23 @@ public class SearchService internal constructor(
             .map { SearchHit(it, MatchKind.FILTER) }
     }
 
-    /** Keyword matches among the allowed items, best first, with their score. */
+    /** Keyword matches among the allowed items, best first. */
     private fun keywordRanking(
         snap: SearchSnapshot,
         text: String,
         allowed: Set<String>,
-    ): List<Pair<String, Double>> = snap.keyword
-        .search(text)
+    ): List<KeywordHit> = snap.keyword
+        .match(text)
         .filterKeys { snap.views[it].item.id in allowed }
         .entries
-        .sortedByDescending { it.value }
-        .map { snap.views[it.key].item.id to it.value }
+        .sortedByDescending { it.value.score }
+        .map { KeywordHit(snap.views[it.key].item.id, it.value.score, it.value.coverage) }
+
+    private class KeywordHit(
+        val id: String,
+        val score: Double,
+        val coverage: Double,
+    )
 
     /** Completions of [prefix] among item names, tags and places (C12), never from a sensitive item. */
     public suspend fun suggest(
@@ -181,10 +214,18 @@ public class SearchService internal constructor(
 
     /** Stops computing vectors and frees the model (app in the background, memory warning). */
     public suspend fun release() {
-        indexing?.cancelAndJoin()
-        indexing = null
+        indexLock.withLock {
+            indexing?.cancelAndJoin()
+            indexing = null
+        }
         runtime.release()
         modeState.value = idleMode()
+    }
+
+    /** Before the store closes ([app.trouvetout.core.di.SharedFactory.wipeAllData]): no write may still be running. */
+    internal suspend fun shutdown() {
+        indexLock.withLock { indexing?.cancelAndJoin() }
+        scope.cancel()
     }
 
     internal fun close() {
@@ -201,31 +242,36 @@ public class SearchService internal constructor(
         return loaded
     }
 
-    private fun startIndexing(snap: SearchSnapshot) {
+    private suspend fun startIndexing(snap: SearchSnapshot) {
         if (tuning.keywordOnly) return
         runtime.unavailableReason?.let {
             modeState.value = SearchMode.KeywordOnly(it)
             return
         }
-        if (indexing?.isActive == true) return
-        indexing =
-            scope.launch {
-                runCatchingLogged("indexing") {
-                    var current = snap
-                    while (true) {
-                        index(current)
-                        val latest = fresh()
-                        if (latest.version == current.version) break
-                        current = latest
+        indexLock.withLock {
+            if (indexing?.isActive == true) return
+            indexing =
+                scope.launch {
+                    runCatchingLogged("indexing") {
+                        var current = snap
+                        while (index(current)) {
+                            indexedVersion = current.version
+                            val latest = fresh()
+                            if (latest.version == current.version) break
+                            current = latest
+                        }
                     }
+                    modeState.value = idleMode()
                 }
-                modeState.value = idleMode()
-            }
+        }
     }
 
-    /** Brings the stored and in-memory vectors in line with [snap]; resumable, batch by batch. */
-    private suspend fun index(snap: SearchSnapshot) {
-        val modelId = runtime.modelId ?: return
+    /**
+     * Brings the stored and in-memory vectors in line with [snap]; resumable, batch by batch. False when the model
+     * could not be used (the search stays on keywords).
+     */
+    private suspend fun index(snap: SearchSnapshot): Boolean {
+        val modelId = runtime.modelId ?: return false
         val key = tuning.modelKey(modelId)
         val texts = snap.documents.associate { it.itemId to it.embeddingText(tuning) }
         val hashes = texts.mapValues { (_, text) -> hashOf(text) }
@@ -237,34 +283,12 @@ public class SearchService internal constructor(
         var done = 0
         if (missing.isNotEmpty()) modeState.value = SearchMode.Indexing(0, missing.size)
         for (batch in missing.chunked(BATCH)) {
-            val vectors =
-                runtime.withModel { model ->
-                    model.embed(batch.map { texts.getValue(it) }, tuning.dimension)
-                }
+            val vectors = embedBatch(batch.map { texts.getValue(it) })
             if (vectors == null) {
                 modeState.value = idleMode()
-                return
+                return false
             }
-            // A vector with NaN (a known float16 pitfall of the model) is never stored: keywords still find the item.
-            val computed = batch.zip(vectors).filter { (_, vector) ->
-                vector.size == tuning.dimension &&
-                    vector.all { it.isFinite() }
-            }
-            withContext(dispatchers.io) {
-                db.transaction {
-                    computed.forEach { (id, vector) ->
-                        db.embeddingQueries.upsert(
-                            OWNER_ITEM,
-                            id,
-                            key,
-                            tuning.dimension.toLong(),
-                            Float16.encode(vector),
-                            hashes.getValue(id),
-                        )
-                    }
-                }
-            }
-            lock.withLock { computed.forEach { (id, vector) -> semantic.put(id, vector) } }
+            store(key, batch.zip(vectors), hashes)
             done += batch.size
             modeState.value = SearchMode.Indexing(done, missing.size)
         }
@@ -276,6 +300,65 @@ public class SearchService internal constructor(
             }
         }
         lock.withLock { semantic.retain(texts.keys) }
+        return true
+    }
+
+    /**
+     * Vectors of [texts] in order, null for a text the model rejects (too long, odd characters) or that yields an
+     * unusable vector (NaN, a known float16 pitfall): a failing batch is retried text by text so that one text never
+     * blocks the others. Null altogether when the model cannot be used.
+     */
+    private suspend fun embedBatch(texts: List<String>): List<FloatArray?>? {
+        fun usable(vector: FloatArray) = vector.size == tuning.dimension && vector.all { it.isFinite() }
+        val whole = attempt { runtime.withModel { it.embed(texts, tuning.dimension) } }
+        if (whole != null) return whole.getOrNull()?.map { v -> v.takeIf(::usable) }
+        return texts.map { text ->
+            val single = attempt { runtime.withModel { it.embed(listOf(text), tuning.dimension) } } ?: return@map null
+            val vectors = single.getOrNull() ?: return null
+            vectors.singleOrNull()?.takeIf(::usable)
+        }
+    }
+
+    /** Success (null value: model unusable), or null when the computation threw (logged by class only). */
+    private suspend fun <T> attempt(block: suspend () -> T?): Result<T?>? = try {
+        Result.success(block())
+    } catch (e: CancellationException) {
+        throw e
+    } catch (
+        @Suppress("TooGenericExceptionCaught") e: Exception,
+    ) {
+        logger.log(LogLevel.WARN, TAG, "embedding failed: ${e::class.simpleName}")
+        null
+    }
+
+    /** Writes the computed vectors; an item without one loses its old vector too (it must not answer for old text). */
+    private suspend fun store(
+        key: String,
+        results: List<Pair<String, FloatArray?>>,
+        hashes: Map<String, String>,
+    ) {
+        val computed = results.mapNotNull { (id, vector) -> vector?.let { id to it } }
+        val failed = results.filter { it.second == null }.map { it.first }
+        withContext(dispatchers.io) {
+            db.transaction {
+                computed.forEach { (id, vector) ->
+                    val blob = Float16.encode(vector)
+                    db.embeddingQueries.upsert(
+                        OWNER_ITEM,
+                        id,
+                        key,
+                        tuning.dimension.toLong(),
+                        blob,
+                        hashes.getValue(id),
+                    )
+                }
+                failed.forEach { db.embeddingQueries.deleteOne(OWNER_ITEM, it, key) }
+            }
+        }
+        lock.withLock {
+            computed.forEach { (id, vector) -> semantic.put(id, vector) }
+            failed.forEach { semantic.remove(it) }
+        }
     }
 
     /** First use after launch: vectors already computed for the current text are read, not recomputed. */
@@ -292,11 +375,10 @@ public class SearchService internal constructor(
             }
         lock.withLock {
             for (row in rows) {
-                if (storedHash[row.owner_id] ==
-                    hashes[row.owner_id]
-                ) {
-                    semantic.put(row.owner_id, Float16.decode(row.vector))
-                }
+                val vector = Float16.decode(row.vector)
+                // A damaged row (wrong size, NaN) is skipped: the item is embedded again by this indexing pass.
+                val valid = vector.size == tuning.dimension && vector.all { it.isFinite() }
+                if (valid && storedHash[row.owner_id] == hashes[row.owner_id]) semantic.put(row.owner_id, vector)
             }
         }
     }
@@ -306,11 +388,21 @@ public class SearchService internal constructor(
         allowed: Set<String>,
     ): List<Pair<String, Float>> {
         if (runtime.unavailableReason != null || lock.withLock { semantic.size } == 0) return emptyList()
+        // Rule 7: whatever the model does (native error, memory, a bad vector), the search answers with keywords.
         val query =
-            runtime.withModel { model ->
-                model.embed(listOf(tuning.promptStyle.query(text)), tuning.dimension).single()
+            try {
+                runtime.withModel { model ->
+                    model.embed(listOf(tuning.promptStyle.query(text)), tuning.dimension).single()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (
+                @Suppress("TooGenericExceptionCaught") e: Exception,
+            ) {
+                logger.log(LogLevel.WARN, TAG, "query embedding failed: ${e::class.simpleName}")
+                null
             }
-                ?: return emptyList()
+        if (query == null || query.size != tuning.dimension || !query.all { it.isFinite() }) return emptyList()
         return lock.withLock { semantic.nearest(query, tuning.semanticCandidates) { it in allowed } }
     }
 
@@ -366,6 +458,7 @@ public class SearchService internal constructor(
         const val DEFAULT_SUGGESTIONS = 6
         const val ITEM_WEIGHT = 1_000L
         const val BATCH = 8
+        const val MAX_QUERY_CHARS = 200
 
         fun hashOf(text: String): String = sha256(text.encodeToByteArray()).toHexString().take(HASH_CHARS)
 

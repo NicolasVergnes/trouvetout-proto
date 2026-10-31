@@ -6,7 +6,9 @@ import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.EmbeddingEngine
 import com.google.ai.edge.litertlm.EmbeddingEngineConfig
 import com.google.ai.edge.litertlm.EmbeddingOptions
+import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.InputData
+import com.google.ai.edge.litertlm.LogSeverity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -35,6 +37,8 @@ public class AssetTextModelSource(
 
     override suspend fun load(): TextEmbedder = withContext(Dispatchers.IO) {
         val model = materialize(checkNotNull(assetPath) { "no model in this build" })
+        // The native library logs its inputs at some levels (rule 3: no business data in logs, debug included).
+        Engine.setNativeMinLogSeverity(LogSeverity.INFINITY)
         val cache = File(appContext.cacheDir, "litertlm").apply { mkdirs() }
         val engine =
             EmbeddingEngine(
@@ -49,15 +53,24 @@ public class AssetTextModelSource(
         LiteRtTextEmbedder(engine)
     }
 
-    /** The model as a plain file: copied from the assets once, atomically. */
+    /**
+     * The model as a plain file: copied from the assets once, atomically, named after the model identity (another
+     * model with the same file name is copied again); copies of other models and partial copies are removed.
+     */
     private fun materialize(path: String): File {
-        val target = File(File(appContext.cacheDir, "models"), path.substringAfterLast('/'))
+        val directory = File(appContext.cacheDir, "models")
+        val target = File(directory, "${checkNotNull(modelId).replace(UNSAFE_CHARS, "_")}.litertlm")
         if (target.isFile && target.length() == expectedBytes) return target
-        target.parentFile?.mkdirs()
-        val partial = File(target.parentFile, target.name + ".part")
-        appContext.assets.open(path).use { input -> partial.outputStream().use { input.copyTo(it, COPY_BUFFER) } }
-        check(partial.length() == expectedBytes) { "model copy incomplete" }
-        check(partial.renameTo(target)) { "model copy not renamed" }
+        directory.listFiles()?.filter { it != target }?.forEach { it.delete() }
+        directory.mkdirs()
+        val partial = File(directory, target.name + ".part")
+        try {
+            appContext.assets.open(path).use { input -> partial.outputStream().use { input.copyTo(it, COPY_BUFFER) } }
+            check(partial.length() == expectedBytes) { "model copy incomplete" }
+            check(partial.renameTo(target)) { "model copy not renamed" }
+        } finally {
+            partial.delete()
+        }
         return target
     }
 
@@ -65,8 +78,9 @@ public class AssetTextModelSource(
         val SUPPORTED_ABIS = setOf("arm64-v8a", "x86_64")
 
         /** The core clips texts well below this (LiteRT-LM rejects, never truncates, a longer input). */
-        const val MAX_INPUT_TOKENS = 256
+        const val MAX_INPUT_TOKENS = 512
         const val COPY_BUFFER = 1 shl 16
+        val UNSAFE_CHARS = Regex("[^A-Za-z0-9._-]")
     }
 }
 

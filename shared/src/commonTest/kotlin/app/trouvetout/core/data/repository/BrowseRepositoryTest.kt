@@ -158,6 +158,14 @@ class BrowseRepositoryTest {
         val skis = item("skis", LocationRef.InPlace(cave), tags = listOf("hiver", "sport"))
         item("luge", LocationRef.InPlace(cave), tags = listOf("hiver"))
         clock.tick()
+        // H4: a tag only a sensitive item carries is never offered (item sheet, search filters).
+        val safe = place("Coffre", kind = PlaceKind.ROOT)
+        items.create(
+            ItemDraft("bague", tags = listOf("bijoux"), sensitive = true),
+            LocationRef.InPlace(safe),
+            EventSource.TEXT,
+        )
+        clock.tick()
         val file = assertNotNull(photos.store("200x100".encodeToByteArray()))
         assertIs<CommandResult.Done>(attachments.attachPhoto(PhotoOwnerType.PLACE, cave, file, EventSource.TEXT))
         clock.tick()

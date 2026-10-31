@@ -120,8 +120,11 @@ class SearchViewModel(
         viewModelScope.launch { app.readyShared.first().search.recordOpened(itemId) }
     }
 
-    /** Back on the screen: the journal may have changed (an item moved from its sheet). */
-    fun onResume() = refresh(debounce = false)
+    /** Back on the screen: the journal may have changed (an item moved from its sheet); vectors may lag behind. */
+    fun onResume() {
+        viewModelScope.launch { app.readyShared.first().search.prepare() }
+        refresh(debounce = false)
+    }
 
     private fun filter(change: (SearchUiState) -> SearchUiState) {
         _state.update(change)

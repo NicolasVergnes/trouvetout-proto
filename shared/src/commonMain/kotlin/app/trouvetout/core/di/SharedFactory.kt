@@ -187,6 +187,7 @@ public class SharedFactory(
      * then builds a fresh [SharedFactory]: this one refuses to reopen. Returns the directories removed.
      */
     public suspend fun wipeAllData(): List<String> = withContext(config.dispatchers.io) {
+        if (searchService.isInitialized()) searchService.value.shutdown()
         close()
         wiped = true
         DATA_DIRECTORIES.filter { files.deleteDirectory(it) }

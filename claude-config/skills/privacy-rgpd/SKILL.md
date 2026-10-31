@@ -52,7 +52,7 @@ Référence : `docs/02-securite-rgpd.md`. Ce skill est la procédure de vérific
 - Micro : « Le micro sert uniquement à transcrire votre phrase, sur votre téléphone. Rien n'est enregistré ni envoyé. »
 - Caméra : « Les photos restent dans l'application, sur votre téléphone. Elles ne vont ni dans votre galerie ni sur internet. »
 - Notifications : « Pour les rappels que vous programmez. Aucune notification promotionnelle. »
-- Pack de modèle : « Téléchargement unique de N Mo depuis nos serveurs. Aucune information sur vous n'est envoyée. »
+- Modèle de recherche : « Inclus dans l'application (165 Mo) ; il fonctionne sur votre téléphone et ne télécharge rien » (ADR-021).
 
 ## Si un jour le périmètre change
 Relais chiffré (F9), télémétrie opt-in, sauvegarde gérée par l'éditeur : refaire l'analyse RGPD complète (base légale, registre, DPA hébergeur, information), **avant** d'écrire du code.

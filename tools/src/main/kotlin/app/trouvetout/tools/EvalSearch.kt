@@ -425,5 +425,5 @@ private const val P50 = 50
 private const val P95 = 95
 private const val LATENCY_ITEMS = 5_000
 private const val MAX_FILLER_AGE = 700
-private const val MAX_INPUT_TOKENS = 256
+private const val MAX_INPUT_TOKENS = 512
 private const val FILLER_MARK = "zzfiller"

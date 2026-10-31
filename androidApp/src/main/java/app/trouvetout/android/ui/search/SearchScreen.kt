@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -43,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -200,6 +202,7 @@ private fun QueryField(
     onChange: (String) -> Unit,
 ) {
     val focus = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
     LaunchedEffect(Unit) { if (query.isEmpty()) focus.requestFocus() }
     OutlinedTextField(
         value = query,
@@ -216,6 +219,8 @@ private fun QueryField(
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search, autoCorrectEnabled = false),
+        // Results follow the typing; the Search key just closes the keyboard to show them.
+        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
     )
 }
 
@@ -233,7 +238,15 @@ private fun ModeBanner(mode: SearchMode) {
                     KeywordOnlyReason.LOAD_FAILED -> stringResource(R.string.search_mode_failed)
                 }
         }
-    Column(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+    // Announced once when the mode changes, not at every batch of vectors.
+    val announced = if (mode is SearchMode.KeywordOnly) {
+        Modifier.semantics {
+            liveRegion = LiveRegionMode.Polite
+        }
+    } else {
+        Modifier
+    }
+    Column(modifier = announced) {
         Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (mode is SearchMode.Indexing && mode.total > 0) {
             LinearProgressIndicator(

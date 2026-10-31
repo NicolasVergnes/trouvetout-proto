@@ -25,6 +25,8 @@ public data class SearchTuning(
     val rrfK: Int = 60,
     /** Share of the keyword score in the linear fusion; the rest is the semantic one ([FusionMethod.LINEAR]). */
     val keywordShare: Double = 0.3,
+    /** Keyword share when the best keyword item has every word of the question (a sure keyword answer). */
+    val fullMatchKeywordShare: Double = 0.6,
     /** Cosine above [semanticFloor] that counts as a full semantic match in the linear fusion. */
     val semanticSpan: Float = 0.3f,
     /**
@@ -55,5 +57,10 @@ public data class SearchTuning(
     val semanticOnly: Boolean = false,
 ) {
     /** Identifies the stored vectors: another model, size or prompt means recomputing them. */
-    internal fun modelKey(modelId: String): String = "$modelId/$dimension/${promptStyle.name}"
+    internal fun modelKey(modelId: String): String = "$modelId/$dimension/${promptStyle.name}/$DOCUMENT_TEXT_VERSION"
+
+    private companion object {
+        /** Bumped whenever the embedded document text changes shape: the stored vectors are then recomputed. */
+        const val DOCUMENT_TEXT_VERSION = "t2"
+    }
 }

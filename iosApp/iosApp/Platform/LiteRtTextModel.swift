@@ -1,3 +1,4 @@
+import CLiteRTLM
 import Foundation
 import LiteRTLM
 import Shared
@@ -10,14 +11,28 @@ final class LiteRtTextModel: CallbackTextModelSource {
 
     init(bundle: Bundle = .main) {
         url = bundle.url(forResource: "embeddinggemma-2-text-270m", withExtension: "litertlm")
-        // Name and size identify the file: another model means new vectors, computed again.
-        let size = url.flatMap { try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize }
-        identity = size.map { "embeddinggemma-2-text-270m@\($0)" }
+        // Name and checksum prefix from the bundled manifest, as on Android: another model means new vectors.
+        identity = url == nil ? nil : LiteRtTextModel.manifestIdentity(bundle)
         super.init()
     }
 
     override var modelId: String? {
         identity
+    }
+
+    /// `id@sha256-prefix` of the text model in `models/manifest.json`, or nil when the manifest is missing.
+    private static func manifestIdentity(_ bundle: Bundle) -> String? {
+        guard let manifestURL = bundle.url(forResource: "manifest", withExtension: "json"),
+              let data = try? Data(contentsOf: manifestURL),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let models = root["models"] as? [[String: Any]],
+              let text = models.first(where: { $0["variant"] as? String == "TEXT_ONLY" }),
+              let id = text["id"] as? String,
+              let sha = text["sha256"] as? String
+        else {
+            return nil
+        }
+        return "\(id)@\(sha.prefix(12))"
     }
 
     /// Every iPhone that runs iOS 16 has a 64-bit ARM processor, which the runtime supports.
@@ -39,13 +54,15 @@ final class LiteRtTextModel: CallbackTextModelSource {
                     create: true
                 ).appendingPathComponent("litertlm", isDirectory: true)
                 try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+                // The native library logs its inputs at some levels (rule 3: no business data in logs, debug included).
+                litert_lm_set_min_log_level(kLiteRtLmLogSeveritySilent)
                 let engine = EmbeddingEngine(
                     config: EmbeddingEngineConfig(
                         modelPath: url.path,
                         backend: .cpu(),
                         cacheDir: cache.path,
                         // The core clips texts well below this: the runtime rejects, never truncates, a longer input.
-                        maxInputLength: 256
+                        maxInputLength: 512
                     )
                 )
                 try await engine.initialize()

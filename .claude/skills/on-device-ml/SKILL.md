@@ -30,16 +30,16 @@ Implémentations : `LiteRtTextEmbedder`, `LiteRtImageEmbedder` (Android : LiteRT
 - Licence Apache 2.0 (EmbeddingGemma 2 et LiteRT-LM) : mention dans les réglages, `THIRD_PARTY_NOTICE` pour J7.
 
 ## Embeddings et index
-- Texte vectorisé : `nom. description. étiquettes` avec le préfixe document de la fiche du modèle (`PromptStyle.MODEL_CARD`) ; **pas le lieu** (le mot-clé le couvre ; renommer un lieu ne recalcule rien). Nom en `title:` et phrase dictée ajoutée ont été mesurés sans gain.
+- Texte vectorisé : `nom. description. étiquettes. Rangé : racine, pièce` avec le préfixe document de la fiche du modèle (`PromptStyle.MODEL_CARD`) : la racine et la pièce donnent du contexte aux fiches nues ; les niveaux plus fins restent au mot-clé. Changer la forme du texte = incrémenter `DOCUMENT_TEXT_VERSION` (`SearchTuning`). Nom en `title:` et phrase dictée ajoutée ont été mesurés sans gain.
 - Photos (omnimodal, lot 7) : un vecteur par photo, à l'ajout.
 - Table cache `embedding(owner_type, owner_id, model_key, dim, vector float16, text_hash)` : `model_key` = modèle + dimension + préfixes ; `text_hash` change → recalcul ; autre modèle → réindexation complète au premier plan avec progression, anciens vecteurs effacés une fois les nouveaux complets. Jamais exportée.
 - Recherche : vecteurs normalisés ; produit scalaire en force brute sur un tableau contigu (`SemanticIndex`) ; 256 dimensions (768 n'apporte rien en FR).
 - Calcul des vecteurs seulement quand l'hôte appelle `SearchService.prepare()` (écran ou app au premier plan) ; `release()` quand l'app passe en arrière-plan ou sur avertissement mémoire (N6).
 
 ## Fusion (shared/search, `SearchTuning`)
-1. Mot-clé : `KeywordIndex` en mémoire (pas de FTS5 : absent du SQLite d'Android), BM25 sur champs pondérés, complétion du dernier mot, fautes par distance d'édition, synonymes FR/EN de `Synonyms.kt` (un saut, poids 0,7).
+1. Mot-clé : `KeywordIndex` en mémoire (pas de FTS5 : absent du SQLite d'Android), BM25 sur champs pondérés, complétion du dernier mot, fautes par distance d'édition et par clé phonétique française (`SearchText.phonetic`), synonymes FR/EN de `Synonyms.kt` (un saut, poids 0,7).
 2. Sémantique : top-50 produits scalaires, filtrés au-dessus de 0,55 et à moins de 0,2 du meilleur.
-3. Fusion **linéaire** : `0,3 × (score mot-clé / meilleur) + 0,7 × force`, force = `(cos − moyenne des 50 candidats) / 0,1` bornée à [0, 1] ; puis `× (1 + 0,1·exp(−jours/90))` et jusqu'à +10 % pour la fréquence d'ouverture (`search_usage`). La RRF a été écartée : sans écart de score, le bonus de récence inversait les rangs.
+3. Fusion **linéaire** : `0,3 × (score mot-clé / meilleur) + 0,7 × force` (0,6 / 0,4 quand la meilleure fiche mot-clé contient tous les mots de la question), force = `(cos − moyenne des 50 candidats) / 0,1` bornée à [0, 1] ; puis `× (1 + 0,1·exp(−jours/90))` et jusqu'à +10 % pour la fréquence d'ouverture (`search_usage`). La RRF a été écartée : sans écart de score, le bonus de récence inversait les rangs.
 4. « Rien trouvé » : aucun mot commun et meilleur cosinus < 0,7.
 5. Réponse C4 en données (`AnswerLine`) ; la phrase et la date relative sont écrites par chaque UI.
 6. Tout réglage se mesure avec `./gradlew :tools:evalSearch -PevalArgs="…"` (options `--mode`, `--prompt`, `--dim`, `--share`, `--floor`, `--span`, `--margin`, `--gap`, `--answer-floor`, `--no-latency`) **sur le split `dev`** ; le `holdout` vérifie la généralisation.

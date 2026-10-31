@@ -5,6 +5,7 @@ import app.trouvetout.core.log.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.concurrent.Volatile
 
 /** Why the search answers with keywords only (the host says it to the user). */
 public enum class KeywordOnlyReason {
@@ -30,6 +31,9 @@ internal class ModelRuntime(
     private var embedder: TextEmbedder? = null
     private var failed = false
 
+    @Volatile
+    private var closing = false
+
     val modelId: String? = source?.modelId
 
     /** Null while the model can be used (loaded or not yet). */
@@ -43,8 +47,14 @@ internal class ModelRuntime(
 
     /** Runs [block] with the model, loading it if needed; null when the model cannot be used. */
     suspend fun <T> withModel(block: suspend (TextEmbedder) -> T): T? = mutex.withLock {
+        if (closing) return@withLock null
         val model = embedder ?: load() ?: return@withLock null
-        block(model)
+        try {
+            block(model)
+        } finally {
+            // closeNow() arrived during the computation: the engine is freed now that nothing uses it.
+            if (closing) closeEmbedder()
+        }
     }
 
     private suspend fun load(): TextEmbedder? {
@@ -67,8 +77,22 @@ internal class ModelRuntime(
 
     val isLoaded: Boolean get() = embedder != null
 
-    /** Shutdown path ([app.trouvetout.core.di.SharedFactory.close]): no computation may be running. */
+    /**
+     * Shutdown path ([app.trouvetout.core.di.SharedFactory.close]), from a non-suspending caller: frees the engine now
+     * when idle, otherwise as soon as the running computation ends; no computation starts afterwards.
+     */
     fun closeNow() {
+        closing = true
+        if (mutex.tryLock()) {
+            try {
+                closeEmbedder()
+            } finally {
+                mutex.unlock()
+            }
+        }
+    }
+
+    private fun closeEmbedder() {
         embedder?.close()
         embedder = null
     }

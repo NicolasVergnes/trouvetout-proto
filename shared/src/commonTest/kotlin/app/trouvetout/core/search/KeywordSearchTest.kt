@@ -57,6 +57,13 @@ class KeywordSearchTest {
     }
 
     @Test
+    fun spellings_by_sound_are_tolerated_C1() {
+        assertEquals(SearchText.phonetic("ciseaux"), SearchText.phonetic("sizeaux"))
+        assertEquals(SearchText.phonetic("perceuse"), SearchText.phonetic("perseuze"))
+        assertEquals("perceuse", ranked("perseuze").first(), "two letters away, same sound")
+    }
+
+    @Test
     fun the_word_being_typed_is_completed_C1() {
         assertEquals("perceuse", ranked("perc").first())
         assertEquals("guirlandes", ranked("guirl").first())

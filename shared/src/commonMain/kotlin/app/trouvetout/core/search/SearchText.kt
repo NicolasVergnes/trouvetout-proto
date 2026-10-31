@@ -40,6 +40,27 @@ internal object SearchText {
         return out
     }
 
+    /**
+     * A rough French phonetic key of a folded word, so that spellings by sound meet (« sizeaux » / « ciseaux »,
+     * « tondeuze » / « tondeuse », « ponceuze »): soft c, s and z alike, ph = f, qu = k, eau/au = o, ai/ei = e, mute h,
+     * final -er/-ez/-et = e, doubled letters single.
+     */
+    fun phonetic(word: String): String {
+        var x = word.replace(
+            "ph",
+            "f",
+        ).replace("qu", "k").replace("ch", "\u0001").replace("h", "").replace("\u0001", "ch")
+        x = SOFT_C.replace(x, "s").replace('z', 's').replace("eau", "o").replace("au", "o")
+        x = x.replace("ai", "e").replace("ei", "e").replace('y', 'i').replace('k', 'c')
+        x = FINAL_E.replace(x, "e")
+        val out = StringBuilder(x.length)
+        for (ch in x) if (out.isEmpty() || out.last() != ch) out.append(ch)
+        return out.toString()
+    }
+
+    private val SOFT_C = Regex("c(?=[eiy])")
+    private val FINAL_E = Regex("(er|ez|et)$")
+
     /** Plural mark removed (« clés » → « cle », « tuyaux » → « tuyau »); numbers are left alone. */
     fun stem(word: String): String = when {
         word.any(Char::isDigit) -> word

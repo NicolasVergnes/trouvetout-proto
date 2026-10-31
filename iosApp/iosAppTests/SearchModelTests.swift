@@ -12,9 +12,9 @@ final class SearchModelTests: XCTestCase {
         defer { embedder.close() }
         let vectors = try await embedder.embed(
             texts: [
-                PromptStyle.litert.query(text: "le chargeur du Kindle"),
-                PromptStyle.litert.document(text: "Câble USB-C blanc"),
-                PromptStyle.litert.document(text: "Tire-bouchon"),
+                PromptStyle.modelCard.query(text: "le chargeur du Kindle"),
+                PromptStyle.modelCard.document(text: "Câble USB-C blanc"),
+                PromptStyle.modelCard.document(text: "Tire-bouchon"),
             ],
             dim: 256
         )

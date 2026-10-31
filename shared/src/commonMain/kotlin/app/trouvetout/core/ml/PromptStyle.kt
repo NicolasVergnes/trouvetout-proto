@@ -24,8 +24,9 @@ public enum class PromptStyle(
 
     public companion object {
         /**
-         * Characters kept from a text: about a hundred tokens, far below the 256-token input the hosts configure
-         * (the runtime rejects a longer input instead of truncating it). Cut at a word boundary.
+         * Characters kept from a text: about a hundred tokens of French, far below the 512-token input the hosts
+         * configure (the runtime rejects a longer input instead of truncating it; a text it still rejects only loses
+         * its own vector). Cut at a word boundary.
          */
         public const val MAX_TEXT_CHARS: Int = 400
 
