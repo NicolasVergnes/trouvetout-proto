@@ -134,9 +134,17 @@ public class ManualClock(
 
 /** Builds the reference household through the journal and replays the questions (N3); JVM test and tool. */
 public object SearchCorpus {
+    /** N3 targets (cahier des charges): 80 % first, 95 % in the first three. */
     public const val TOP1_THRESHOLD: Double = 0.80
     public const val TOP3_THRESHOLD: Double = 0.95
     public val LATENCY_BUDGET: Duration = Duration.parse("1s")
+
+    /**
+     * Non-regression floors of the hybrid search, by language: the level measured when lot 6 closed (FR 76.0 % /
+     * 89.0 %, EN 96.7 % / 100 %) minus one question for float differences between platforms. They only ever go up;
+     * the N3 targets above stay the goal (ADR-021).
+     */
+    public val FLOORS: Map<String, Pair<Double, Double>> = mapOf("fr" to (0.75 to 0.88), "en" to (0.95 to 0.98))
 
     /** Results kept per question: enough to find the right item's rank. */
     private const val DEPTH = 10

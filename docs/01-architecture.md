@@ -197,7 +197,7 @@ Méthode : normalisation (minuscules, accents conservés pour l'affichage, repli
 - Les APIs système (Foundation Models, Gemini Nano, ML Kit) peuvent remplacer un pack quand elles sont présentes, derrière la même interface `TextEmbedder` / `ImageEmbedder` / `Rephraser`, mais ne sont jamais une condition.
 
 ### 5.3 Évaluation (N3)
-`tools/eval-search` rejoue `corpus/recherche.jsonl` (question → id de la fiche attendue sur un jeu de fiches de référence) et sort top-1 / top-3 / latence. Seuils : 80 % / 95 % / < 1 s. Tourne en CI (JVM) avec le modèle texte seul.
+`tools/eval-search` rejoue `corpus/recherche.jsonl` (question → id de la fiche attendue sur `corpus/fiches-reference.json`) en trois modes (mots-clés, sémantique, hybride) avec le vrai modèle (LiteRT-LM JVM) et sort top-1 / top-3 par langue et par split, puis la latence sur 5 000 objets. Objectif N3 : 80 % / 95 % / < 1 s ; la CI (job `search-eval`) bloque sous le plancher `SearchCorpus.FLOORS`, mesure de clôture du lot 6, qui ne baisse jamais (ADR-021).
 
 ## 6. Licence et essai (J1, J4, J5)
 

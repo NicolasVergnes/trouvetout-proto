@@ -36,7 +36,8 @@ Répartition visée par `kind` : exact 20 %, typo/accents 15 %, synonym 20 %, pa
 
 ## 3. Outils
 - `tools/eval-parser` et `tools/eval-search` (Kotlin/JVM, lancés par Gradle) : rejouent les corpus, affichent les scores, échouent sous les seuils ; sortie JSON dans `build/reports/` pour la CI.
-- `tools/eval-search --model none` permet de mesurer le mot-clé seul (utile pour les appareils sans pack).
+- `./gradlew :tools:evalSearch` rejoue les trois modes (mots-clés seuls, sémantique seule, hybride) ; `-PevalArgs="--mode keyword"` mesure le mot-clé seul (appareils sans modèle). `SearchCorpusTest` garde un plancher du mot-clé seul dans `allTests`.
+- `corpus/recherche.jsonl` et `corpus/fiches-reference.json` sont générés par `corpus/build-search-corpus.py` (déterministe) ; chaque question porte `split: dev | holdout` (une sur cinq en holdout) : les réglages du moteur se font sur `dev`, le `holdout` mesure la généralisation. Le corpus a été écrit, puis audité (réponses acceptables `accept`, questions ambiguës reformulées), par des passes qui n'ont lu ni le moteur ni ses résultats.
 
 ## 4. Procédure d'enrichissement
 1. Toute phrase réelle saisie par le développeur pendant ses tests est ajoutée avec `origin: own-usage` (sans donnée personnelle sensible). Le dépôt est public (ADR-013) : seules des phrases synthétiques ou écrites par le développeur sont versionnées ; aucune phrase d'un utilisateur ne rejoint jamais le corpus — l'app n'a, et n'aura, aucun canal pour cela.
