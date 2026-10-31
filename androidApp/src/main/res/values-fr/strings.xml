@@ -183,4 +183,7 @@
     <string name="search_mode_no_model">Recherche par mots-clés : cette version de l’app n’inclut pas le modèle de recherche intelligente.</string>
     <string name="search_mode_unsupported">Recherche par mots-clés : ce téléphone ne peut pas faire tourner le modèle de recherche intelligente.</string>
     <string name="search_mode_failed">Recherche par mots-clés : le modèle de recherche intelligente n’a pas pu se charger. Nouvel essai au prochain lancement.</string>
+    <string name="settings_search_section">Recherche</string>
+    <string name="settings_search_text">La recherche tourne sur ce téléphone : mots-clés, synonymes et sens des mots, avec un modèle inclus dans l’app. Rien n’est envoyé nulle part.</string>
+    <string name="settings_search_licences">EmbeddingGemma 2 de Google et LiteRT-LM, sous licence Apache 2.0.</string>
 </resources>

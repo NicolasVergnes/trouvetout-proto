@@ -8,7 +8,9 @@ enum SincePeriod: Int, CaseIterable, Identifiable {
     case month = 30
     case year = 365
 
-    var id: Int { rawValue }
+    var id: Int {
+        rawValue
+    }
 
     var label: String {
         switch self {
@@ -24,7 +26,11 @@ enum SincePeriod: Int, CaseIterable, Identifiable {
 @MainActor
 final class SearchViewModel: ObservableObject {
     @Published var query: String {
-        didSet { if query != oldValue { refresh(debounce: true) } }
+        didSet {
+            if query != oldValue {
+                refresh(debounce: true)
+            }
+        }
     }
 
     @Published private(set) var result: SearchResult?
@@ -136,14 +142,26 @@ final class SearchViewModel: ObservableObject {
                 try? await Task.sleep(nanoseconds: 250_000_000)
             }
             guard !Task.isCancelled else { return }
-            let completions = text.trimmingCharacters(in: .whitespaces).isEmpty
-                ? []
-                : ((try? await search.suggest(prefix: text, limit: 6)) ?? [])
-            guard let found = try? await search.search(query: text, filters: filters, limit: 20),
-                  !Task.isCancelled
-            else { return }
+            let completions = await SearchViewModel.completions(of: text, in: search)
+            let found: SearchResult
+            do {
+                found = try await search.search(query: text, filters: filters, limit: 20)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
             self?.result = found
             self?.suggestions = completions
+        }
+    }
+
+    /// C12 completions of what is typed; none for a blank field or when the core fails.
+    private static func completions(of text: String, in search: SearchService) async -> [Suggestion] {
+        guard !text.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
+        do {
+            return try await search.suggest(prefix: text, limit: 6)
+        } catch {
+            return []
         }
     }
 }

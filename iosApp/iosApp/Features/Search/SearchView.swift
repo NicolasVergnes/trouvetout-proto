@@ -232,18 +232,22 @@ private struct AnswerRow: View {
 
     @ViewBuilder
     private var breadcrumb: some View {
-        if answer.places.isEmpty && answer.containerId == nil {
+        if answer.places.isEmpty, answer.containerId == nil {
             Text("state_unknown_place").font(.body)
         } else {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
                     ForEach(Array(answer.places.enumerated()), id: \.element.id) { index, place in
-                        if index > 0 { Text(verbatim: "›").foregroundStyle(.secondary) }
+                        if index > 0 {
+                            Text(verbatim: "›").foregroundStyle(.secondary)
+                        }
                         NavigationLink(place.name, value: BrowseTarget.place(place.id))
                             .buttonStyle(.bordered)
                     }
                     if let containerId = answer.containerId, let label = answer.containerLabel {
-                        if !answer.places.isEmpty { Text(verbatim: "›").foregroundStyle(.secondary) }
+                        if !answer.places.isEmpty {
+                            Text(verbatim: "›").foregroundStyle(.secondary)
+                        }
                         NavigationLink(label, value: BrowseTarget.container(containerId))
                             .buttonStyle(.bordered)
                     }
@@ -254,12 +258,12 @@ private struct AnswerRow: View {
 
     private var stateText: String {
         let when = relativeDate(answer.since)
-        let state: String
-        switch answer.status {
-        case .taken: state = localized("search_answer_taken", when)
-        case .lent: state = localized("search_answer_lent", answer.lentTo ?? "", when)
-        default: state = localized("search_answer_stored", when)
-        }
+        let state =
+            switch answer.status {
+            case .taken: localized("search_answer_taken", when)
+            case .lent: localized("search_answer_lent", answer.lentTo ?? "", when)
+            default: localized("search_answer_stored", when)
+            }
         return answer.archived ? localized("search_answer_archived", state) : state
     }
 }

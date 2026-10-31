@@ -2353,6 +2353,54 @@
         }
       }
     },
+    "settings_search_licences": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EmbeddingGemma 2 by Google and LiteRT-LM, under the Apache License 2.0."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EmbeddingGemma 2 de Google et LiteRT-LM, sous licence Apache 2.0."
+          }
+        }
+      }
+    },
+    "settings_search_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche"
+          }
+        }
+      }
+    },
+    "settings_search_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search runs on this phone: keywords, synonyms and the meaning of words, with a model included in the app. Nothing is sent anywhere."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La recherche tourne sur ce téléphone : mots-clés, synonymes et sens des mots, avec un modèle inclus dans l’app. Rien n’est envoyé nulle part."
+          }
+        }
+      }
+    },
     "settings_title": {
       "localizations": {
         "en": {

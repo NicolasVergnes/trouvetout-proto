@@ -26,7 +26,7 @@ class SearchCorpusTest {
         var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
         while (dir != null) {
             val candidate = File(dir, "corpus/recherche.jsonl")
-            if (candidate.isFile) return candidate.parentFile
+            if (candidate.isFile) return File(dir, "corpus")
             dir = dir.parentFile
         }
         fail("corpus/recherche.jsonl not found above ${System.getProperty("user.dir")}")

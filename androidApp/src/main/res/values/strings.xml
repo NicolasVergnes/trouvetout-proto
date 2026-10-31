@@ -183,4 +183,7 @@
     <string name="search_mode_no_model">Keyword search: this version of the app has no smart search model.</string>
     <string name="search_mode_unsupported">Keyword search: this phone cannot run the smart search model.</string>
     <string name="search_mode_failed">Keyword search: the smart search model could not load. It will be retried at the next launch.</string>
+    <string name="settings_search_section">Search</string>
+    <string name="settings_search_text">Search runs on this phone: keywords, synonyms and the meaning of words, with a model included in the app. Nothing is sent anywhere.</string>
+    <string name="settings_search_licences">EmbeddingGemma 2 by Google and LiteRT-LM, under the Apache License 2.0.</string>
 </resources>

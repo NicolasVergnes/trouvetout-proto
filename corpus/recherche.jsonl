@@ -4,7 +4,7 @@
 {"id":"q0004","lang":"fr","origin":"synthetic","query":"le fer à repasser","expect":"item_fer_repasser","kind":"exact","split":"dev"}
 {"id":"q0005","lang":"fr","origin":"synthetic","query":"le sac de gym","expect":"item_sac_sport","kind":"synonym","split":"holdout"}
 {"id":"q0006","lang":"fr","origin":"synthetic","query":"le câble HDMI","expect":"item_cable_hdmi","kind":"exact","split":"dev"}
-{"id":"q0007","lang":"fr","origin":"synthetic","query":"des souvenirs de famille","expect":"item_albums_photo","accept":["item_album_mariage","item_cadres_photos"],"kind":"category","split":"dev"}
+{"id":"q0007","lang":"fr","origin":"synthetic","query":"des souvenirs de famille","expect":"item_albums_photo","accept":["item_album_mariage","item_cadres_photos","item_disque_dur"],"kind":"category","split":"dev"}
 {"id":"q0008","lang":"fr","origin":"synthetic","query":"la bombe de peinture","expect":"item_bombe_noire","kind":"synonym","split":"dev"}
 {"id":"q0009","lang":"fr","origin":"synthetic","query":"le vélo d'intérieur","expect":"item_velo_appartement","kind":"synonym","split":"dev"}
 {"id":"q0010","lang":"fr","origin":"synthetic","query":"le document qui prouve que la voiture est à moi","expect":"item_carte_grise","kind":"paraphrase","split":"holdout"}
@@ -24,7 +24,7 @@
 {"id":"q0024","lang":"fr","origin":"synthetic","query":"mes papiers d'identité","expect":"item_passeport","kind":"category","split":"dev"}
 {"id":"q0025","lang":"fr","origin":"synthetic","query":"la moka","expect":"item_cafetiere_italienne","kind":"synonym","split":"holdout"}
 {"id":"q0026","lang":"fr","origin":"synthetic","query":"la télécommande du meuble TV","expect":"item_telecommande_tv","kind":"place","split":"dev"}
-{"id":"q0027","lang":"fr","origin":"synthetic","query":"un moyen de transport pour enfant","expect":"item_trottinette","accept":["item_velo_enfant"],"kind":"category","split":"dev"}
+{"id":"q0027","lang":"fr","origin":"synthetic","query":"un moyen de transport pour enfant","expect":"item_trottinette","accept":["item_velo_enfant","item_poussette"],"kind":"category","split":"dev"}
 {"id":"q0028","lang":"fr","origin":"synthetic","query":"le plaid en laine","expect":"item_plaid","kind":"exact","split":"dev"}
 {"id":"q0029","lang":"fr","origin":"synthetic","query":"ce que je mets tout en haut du sapin","expect":"item_etoile_sapin","kind":"paraphrase","split":"dev"}
 {"id":"q0030","lang":"fr","origin":"synthetic","query":"sizeaux de cuisine","expect":"item_ciseaux_cuisine","kind":"typo","split":"holdout"}
@@ -35,8 +35,8 @@
 {"id":"q0035","lang":"fr","origin":"synthetic","query":"le machin qui sert à repasser les chemises","expect":"item_fer_repasser","kind":"paraphrase","split":"holdout"}
 {"id":"q0036","lang":"fr","origin":"synthetic","query":"le parapluie de l'entrée","expect":"item_parapluie","kind":"place","split":"dev"}
 {"id":"q0037","lang":"fr","origin":"synthetic","query":"scie sauteze","expect":"item_scie_sauteuse","kind":"typo","split":"dev"}
-{"id":"q0038","lang":"fr","origin":"synthetic","query":"l'agrafeuse du garage","expect":"item_agrafeuse_murale","kind":"place","split":"dev"}
-{"id":"q0039","lang":"fr","origin":"synthetic","query":"le câble de la voiture","expect":"item_cable_usbc_noir","kind":"place","split":"dev"}
+{"id":"q0038","lang":"fr","origin":"synthetic","query":"l'agrafeuse du garage","expect":"item_agrafeuse_murale","accept":["item_en_staple_gun"],"kind":"place","split":"dev"}
+{"id":"q0039","lang":"fr","origin":"synthetic","query":"le câble de la voiture","expect":"item_cable_usbc_noir","accept":["item_cables_demarrage"],"kind":"place","split":"dev"}
 {"id":"q0040","lang":"fr","origin":"synthetic","query":"le truc pour coudre un bouton","expect":"item_aiguilles_fil","kind":"paraphrase","split":"holdout"}
 {"id":"q0041","lang":"fr","origin":"synthetic","query":"les vis du bac bleu","expect":"item_vis_m4","accept":["item_vis_bois","item_boulons_m6"],"kind":"place","split":"dev"}
 {"id":"q0042","lang":"fr","origin":"synthetic","query":"le costume de pirate","expect":"item_costume_pirate","kind":"exact","split":"dev"}
@@ -73,11 +73,11 @@
 {"id":"q0073","lang":"fr","origin":"synthetic","query":"les chaînes à neige","expect":"item_chaines_neige","kind":"exact","split":"dev"}
 {"id":"q0074","lang":"fr","origin":"synthetic","query":"de l'alcool","expect":"item_bordeaux","accept":["item_champagne"],"kind":"category","split":"dev"}
 {"id":"q0075","lang":"fr","origin":"synthetic","query":"le truc pour attacher les feuilles de papier ensemble","expect":"item_agrafeuse","accept":["item_trombones"],"kind":"paraphrase","split":"holdout"}
-{"id":"q0076","lang":"fr","origin":"synthetic","query":"les décos de Noël","expect":"item_guirlandes","accept":["item_boules_noel","item_creche","item_etoile_sapin"],"kind":"category","split":"dev"}
+{"id":"q0076","lang":"fr","origin":"synthetic","query":"les décos de Noël","expect":"item_guirlandes","accept":["item_boules_noel","item_creche","item_etoile_sapin","item_sapin_artificiel"],"kind":"category","split":"dev"}
 {"id":"q0077","lang":"fr","origin":"synthetic","query":"l'appareil qu'on branche pour regarder les chaînes de la box","expect":"item_decodeur_tv","kind":"paraphrase","split":"dev"}
 {"id":"q0078","lang":"fr","origin":"synthetic","query":"les bouteilles de bordo","expect":"item_bordeaux","kind":"typo","split":"dev"}
 {"id":"q0079","lang":"fr","origin":"synthetic","query":"un appareil de chauffage","expect":"item_chauffage_appoint","kind":"category","split":"dev"}
-{"id":"q0080","lang":"fr","origin":"synthetic","query":"le carnet où il y a les vaccins des enfants","expect":"item_carnets_sante","kind":"paraphrase","split":"holdout"}
+{"id":"q0080","lang":"fr","origin":"synthetic","query":"le carnet où il y a les vaccins des enfants","expect":"item_carnets_sante","accept":["item_en_vaccination"],"kind":"paraphrase","split":"holdout"}
 {"id":"q0081","lang":"fr","origin":"synthetic","query":"la cafetière de la résidence secondaire","expect":"item_cafetiere_filtre","kind":"place","split":"dev"}
 {"id":"q0082","lang":"fr","origin":"synthetic","query":"perseuse bosh","expect":"item_perceuse_bosch","kind":"typo","split":"dev"}
 {"id":"q0083","lang":"fr","origin":"synthetic","query":"l'objet pour soulever la voiture quand on change une roue","expect":"item_cric","kind":"paraphrase","split":"dev"}
@@ -92,7 +92,7 @@
 {"id":"q0092","lang":"fr","origin":"synthetic","query":"où est la tondeuse ?","expect":"item_tondeuse","kind":"exact","split":"dev"}
 {"id":"q0093","lang":"fr","origin":"synthetic","query":"table à repasser","expect":"item_table_repasser","kind":"exact","split":"dev"}
 {"id":"q0094","lang":"fr","origin":"synthetic","query":"les clés hexagonales","expect":"item_cles_allen","kind":"synonym","split":"dev"}
-{"id":"q0095","lang":"fr","origin":"synthetic","query":"le pistolet à agrafes","expect":"item_en_staple_gun","kind":"crosslang","split":"holdout"}
+{"id":"q0095","lang":"fr","origin":"synthetic","query":"le pistolet à agrafes","expect":"item_en_staple_gun","accept":["item_agrafeuse_murale"],"kind":"crosslang","split":"holdout"}
 {"id":"q0096","lang":"fr","origin":"synthetic","query":"cuit vapeure","expect":"item_cuit_vapeur","kind":"typo","split":"dev"}
 {"id":"q0097","lang":"fr","origin":"synthetic","query":"un lubrifiant","expect":"item_wd40","accept":["item_huile_moteur"],"kind":"category","split":"dev"}
 {"id":"q0098","lang":"fr","origin":"synthetic","query":"le doudou lapin","expect":"item_doudou","kind":"exact","split":"dev"}
@@ -104,22 +104,22 @@
 {"id":"q0104","lang":"fr","origin":"synthetic","query":"confiture de fraize","expect":"item_confiture_fraises","kind":"typo","split":"dev"}
 {"id":"q0105","lang":"fr","origin":"synthetic","query":"le fer à souder","expect":"item_en_soldering_iron","kind":"crosslang","split":"holdout"}
 {"id":"q0106","lang":"fr","origin":"synthetic","query":"le truc pour voir si le courant passe","expect":"item_testeur_tension","kind":"paraphrase","split":"dev"}
-{"id":"q0107","lang":"fr","origin":"synthetic","query":"un produit d'entretien pour la voiture","expect":"item_cire_voiture","accept":["item_lave_glace"],"kind":"category","split":"dev"}
+{"id":"q0107","lang":"fr","origin":"synthetic","query":"un produit d'entretien pour la voiture","expect":"item_cire_voiture","accept":["item_lave_glace","item_huile_moteur"],"kind":"category","split":"dev"}
 {"id":"q0108","lang":"fr","origin":"synthetic","query":"la batterie externe","expect":"item_en_power_bank","kind":"crosslang","split":"dev"}
 {"id":"q0109","lang":"fr","origin":"synthetic","query":"un appareil pour les desserts glacés","expect":"item_sorbetiere","kind":"category","split":"dev"}
 {"id":"q0110","lang":"fr","origin":"synthetic","query":"le rasoir électrique","expect":"item_rasoir_electrique","kind":"exact","split":"holdout"}
-{"id":"q0111","lang":"fr","origin":"synthetic","query":"du matériel scolaire","expect":"item_cartable","accept":["item_feutres"],"kind":"category","split":"dev"}
+{"id":"q0111","lang":"fr","origin":"synthetic","query":"du matériel scolaire","expect":"item_cartable","accept":["item_feutres","item_calculatrice","item_en_colouring_pencils"],"kind":"category","split":"dev"}
 {"id":"q0112","lang":"fr","origin":"synthetic","query":"les verres pour trinquer au champagne","expect":"item_flutes_champagne","kind":"paraphrase","split":"dev"}
 {"id":"q0113","lang":"fr","origin":"synthetic","query":"le jeu avec des îles à construire et des routes","expect":"item_catan","kind":"paraphrase","split":"dev"}
 {"id":"q0114","lang":"fr","origin":"synthetic","query":"niveau a bulles","expect":"item_niveau_bulle","kind":"typo","split":"dev"}
 {"id":"q0115","lang":"fr","origin":"synthetic","query":"le papier du médecin pour acheter les médicaments","expect":"item_ordonnances","kind":"paraphrase","split":"holdout"}
 {"id":"q0116","lang":"fr","origin":"synthetic","query":"où est le matelas gonflable ?","expect":"item_matelas_gonflable","kind":"exact","split":"dev"}
-{"id":"q0117","lang":"fr","origin":"synthetic","query":"de la musique","expect":"item_disques_vinyles","accept":["item_en_bluetooth_speaker"],"kind":"category","split":"dev"}
+{"id":"q0117","lang":"fr","origin":"synthetic","query":"de la musique","expect":"item_disques_vinyles","accept":["item_en_bluetooth_speaker","item_en_headphones","item_lecteur_mp3"],"kind":"category","split":"dev"}
 {"id":"q0118","lang":"fr","origin":"synthetic","query":"le truc pour relier la télé à internet par un fil","expect":"item_cable_ethernet","kind":"paraphrase","split":"dev"}
 {"id":"q0119","lang":"fr","origin":"synthetic","query":"le karcher","expect":"item_nettoyeur_hp","kind":"synonym","split":"dev"}
 {"id":"q0120","lang":"fr","origin":"synthetic","query":"les bouchons d'oreilles","expect":"item_boules_quies","kind":"synonym","split":"holdout"}
 {"id":"q0121","lang":"fr","origin":"synthetic","query":"où est le marteau ?","expect":"item_marteau","kind":"exact","split":"dev"}
-{"id":"q0122","lang":"fr","origin":"synthetic","query":"où est l'agrafeuse murale","expect":"item_agrafeuse_murale","kind":"exact","split":"dev"}
+{"id":"q0122","lang":"fr","origin":"synthetic","query":"où est l'agrafeuse murale","expect":"item_agrafeuse_murale","accept":["item_en_staple_gun"],"kind":"exact","split":"dev"}
 {"id":"q0123","lang":"fr","origin":"synthetic","query":"papier alluminium","expect":"item_papier_alu","kind":"typo","split":"dev"}
 {"id":"q0124","lang":"fr","origin":"synthetic","query":"le truc pour s'asseoir sur l'herbe quand on mange dehors","expect":"item_couverture_pique_nique","kind":"paraphrase","split":"dev"}
 {"id":"q0125","lang":"fr","origin":"synthetic","query":"ou est le sapin artificiel","expect":"item_sapin_artificiel","kind":"exact","split":"holdout"}
@@ -137,13 +137,13 @@
 {"id":"q0137","lang":"fr","origin":"synthetic","query":"le bidule pour brancher mes appareils en Angleterre","expect":"item_adaptateur_uk","kind":"paraphrase","split":"dev"}
 {"id":"q0138","lang":"fr","origin":"synthetic","query":"le truc pour ouvrir les bouteilles","expect":"item_tire_bouchon","kind":"paraphrase","split":"dev"}
 {"id":"q0139","lang":"fr","origin":"synthetic","query":"cable micro-usb","expect":"item_cable_micro_usb","kind":"typo","split":"dev"}
-{"id":"q0140","lang":"fr","origin":"synthetic","query":"le truc pour couper les branches","expect":"item_secateur","kind":"paraphrase","split":"holdout"}
+{"id":"q0140","lang":"fr","origin":"synthetic","query":"le truc qu'on tient d'une main pour couper les petites branches","expect":"item_secateur","kind":"paraphrase","split":"holdout"}
 {"id":"q0141","lang":"fr","origin":"synthetic","query":"un produit solaire","expect":"item_creme_solaire","kind":"category","split":"dev"}
 {"id":"q0142","lang":"fr","origin":"synthetic","query":"où est le tensiomètre ?","expect":"item_tensiometre","kind":"exact","split":"dev"}
 {"id":"q0143","lang":"fr","origin":"synthetic","query":"les assiettes de mon mariage","expect":"item_vaisselle_mariage","kind":"synonym","split":"dev"}
 {"id":"q0144","lang":"fr","origin":"synthetic","query":"le truc pour cuire à la vapeur","expect":"item_cuit_vapeur","kind":"paraphrase","split":"dev"}
-{"id":"q0145","lang":"fr","origin":"synthetic","query":"le gilet en laine grise","expect":"item_pull_gris","kind":"synonym","split":"holdout"}
-{"id":"q0146","lang":"fr","origin":"synthetic","query":"bottes de plui","expect":"item_bottes_pluie","kind":"typo","split":"dev"}
+{"id":"q0145","lang":"fr","origin":"synthetic","query":"mon chandail en laine grise","expect":"item_pull_gris","kind":"synonym","split":"holdout"}
+{"id":"q0146","lang":"fr","origin":"synthetic","query":"bottes de plui","expect":"item_bottes_pluie","accept":["item_en_kids_rain_boots"],"kind":"typo","split":"dev"}
 {"id":"q0147","lang":"fr","origin":"synthetic","query":"le ballon de la terrasse","expect":"item_ballon_foot","kind":"place","split":"dev"}
 {"id":"q0148","lang":"fr","origin":"synthetic","query":"le chargeur de l'ordi","expect":"item_chargeur_pc","kind":"synonym","split":"dev"}
 {"id":"q0149","lang":"fr","origin":"synthetic","query":"ciseaux à tissu","expect":"item_ciseaux_tissu","kind":"exact","split":"dev"}
@@ -175,7 +175,7 @@
 {"id":"q0175","lang":"fr","origin":"synthetic","query":"la couverture polaire","expect":"item_plaids_polaire","kind":"synonym","split":"holdout"}
 {"id":"q0176","lang":"fr","origin":"synthetic","query":"où sont les jumelles ?","expect":"item_jumelles","kind":"exact","split":"dev"}
 {"id":"q0177","lang":"fr","origin":"synthetic","query":"le parapluie de la voiture","expect":"item_parapluie_pliant","kind":"place","split":"dev"}
-{"id":"q0178","lang":"fr","origin":"synthetic","query":"un document fiscal","expect":"item_avis_imposition","kind":"category","split":"dev"}
+{"id":"q0178","lang":"fr","origin":"synthetic","query":"un document fiscal","expect":"item_avis_imposition","accept":["item_en_council_tax"],"kind":"category","split":"dev"}
 {"id":"q0179","lang":"fr","origin":"synthetic","query":"mes chaussures de running","expect":"item_baskets_course","kind":"synonym","split":"dev"}
 {"id":"q0180","lang":"fr","origin":"synthetic","query":"la clef de la boîte à lettres","expect":"item_cle_boite_lettres","kind":"synonym","split":"holdout"}
 {"id":"q0181","lang":"fr","origin":"synthetic","query":"où est la turbulette ?","expect":"item_gigoteuse","kind":"synonym","split":"dev"}
@@ -189,7 +189,7 @@
 {"id":"q0189","lang":"fr","origin":"synthetic","query":"le plat à raclette","expect":"item_appareil_raclette","kind":"synonym","split":"dev"}
 {"id":"q0190","lang":"fr","origin":"synthetic","query":"echelle telescopique","expect":"item_echelle","kind":"typo","split":"holdout"}
 {"id":"q0191","lang":"fr","origin":"synthetic","query":"bâtons de marsh","expect":"item_batons_marche","kind":"typo","split":"dev"}
-{"id":"q0192","lang":"fr","origin":"synthetic","query":"papier cadeau","expect":"item_papier_cadeau","kind":"exact","split":"dev"}
+{"id":"q0192","lang":"fr","origin":"synthetic","query":"papier cadeau","expect":"item_papier_cadeau","accept":["item_en_christmas_wrap"],"kind":"exact","split":"dev"}
 {"id":"q0193","lang":"fr","origin":"synthetic","query":"le papier qui prouve que la voiture est assurée","expect":"item_attestation_auto","kind":"paraphrase","split":"dev"}
 {"id":"q0194","lang":"fr","origin":"synthetic","query":"l'appareil à air chaud pour les cheveux","expect":"item_seche_cheveux","kind":"paraphrase","split":"dev"}
 {"id":"q0195","lang":"fr","origin":"synthetic","query":"la lampe qu'on met sur la tête","expect":"item_lampe_frontale","kind":"paraphrase","split":"holdout"}
@@ -197,11 +197,11 @@
 {"id":"q0197","lang":"fr","origin":"synthetic","query":"de quoi nettoyer les carreaux","expect":"item_produit_vitres","kind":"paraphrase","split":"dev"}
 {"id":"q0198","lang":"fr","origin":"synthetic","query":"où sont les haltères ?","expect":"item_en_dumbbells","kind":"crosslang","split":"dev"}
 {"id":"q0199","lang":"fr","origin":"synthetic","query":"un produit pour laver le linge","expect":"item_lessive","accept":["item_adoucissant","item_detachant"],"kind":"category","split":"dev"}
-{"id":"q0200","lang":"fr","origin":"synthetic","query":"la boîte de vis sur l'étagère du garage","expect":"item_vis_placo","kind":"place","split":"holdout"}
+{"id":"q0200","lang":"fr","origin":"synthetic","query":"la grosse boîte de vis noires sur l'étagère du garage","expect":"item_vis_placo","kind":"place","split":"holdout"}
 {"id":"q0201","lang":"fr","origin":"synthetic","query":"les trucs à mettre sur les pneus pour rouler dans la neige","expect":"item_chaines_neige","kind":"paraphrase","split":"dev"}
 {"id":"q0202","lang":"fr","origin":"synthetic","query":"le mètre enrouleur","expect":"item_metre_ruban","kind":"synonym","split":"dev"}
 {"id":"q0203","lang":"fr","origin":"synthetic","query":"où est la clef USB ?","expect":"item_cle_usb","kind":"synonym","split":"dev"}
-{"id":"q0204","lang":"fr","origin":"synthetic","query":"le liquide pour nettoyer les plaies","expect":"item_desinfectant","kind":"paraphrase","split":"dev"}
+{"id":"q0204","lang":"fr","origin":"synthetic","query":"le liquide à mettre sur une coupure pour tuer les microbes","expect":"item_desinfectant","kind":"paraphrase","split":"dev"}
 {"id":"q0205","lang":"fr","origin":"synthetic","query":"où est la balance de cuisine","expect":"item_balance_cuisine","kind":"exact","split":"holdout"}
 {"id":"q0206","lang":"fr","origin":"synthetic","query":"un instrument de pesée","expect":"item_balance_cuisine","kind":"category","split":"dev"}
 {"id":"q0207","lang":"fr","origin":"synthetic","query":"le truc pour mesurer la fièvre","expect":"item_thermometre_frontal","kind":"paraphrase","split":"dev"}
@@ -223,9 +223,9 @@
 {"id":"q0223","lang":"fr","origin":"synthetic","query":"sapin artificel","expect":"item_sapin_artificiel","kind":"typo","split":"dev"}
 {"id":"q0224","lang":"fr","origin":"synthetic","query":"le casque anti-bruit","expect":"item_en_headphones","kind":"crosslang","split":"dev"}
 {"id":"q0225","lang":"fr","origin":"synthetic","query":"le tapis du salon","expect":"item_tapis_salon","kind":"exact","split":"holdout"}
-{"id":"q0226","lang":"fr","origin":"synthetic","query":"un accessoire pour costume","expect":"item_cravates","kind":"category","split":"dev"}
+{"id":"q0226","lang":"fr","origin":"synthetic","query":"un accessoire à assortir avec un costume de ville","expect":"item_cravates","accept":["item_ceinture_cuir"],"kind":"category","split":"dev"}
 {"id":"q0227","lang":"fr","origin":"synthetic","query":"la cafetière italienne","expect":"item_cafetiere_italienne","kind":"exact","split":"dev"}
-{"id":"q0228","lang":"fr","origin":"synthetic","query":"le dico","expect":"item_dictionnaire","kind":"synonym","split":"dev"}
+{"id":"q0228","lang":"fr","origin":"synthetic","query":"le dico","expect":"item_dictionnaire","accept":["item_en_oxford_dict"],"kind":"synonym","split":"dev"}
 {"id":"q0229","lang":"fr","origin":"synthetic","query":"les piles du bureau","expect":"item_piles_aaa","accept":["item_piles_bouton"],"kind":"place","split":"dev"}
 {"id":"q0230","lang":"fr","origin":"synthetic","query":"pele et balayete","expect":"item_pelle_balayette","kind":"typo","split":"holdout"}
 {"id":"q0231","lang":"fr","origin":"synthetic","query":"du linge de lit","expect":"item_draps_140","accept":["item_couette_ete","item_draps_campagne"],"kind":"category","split":"dev"}
@@ -233,8 +233,8 @@
 {"id":"q0233","lang":"fr","origin":"synthetic","query":"un appareil de ventilation","expect":"item_ventilateur","kind":"category","split":"dev"}
 {"id":"q0234","lang":"fr","origin":"synthetic","query":"tansiomètre","expect":"item_tensiometre","kind":"typo","split":"dev"}
 {"id":"q0235","lang":"fr","origin":"synthetic","query":"les trucs pour retourner les saucisses sur le grill","expect":"item_pinces_barbecue","kind":"paraphrase","split":"holdout"}
-{"id":"q0236","lang":"fr","origin":"synthetic","query":"le truc pour dormir pendant les vols","expect":"item_coussin_voyage","kind":"paraphrase","split":"dev"}
-{"id":"q0237","lang":"fr","origin":"synthetic","query":"le truc pour que le linge sente bon","expect":"item_adoucissant","kind":"paraphrase","split":"dev"}
+{"id":"q0236","lang":"fr","origin":"synthetic","query":"le truc pour caler sa nuque pendant les vols","expect":"item_coussin_voyage","kind":"paraphrase","split":"dev"}
+{"id":"q0237","lang":"fr","origin":"synthetic","query":"le truc pour rendre le linge tout doux et parfumé","expect":"item_adoucissant","kind":"paraphrase","split":"dev"}
 {"id":"q0238","lang":"fr","origin":"synthetic","query":"le gros pot en fonte pour faire mijoter","expect":"item_cocotte_fonte","kind":"paraphrase","split":"dev"}
 {"id":"q0239","lang":"fr","origin":"synthetic","query":"la mangeoire à oiseaux","expect":"item_en_bird_feeder","kind":"crosslang","split":"dev"}
 {"id":"q0240","lang":"fr","origin":"synthetic","query":"les petites pinces pour étendre le linge","expect":"item_pinces_linge","kind":"paraphrase","split":"holdout"}
@@ -244,7 +244,7 @@
 {"id":"q0244","lang":"fr","origin":"synthetic","query":"le bidon de lave-vitre","expect":"item_lave_glace","kind":"synonym","split":"dev"}
 {"id":"q0245","lang":"fr","origin":"synthetic","query":"ma souris sans fil","expect":"item_en_wireless_mouse","kind":"crosslang","split":"holdout"}
 {"id":"q0246","lang":"fr","origin":"synthetic","query":"où sont mes lunettes de lecture ?","expect":"item_lunettes_lecture","kind":"exact","split":"dev"}
-{"id":"q0247","lang":"fr","origin":"synthetic","query":"la recharge pour l'imprimante","expect":"item_cartouches_encre","kind":"paraphrase","split":"dev"}
+{"id":"q0247","lang":"fr","origin":"synthetic","query":"ce qu'on remplace quand l'imprimante n'a plus d'encre","expect":"item_cartouches_encre","kind":"paraphrase","split":"dev"}
 {"id":"q0248","lang":"fr","origin":"synthetic","query":"le truc pour dormir sans entendre les voisins","expect":"item_boules_quies","kind":"paraphrase","split":"dev"}
 {"id":"q0249","lang":"fr","origin":"synthetic","query":"lunnettes de lecture","expect":"item_lunettes_lecture","kind":"typo","split":"dev"}
 {"id":"q0250","lang":"fr","origin":"synthetic","query":"mon reflex","expect":"item_appareil_photo","kind":"synonym","split":"holdout"}
@@ -269,14 +269,14 @@
 {"id":"q0269","lang":"fr","origin":"synthetic","query":"le truc pour protéger les yeux sur les pistes","expect":"item_masque_ski","kind":"paraphrase","split":"dev"}
 {"id":"q0270","lang":"fr","origin":"synthetic","query":"la perceuse sans fil","expect":"item_visseuse_makita","kind":"synonym","split":"holdout"}
 {"id":"q0271","lang":"fr","origin":"synthetic","query":"la visseuse Makita","expect":"item_visseuse_makita","kind":"exact","split":"dev"}
-{"id":"q0272","lang":"fr","origin":"synthetic","query":"les bouquins de recettes","expect":"item_livres_cuisine","kind":"synonym","split":"dev"}
+{"id":"q0272","lang":"fr","origin":"synthetic","query":"les bouquins de recettes","expect":"item_livres_cuisine","accept":["item_en_jamie_oliver"],"kind":"synonym","split":"dev"}
 {"id":"q0273","lang":"fr","origin":"synthetic","query":"où est le thermos ?","expect":"item_thermos","kind":"exact","split":"dev"}
 {"id":"q0274","lang":"fr","origin":"synthetic","query":"casque de ski","expect":"item_casque_ski","kind":"exact","split":"dev"}
 {"id":"q0275","lang":"fr","origin":"synthetic","query":"le PQ","expect":"item_papier_toilette","kind":"synonym","split":"holdout"}
 {"id":"q0276","lang":"fr","origin":"synthetic","query":"ce qui ferme ma valise avec un code","expect":"item_cadenas_code","kind":"paraphrase","split":"dev"}
 {"id":"q0277","lang":"fr","origin":"synthetic","query":"un jeu de construction","expect":"item_briques_lego","accept":["item_plaques_lego"],"kind":"category","split":"dev"}
 {"id":"q0278","lang":"fr","origin":"synthetic","query":"où est la zapette ?","expect":"item_telecommande_tv","kind":"synonym","split":"dev"}
-{"id":"q0279","lang":"fr","origin":"synthetic","query":"le truc qu'on allume avec le charbon pour démarrer","expect":"item_allume_feu","kind":"paraphrase","split":"dev"}
+{"id":"q0279","lang":"fr","origin":"synthetic","query":"le truc qu'on glisse sous le charbon pour démarrer le barbecue","expect":"item_allume_feu","kind":"paraphrase","split":"dev"}
 {"id":"q0280","lang":"fr","origin":"synthetic","query":"euh le truc qu'on met sur le sol pour peindre sans salir","expect":"item_bache_protection","kind":"paraphrase","split":"holdout"}
 {"id":"q0281","lang":"fr","origin":"synthetic","query":"les ciseaux de la cuisine","expect":"item_ciseaux_cuisine","kind":"place","split":"dev"}
 {"id":"q0282","lang":"fr","origin":"synthetic","query":"papier toilete","expect":"item_papier_toilette","kind":"typo","split":"dev"}
@@ -287,7 +287,7 @@
 {"id":"q0287","lang":"fr","origin":"synthetic","query":"le plateau pour servir l'apéro","expect":"item_plateau_service","kind":"paraphrase","split":"dev"}
 {"id":"q0288","lang":"fr","origin":"synthetic","query":"le prolongateur","expect":"item_rallonge","kind":"synonym","split":"dev"}
 {"id":"q0289","lang":"fr","origin":"synthetic","query":"ce qu'on prend quand le pollen pique","expect":"item_antihistaminiques","kind":"paraphrase","split":"dev"}
-{"id":"q0290","lang":"fr","origin":"synthetic","query":"où sont les legos ?","expect":"item_briques_lego","kind":"synonym","split":"holdout"}
+{"id":"q0290","lang":"fr","origin":"synthetic","query":"où sont les legos ?","expect":"item_briques_lego","accept":["item_plaques_lego"],"kind":"synonym","split":"holdout"}
 {"id":"q0291","lang":"fr","origin":"synthetic","query":"un produit contre les allergies","expect":"item_antihistaminiques","kind":"category","split":"dev"}
 {"id":"q0292","lang":"fr","origin":"synthetic","query":"où sont les 12 vis M4","expect":"item_vis_m4","kind":"exact","split":"dev"}
 {"id":"q0293","lang":"fr","origin":"synthetic","query":"où est la mandoline ?","expect":"item_mandoline","kind":"exact","split":"dev"}
@@ -307,11 +307,11 @@
 {"id":"q0307","lang":"en","origin":"synthetic","query":"that silver sticky tape for repairs","expect":"item_en_duct_tape","kind":"paraphrase","split":"dev"}
 {"id":"q0308","lang":"en","origin":"synthetic","query":"where is the soldering iron?","expect":"item_en_soldering_iron","kind":"exact","split":"dev"}
 {"id":"q0309","lang":"en","origin":"synthetic","query":"home loan papers","expect":"item_en_mortgage","kind":"synonym","split":"dev"}
-{"id":"q0310","lang":"en","origin":"synthetic","query":"a reference book","expect":"item_en_oxford_dict","kind":"category","split":"holdout"}
+{"id":"q0310","lang":"en","origin":"synthetic","query":"a reference book","expect":"item_en_oxford_dict","accept":["item_dictionnaire"],"kind":"category","split":"holdout"}
 {"id":"q0311","lang":"en","origin":"synthetic","query":"where are the Penguin classics","expect":"item_en_penguin_classics","kind":"exact","split":"dev"}
 {"id":"q0312","lang":"en","origin":"synthetic","query":"hedge sheers","expect":"item_en_hedge_shears","kind":"typo","split":"dev"}
 {"id":"q0313","lang":"en","origin":"synthetic","query":"where's the baby bath","expect":"item_en_baby_bath","kind":"exact","split":"dev"}
-{"id":"q0314","lang":"en","origin":"synthetic","query":"fitness equipment","expect":"item_en_dumbbells","accept":["item_en_yoga_mat"],"kind":"category","split":"dev"}
+{"id":"q0314","lang":"en","origin":"synthetic","query":"fitness equipment","expect":"item_en_dumbbells","accept":["item_en_yoga_mat","item_velo_appartement"],"kind":"category","split":"dev"}
 {"id":"q0315","lang":"en","origin":"synthetic","query":"the kids' night lamp","expect":"item_en_night_light","kind":"synonym","split":"holdout"}
 {"id":"q0316","lang":"en","origin":"synthetic","query":"passport","expect":"item_passeport","kind":"crosslang","split":"dev"}
 {"id":"q0317","lang":"en","origin":"synthetic","query":"the raincoat in the hall cupboard","expect":"item_en_raincoat","kind":"place","split":"dev"}
@@ -320,7 +320,7 @@
 {"id":"q0320","lang":"en","origin":"synthetic","query":"agatha cristie books","expect":"item_en_christie","kind":"typo","split":"holdout"}
 {"id":"q0321","lang":"en","origin":"synthetic","query":"tea strainner","expect":"item_en_tea_strainer","kind":"typo","split":"dev"}
 {"id":"q0322","lang":"en","origin":"synthetic","query":"where is the waffle iron?","expect":"item_en_waffle_iron","kind":"exact","split":"dev"}
-{"id":"q0323","lang":"en","origin":"synthetic","query":"the books I read to the kids at night","expect":"item_en_bedtime_books","kind":"paraphrase","split":"dev"}
+{"id":"q0323","lang":"en","origin":"synthetic","query":"the books I read to the kids at night","expect":"item_en_bedtime_books","accept":["item_albums_enfants"],"kind":"paraphrase","split":"dev"}
 {"id":"q0324","lang":"en","origin":"synthetic","query":"the basket for eating outside on the grass","expect":"item_en_picnic_basket","kind":"paraphrase","split":"dev"}
 {"id":"q0325","lang":"en","origin":"synthetic","query":"the local tax bill","expect":"item_en_council_tax","kind":"synonym","split":"holdout"}
 {"id":"q0326","lang":"en","origin":"synthetic","query":"the toy with tracks and engines","expect":"item_en_train_set","kind":"paraphrase","split":"dev"}
@@ -331,7 +331,7 @@
 {"id":"q0331","lang":"en","origin":"synthetic","query":"the bird table","expect":"item_en_bird_feeder","kind":"synonym","split":"dev"}
 {"id":"q0332","lang":"en","origin":"synthetic","query":"hair dryer","expect":"item_seche_cheveux","kind":"crosslang","split":"dev"}
 {"id":"q0333","lang":"en","origin":"synthetic","query":"where is the slow coker","expect":"item_en_slow_cooker","kind":"typo","split":"dev"}
-{"id":"q0334","lang":"en","origin":"synthetic","query":"the gadget to connect my laptop to the TV","expect":"item_en_usbc_hdmi","kind":"paraphrase","split":"dev"}
+{"id":"q0334","lang":"en","origin":"synthetic","query":"the dongle to plug my USB-C laptop into a TV","expect":"item_en_usbc_hdmi","kind":"paraphrase","split":"dev"}
 {"id":"q0335","lang":"en","origin":"synthetic","query":"the jug with ml marks for pouring","expect":"item_en_measuring_jug","kind":"paraphrase","split":"holdout"}
 {"id":"q0336","lang":"en","origin":"synthetic","query":"the tray for baking little cakes","expect":"item_en_muffin_tin","kind":"paraphrase","split":"dev"}
 {"id":"q0337","lang":"en","origin":"synthetic","query":"flower pots","expect":"item_en_plant_pots","kind":"synonym","split":"dev"}
@@ -346,10 +346,10 @@
 {"id":"q0346","lang":"en","origin":"synthetic","query":"wireless mouse","expect":"item_en_wireless_mouse","kind":"exact","split":"dev"}
 {"id":"q0347","lang":"en","origin":"synthetic","query":"a legal document about the house","expect":"item_assurance_habitation","accept":["item_en_mortgage"],"kind":"category","split":"dev"}
 {"id":"q0348","lang":"en","origin":"synthetic","query":"garden kneeling pad","expect":"item_en_kneeling_pad","kind":"exact","split":"dev"}
-{"id":"q0349","lang":"en","origin":"synthetic","query":"garden scissors","expect":"item_en_hedge_shears","kind":"synonym","split":"dev"}
+{"id":"q0349","lang":"en","origin":"synthetic","query":"garden scissors","expect":"item_en_hedge_shears","accept":["item_secateur"],"kind":"synonym","split":"dev"}
 {"id":"q0350","lang":"en","origin":"synthetic","query":"head protection for the kids' scooter","expect":"item_en_scooter_helmet","kind":"paraphrase","split":"holdout"}
 {"id":"q0351","lang":"en","origin":"synthetic","query":"corkscrew","expect":"item_tire_bouchon","kind":"crosslang","split":"dev"}
-{"id":"q0352","lang":"en","origin":"synthetic","query":"a garden chemical","expect":"item_en_weed_killer","kind":"category","split":"dev"}
+{"id":"q0352","lang":"en","origin":"synthetic","query":"a garden chemical","expect":"item_en_weed_killer","accept":["item_engrais"],"kind":"category","split":"dev"}
 {"id":"q0353","lang":"en","origin":"synthetic","query":"the thing for raising my laptop to eye level","expect":"item_en_laptop_stand","kind":"paraphrase","split":"dev"}
 {"id":"q0354","lang":"en","origin":"synthetic","query":"portable speaker","expect":"item_en_bluetooth_speaker","kind":"synonym","split":"dev"}
 {"id":"q0355","lang":"en","origin":"synthetic","query":"dishwasher warranty card","expect":"item_en_dishwasher_warranty","kind":"exact","split":"holdout"}

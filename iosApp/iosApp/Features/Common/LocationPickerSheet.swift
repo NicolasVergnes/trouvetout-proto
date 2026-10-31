@@ -82,18 +82,5 @@ struct LocationPickerSheet: View {
 
 /// Ids of `placeId` and all its descendants (a place cannot be merged into itself or below itself).
 func descendants(of placeId: String, in places: [Place_]) -> Set<String> {
-    var byParent: [String: [Place_]] = [:]
-    for place in places {
-        if let parent = place.parentId {
-            byParent[parent, default: []].append(place)
-        }
-    }
-    var out: Set<String> = []
-    var queue = [placeId]
-    while let id = queue.popLast() {
-        if out.insert(id).inserted {
-            queue.append(contentsOf: (byParent[id] ?? []).map(\.id))
-        }
-    }
-    return out
+    PlaceTree.shared.descendantIds(placeId: placeId, places: places)
 }
