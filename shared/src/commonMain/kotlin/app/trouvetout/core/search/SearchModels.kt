@@ -3,6 +3,8 @@ package app.trouvetout.core.search
 import app.trouvetout.core.data.repository.ItemView
 import app.trouvetout.core.domain.model.LocationStatus
 import app.trouvetout.core.ml.KeywordOnlyReason
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 
 /** State of an item as the filters see it (C11): its location status, or archived (D11). */
@@ -20,6 +22,11 @@ public data class SearchFilters(
 ) {
     public val isEmpty: Boolean
         get() = placeId == null && containerId == null && tag == null && state == null && movedSince == null
+
+    public companion object {
+        /** The instant [days] days ago, for [movedSince] (hosts without a date type of the core at hand). */
+        public fun daysAgo(days: Int): Instant = Clock.System.now() - days.days
+    }
 }
 
 /** How the result was found, for the tests and the evaluation (never shown as a score). */

@@ -11,8 +11,12 @@ struct CaptureView: View {
     /// Requests are replayed to every new subscriber: each serial is handled once.
     @State private var handledSerial = 0
 
-    init(container: AppContainer) {
+    /// Opens the search screen (lot 6) with a question asked here (C5).
+    private let onSearch: (String) -> Void
+
+    init(container: AppContainer, onSearch: @escaping (String) -> Void = { _ in }) {
         _viewModel = StateObject(wrappedValue: CaptureViewModel(container: container))
+        self.onSearch = onSearch
     }
 
     var body: some View {
@@ -66,6 +70,11 @@ struct CaptureView: View {
             }
         }
         .onReceive(router.$request) { handle($0) }
+        .onReceive(viewModel.$searchQuery) { query in
+            guard let query else { return }
+            viewModel.dismissMessages() // the search screen takes the question over
+            onSearch(query)
+        }
         .onDisappear { viewModel.stopListening() }
     }
 
@@ -188,27 +197,15 @@ struct CaptureView: View {
 
     @ViewBuilder
     private var itemList: some View {
-        let query = viewModel.searchQuery
-        let shown: [ItemView] =
-            if let query {
-                viewModel.items.filter { $0.item.name.localizedCaseInsensitiveContains(query) }
-            } else {
-                viewModel.items
-            }
-        if let query {
-            HStack {
-                Text(String(format: NSLocalizedString("capture_search_title", comment: ""), query))
-                    .font(.subheadline.bold())
-                Spacer()
-                Button("action_close") { viewModel.dismissMessages() }
-            }
-            .padding(.horizontal, 16)
-        }
-        if shown.isEmpty {
-            emptyText(searching: query != nil)
+        if viewModel.items.isEmpty {
+            Text("capture_empty")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 16)
+                .padding(.top, 24)
             Spacer()
         } else {
-            List(shown, id: \.item.id) { view in
+            List(viewModel.items, id: \.item.id) { view in
                 NavigationLink(value: ItemRoute(id: view.item.id)) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(view.item.name)
@@ -222,20 +219,6 @@ struct CaptureView: View {
             }
             .listStyle(.plain)
         }
-    }
-
-    private func emptyText(searching: Bool) -> some View {
-        Group {
-            if searching {
-                Text("capture_search_empty")
-            } else {
-                Text("capture_empty")
-            }
-        }
-        .font(.callout)
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 16)
-        .padding(.top, 24)
     }
 
     private var pendingPresented: Binding<Bool> {

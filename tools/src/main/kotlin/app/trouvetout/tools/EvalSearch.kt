@@ -10,6 +10,7 @@ import app.trouvetout.core.ml.TextModelSource
 import app.trouvetout.core.platform.EncodedImage
 import app.trouvetout.core.platform.ImageCodec
 import app.trouvetout.core.platform.JvmDeviceInfo
+import app.trouvetout.core.search.FusionMethod
 import app.trouvetout.core.search.SearchTuning
 import app.trouvetout.core.search.corpus.ManualClock
 import app.trouvetout.core.search.corpus.ReferenceHousehold
@@ -26,6 +27,8 @@ import com.google.ai.edge.litertlm.InputData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.io.File
 import java.nio.file.Files
 import kotlin.math.sqrt
@@ -40,7 +43,9 @@ import kotlin.time.Instant
  * 80 % top-1 / 95 % top-3 (French and English, hybrid) or above 1 s at the 95th percentile.
  *
  * Arguments: corpus directory, reports directory, model file, then options:
- * `--mode all|keyword|semantic|hybrid`, `--prompt LITERT|MODEL_CARD|NONE`, `--dim 128|256|512|768`, `--no-latency`.
+ * `--mode all|keyword|semantic|hybrid`, `--prompt LITERT|MODEL_CARD|NONE`, `--dim 128|256|512|768`, `--no-latency`,
+ * and the ranking knobs `--fusion RRF|LINEAR`, `--share`, `--floor`, `--span`, `--margin`, `--answer-floor`.
+ * Vectors are cached on disk next to the reports, so that comparing knobs does not recompute them.
  */
 fun main(args: Array<String>) {
     val corpus = File(args[0])
@@ -48,9 +53,8 @@ fun main(args: Array<String>) {
     val options = Options.parse(args.drop(FIRST_OPTION))
     val household = SearchCorpus.parseHousehold(File(corpus, "fiches-reference.json").readText())
     val questions = SearchCorpus.parseQuestions(File(corpus, "recherche.jsonl").readText())
-    val model = CachingModel(File(args[2]))
-
-    val base = SearchTuning(promptStyle = options.prompt, dimension = options.dim)
+    val model = CachingModel(File(args[2]), File(reports, "embedding-cache.bin"))
+    val base = options.tuning
     val reportsByMode = runBlocking { runModes(model, base, options.mode, household, questions) }
     val hybrid = reportsByMode["hybrid"]
     hybrid?.failures?.forEach { failure ->
@@ -125,17 +129,27 @@ private fun thresholdFailures(
 
 private data class Options(
     val mode: String,
-    val prompt: PromptStyle,
-    val dim: Int,
+    val tuning: SearchTuning,
     val latency: Boolean,
 ) {
     companion object {
         fun parse(args: List<String>): Options {
             fun value(name: String) = args.indexOf(name).takeIf { it >= 0 }?.let { args.getOrNull(it + 1) }
+            val d = SearchTuning()
             return Options(
                 mode = value("--mode") ?: "all",
-                prompt = value("--prompt")?.let(PromptStyle::valueOf) ?: SearchTuning().promptStyle,
-                dim = value("--dim")?.toInt() ?: SearchTuning().dimension,
+                tuning =
+                    d.copy(
+                        promptStyle = value("--prompt")?.let(PromptStyle::valueOf) ?: d.promptStyle,
+                        dimension = value("--dim")?.toInt() ?: d.dimension,
+                        fusion = value("--fusion")?.let(FusionMethod::valueOf) ?: d.fusion,
+                        keywordShare = value("--share")?.toDouble() ?: d.keywordShare,
+                        semanticFloor = value("--floor")?.toFloat() ?: d.semanticFloor,
+                        semanticSpan = value("--span")?.toFloat() ?: d.semanticSpan,
+                        semanticMargin = value("--margin")?.toFloat() ?: d.semanticMargin,
+                        semanticAnswerFloor = value("--answer-floor")?.toFloat() ?: d.semanticAnswerFloor,
+                        semanticGap = value("--gap")?.toFloat() ?: d.semanticGap,
+                    ),
                 latency = "--no-latency" !in args,
             )
         }
@@ -184,9 +198,25 @@ private object NoImages : ImageCodec {
  */
 private class CachingModel(
     private val file: File,
+    private val cacheFile: File,
 ) : TextModelSource {
     private var engine: EmbeddingEngine? = null
     private val cache = HashMap<Pair<String, Int>, FloatArray>()
+    private val cacheKey = "${file.name}:${file.length()}"
+
+    init {
+        if (cacheFile.isFile) {
+            DataInputStream(cacheFile.inputStream().buffered()).use { input ->
+                if (input.readUTF() == cacheKey) {
+                    repeat(input.readInt()) {
+                        val text = input.readUTF()
+                        val vector = FloatArray(input.readInt()) { input.readFloat() }
+                        cache[text to vector.size] = vector
+                    }
+                }
+            }
+        }
+    }
 
     override val modelId: String = "eval-" + file.nameWithoutExtension
     override val isSupported: Boolean = true
@@ -213,6 +243,7 @@ private class CachingModel(
         ): List<FloatArray> = withContext(Dispatchers.Default) {
             val missing = texts.filter { (it to dim) !in cache && FILLER_MARK !in it }.distinct()
             if (missing.isNotEmpty()) {
+                if (engine == null) load()
                 val options = EmbeddingOptions(normalize = true, outputSize = dim)
                 val computed = checkNotNull(engine).computeEmbeddingBatch(
                     missing.map {
@@ -232,6 +263,15 @@ private class CachingModel(
     fun close() {
         engine?.close()
         engine = null
+        DataOutputStream(cacheFile.outputStream().buffered()).use { out ->
+            out.writeUTF(cacheKey)
+            out.writeInt(cache.size)
+            for ((key, vector) in cache) {
+                out.writeUTF(key.first)
+                out.writeInt(vector.size)
+                vector.forEach(out::writeFloat)
+            }
+        }
     }
 
     fun forget(predicate: (String) -> Boolean) {
@@ -356,7 +396,12 @@ private fun toJson(
             """"$mode":{$langs,"absent":${scoreJson(report.absent)},"failures":[$failures]}"""
         }
     val latencyJson = latency?.let { """{"items":${it.items},"p50Ms":${it.p50Ms},"p95Ms":${it.p95Ms}}""" } ?: "null"
-    return """{"prompt":"${options.prompt}","dim":${options.dim},"modes":{$modes},"latency":$latencyJson}"""
+    val t = options.tuning
+    val tuning =
+        """{"prompt":"${t.promptStyle}","dim":${t.dimension},"fusion":"${t.fusion}","share":${t.keywordShare},""" +
+            """"floor":${t.semanticFloor},"span":${t.semanticSpan},"margin":${t.semanticMargin},""" +
+            """"answerFloor":${t.semanticAnswerFloor},"gap":${t.semanticGap}}"""
+    return """{"tuning":$tuning,"modes":{$modes},"latency":$latencyJson}"""
 }
 
 private fun pct(rate: Double): String = "${"%.1f".format(rate * PERCENT)} %"

@@ -73,9 +73,19 @@ internal class SearchSnapshot(
     }
 }
 
-/** The text the model embeds for an item: what it is, not where it is (the keyword index covers places). */
-internal fun SearchDocument.embeddingText(): String = buildString {
-    append(name)
-    description?.takeIf { it.isNotBlank() }?.let { append(". ").append(it) }
-    if (tags.isNotEmpty()) append(". ").append(tags.joinToString(", "))
+/**
+ * The prompted text the model embeds for an item: what it is (name, description, tags), not where it is (the
+ * keyword index covers places, so renaming a place recomputes nothing). A title slot or the capture sentence were
+ * measured and left out (ADR-021).
+ */
+internal fun SearchDocument.embeddingText(tuning: SearchTuning): String {
+    val parts =
+        listOfNotNull(
+            name,
+            description?.takeIf {
+                it.isNotBlank()
+            },
+            tags.takeIf { it.isNotEmpty() }?.joinToString(", "),
+        )
+    return tuning.promptStyle.document(parts.joinToString(". "))
 }

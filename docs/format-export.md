@@ -75,7 +75,7 @@ journal, l'ignore dans la projection et le réécrit à l'identique dans ses exp
 version plus ancienne. Une `source` inconnue est lue comme `SYSTEM`. L'import refuse un export dont `formatVersion`
 est supérieur à ce qu'il sait lire.
 
-## 4. Schéma SQLite (version 1)
+## 4. Schéma SQLite (version 2)
 
 Instants en millisecondes UTC (`INTEGER`), booléens en `INTEGER` 0/1, listes en JSON (`TEXT`).
 Les fichiers de référence sont `shared/src/commonMain/sqldelight/app/trouvetout/core/data/db/*.sq`.
@@ -119,11 +119,21 @@ CREATE TABLE reminder (
   kind TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0);
 
 CREATE TABLE meta (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL);
--- clés : schema_version, device_id (puis model_variant, trial_started_at…)
+-- clés : schema_version, device_id, model_variant (puis trial_started_at…)
+
+-- Version 2 (lot 6, migration additive) : caches de la recherche, recalculables, jamais exportés.
+CREATE TABLE embedding (
+  owner_type TEXT NOT NULL, owner_id TEXT NOT NULL, model_key TEXT NOT NULL, dim INTEGER NOT NULL,
+  vector BLOB NOT NULL,          -- float16 petit-boutiste, vecteur normalisé
+  text_hash TEXT NOT NULL,       -- 16 premiers caractères hexadécimaux du SHA-256 du texte vectorisé
+  PRIMARY KEY (owner_type, owner_id, model_key));
+CREATE TABLE search_usage (
+  item_id TEXT NOT NULL PRIMARY KEY, opened_count INTEGER NOT NULL, last_opened_at INTEGER NOT NULL);
 ```
 
 Un objet rangé dans un contenant a `container_id` renseigné et `place_id` à `NULL` : son lieu est celui du contenant.
-La table de recherche plein texte (`item_fts`) arrive au lot 6 par migration additive.
+La recherche par mots-clés n'a pas de table : son index est construit en mémoire à partir de la projection (ADR-021).
+`embedding` et `search_usage` ne sont ni exportées ni importées : après un import, l'app recalcule les vecteurs.
 
 ## 5. Export ZIP (lot 2)
 

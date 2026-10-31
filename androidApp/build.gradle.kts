@@ -75,6 +75,8 @@ android {
                     device = "Pixel 2"
                     apiLevel = 29
                     systemImageSource = "aosp"
+                    // x86_64 image: LiteRT-LM ships no 32-bit x86 native library (ADR-021).
+                    require64Bit = true
                 }
             }
         }

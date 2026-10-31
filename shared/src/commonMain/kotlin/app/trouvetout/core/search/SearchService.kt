@@ -84,7 +84,8 @@ public class SearchService internal constructor(
             return SearchResult(query, filters, emptyList(), null)
         }
         val semanticHits = Ranking.semanticCandidates(nearest, tuning)
-        val fused = Ranking.fuse(keyword, semanticHits, tuning)
+        val semanticMean = nearest.map { it.second.toDouble() }.average().takeIf { !it.isNaN() } ?: 0.0
+        val fused = Ranking.combine(keyword, semanticHits, tuning, semanticMean)
         val opened = openedCounts()
         val now = clock.now()
         val keywordSet = keyword.mapTo(HashSet()) { it.first }
@@ -226,7 +227,7 @@ public class SearchService internal constructor(
     private suspend fun index(snap: SearchSnapshot) {
         val modelId = runtime.modelId ?: return
         val key = tuning.modelKey(modelId)
-        val texts = snap.documents.associate { it.itemId to it.embeddingText() }
+        val texts = snap.documents.associate { it.itemId to it.embeddingText(tuning) }
         val hashes = texts.mapValues { (_, text) -> hashOf(text) }
         val stored = withContext(dispatchers.io) { db.embeddingQueries.hashes(OWNER_ITEM, key).executeAsList() }
         val storedHash = stored.associate { it.owner_id to it.text_hash }
@@ -238,7 +239,7 @@ public class SearchService internal constructor(
         for (batch in missing.chunked(BATCH)) {
             val vectors =
                 runtime.withModel { model ->
-                    model.embed(batch.map { tuning.promptStyle.document(texts.getValue(it)) }, tuning.dimension)
+                    model.embed(batch.map { texts.getValue(it) }, tuning.dimension)
                 }
             if (vectors == null) {
                 modeState.value = idleMode()

@@ -454,23 +454,21 @@ private fun Breadcrumb(
 
 @Composable
 private fun answerState(answer: AnswerLine): String {
-    val context = LocalContext.current
     val relative =
         DateUtils
             .getRelativeTimeSpanString(
                 answer.since.toEpochMilliseconds(),
                 System.currentTimeMillis(),
                 DateUtils.DAY_IN_MILLIS,
-            )
-            .toString()
+            ).toString()
             .lowercase()
     val state =
         when (answer.status) {
-            LocationStatus.STORED -> context.getString(R.string.search_answer_stored, relative)
-            LocationStatus.TAKEN -> context.getString(R.string.search_answer_taken, relative)
-            LocationStatus.LENT -> context.getString(R.string.search_answer_lent, answer.lentTo.orEmpty(), relative)
+            LocationStatus.STORED -> stringResource(R.string.search_answer_stored, relative)
+            LocationStatus.TAKEN -> stringResource(R.string.search_answer_taken, relative)
+            LocationStatus.LENT -> stringResource(R.string.search_answer_lent, answer.lentTo.orEmpty(), relative)
         }
-    return if (answer.archived) context.getString(R.string.search_answer_archived, state) else state
+    return if (answer.archived) stringResource(R.string.search_answer_archived, state) else state
 }
 
 @Preview

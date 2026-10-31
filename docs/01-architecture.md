@@ -45,7 +45,7 @@ Choix de bibliothèques (à confirmer au premier lot si une alternative s'impose
 | Sérialisation | kotlinx.serialization (JSON) | Export lisible, stable |
 | Concurrence | kotlinx.coroutines | Standard KMP |
 | Injection | Koin ou injection manuelle | Léger ; pas de framework lourd |
-| Embeddings | EmbeddingGemma 2 via LiteRT / Google AI Edge (Kotlin sur Android, Swift via le package LiteRT sur iOS) | Un seul modèle, deux plateformes |
+| Embeddings | EmbeddingGemma 2 via LiteRT-LM (`litertlm-android`, Swift Package `LiteRTLM`, `litertlm-jvm` pour l'évaluation) — ADR-021 | Un seul modèle, deux plateformes, tokenizer inclus dans le fichier |
 | Images | Coil (Android), SwiftUI AsyncImage/UIImage (iOS) | Natif |
 | Tests | kotlin.test, Turbine ; JUnit/Espresso ; XCTest | Natif |
 
@@ -119,13 +119,15 @@ CREATE TABLE photo (
   file_name TEXT NOT NULL, thumb_name TEXT NOT NULL, width INTEGER, height INTEGER,
   sha256 TEXT NOT NULL, created_at INTEGER NOT NULL
 );
+-- Caches de la recherche (lot 6, ADR-021) : recalculables, jamais exportés.
 CREATE TABLE embedding (
-  owner_type TEXT NOT NULL, owner_id TEXT NOT NULL, model_id TEXT NOT NULL,
+  owner_type TEXT NOT NULL, owner_id TEXT NOT NULL, model_key TEXT NOT NULL,
   dim INTEGER NOT NULL, vector BLOB NOT NULL, text_hash TEXT NOT NULL,
-  PRIMARY KEY (owner_type, owner_id, model_id)
+  PRIMARY KEY (owner_type, owner_id, model_key)
 );
-CREATE VIRTUAL TABLE item_fts USING fts5(name, description, tags, place_path, raw_input,
-  content='', tokenize='unicode61 remove_diacritics 2');
+CREATE TABLE search_usage (
+  item_id TEXT PRIMARY KEY, opened_count INTEGER NOT NULL, last_opened_at INTEGER NOT NULL
+);
 CREATE TABLE reminder (
   id TEXT PRIMARY KEY, item_id TEXT NOT NULL, fire_at INTEGER NOT NULL,
   kind TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0
@@ -178,17 +180,18 @@ Méthode : normalisation (minuscules, accents conservés pour l'affichage, repli
 ## 5. Recherche (C1–C7, C10–C13)
 
 ### 5.1 Pipeline hybride
-1. **Normalisation** de la requête (accents repliés, pluriels simples, fautes via distance ≤ 2 sur les tokens rares).
-2. **Mot-clé** : FTS5 sur `item_fts` (préfixes activés) → score BM25.
-3. **Synonymes métier** : table `synonyms` embarquée (FR/EN : chargeur/câble/alim, carton/boîte/caisse, clé/clef…) étendant la requête.
-4. **Sémantique** : embedding de la requête (EmbeddingGemma 2) → similarité cosinus contre `embedding` (force brute, float16, < 5 000 vecteurs : quelques ms).
-5. **Fusion** : Reciprocal Rank Fusion des listes (mot-clé, sémantique) + bonus récence (dernier événement) et fréquence de consultation.
-6. **Réponse** : premier résultat rendu en phrase (C4) via un gabarit, pas de génération : `{chemin complet}, {état} {date relative}` ; liste des suivants en dessous.
+1. **Normalisation** de la requête et des fiches, mêmes règles des deux côtés (`search/SearchText`) : accents et casse repliés, mots composés aussi joints (« tire-bouchon » → `tirebouchon`), pluriels simples, mots grammaticaux retirés (« où sont mes », « le truc pour »).
+2. **Mot-clé** : index inversé **en mémoire** dans `shared` (`KeywordIndex`), BM25 sur champs pondérés (nom, étiquettes, chemin du lieu et contenant, description, dernières phrases dictées), complétion du mot en cours, fautes par distance d'édition (1 dès 4 lettres, 2 dès 8). Pas de FTS5 : absent du SQLite système d'Android et incapable de tolérer les fautes (ADR-021).
+3. **Synonymes métier** : groupes FR/EN dans `search/Synonyms.kt` (chargeur/câble/alim, carton/boîte/caisse, clé/clef/key…), un saut d'expansion, poids réduit.
+4. **Sémantique** : embedding de la requête (EmbeddingGemma 2, préfixes de tâche de la fiche du modèle) → produit scalaire contre les vecteurs normalisés du cache `embedding` (force brute en mémoire, float16 sur disque ; quelques ms pour 5 000).
+5. **Fusion** : somme pondérée du score mot-clé (relatif au meilleur) et de la force sémantique (cosinus au-dessus d'un plancher), puis bonus de récence et de fréquence d'ouverture. La RRF a été mesurée puis écartée : sans écart de score, le bonus de récence suffisait à inverser les rangs (ADR-021).
+6. **Réponse** : premier résultat en données structurées (C4, `AnswerLine`) — chemin cliquable (C6), état, date, photo — que chaque UI met en phrase avec ses formatteurs de date ; liste des suivants en dessous ; « rien trouvé » quand aucun mot ne correspond et que le meilleur cosinus reste sous le seuil de réponse.
 
 ### 5.2 Modèle et variantes (décision du 24 oct. 2026)
 - Au premier lancement, `shared/ml/ModelSelector` lit la RAM totale (`ActivityManager.MemoryInfo` / `ProcessInfo.physicalMemory`) : **≥ 6 Go → variante omnimodale** (texte + image), **sinon texte seul**. Le choix est stocké dans `meta.model_variant` et modifiable dans les réglages (forcer texte seul).
-- Les poids ne sont **pas** dans le binaire : pack téléchargé à la demande (Play Asset Delivery `on-demand` / On-Demand Resources ou téléchargement HTTPS depuis un domaine contrôlé, avec somme SHA-256 vérifiée). Tant que le pack n'est pas là, la recherche fonctionne en mot-clé + synonymes et le dit à l'utilisateur.
-- Les vecteurs sont indexés par `model_id` ; un changement de variante déclenche une **réindexation** depuis `raw_input` / `name` / `description` (quelques secondes pour un foyer), jamais une perte.
+- **Variante texte : incluse dans l'app** (ADR-021, révise ADR-008 pour ce fichier) : `models/manifest.json` épingle la révision et le SHA-256, `./gradlew :models:fetchTextModel` télécharge et vérifie au build, les poids ne sont jamais versionnés. Android : asset non compressé, copié une fois dans `cacheDir/models/` (LiteRT-LM ouvre un fichier) ; iOS : ressource du bundle lue en place. Aucune permission réseau, pas de `ModelPackDownloader` en v1. Sans modèle (build `-Ptrouvetout.bundleModel=false`, processeur 32 bits, échec de chargement), la recherche fonctionne en mot-clé + synonymes et le dit à l'utilisateur.
+- Chargement paresseux à la première recherche, une seule utilisation à la fois, libéré quand l'app passe en arrière-plan ou sur avertissement mémoire ; les vecteurs manquants se calculent au premier plan seulement (N6), par lots, avec une progression visible.
+- Les vecteurs sont indexés par `model_key` (modèle + dimension + préfixes) et `text_hash` (nom, description, étiquettes — pas le lieu, que le mot-clé couvre : renommer un lieu ne recalcule rien) ; un changement de modèle déclenche une **réindexation** au premier plan, les anciens vecteurs n'étant effacés qu'une fois les nouveaux complets, jamais une perte.
 - Photos (variante omnimodale) : embedding de chaque photo à l'ajout ; recherche par photo (C10) = même espace ; nommage (B8) = similarité entre la photo et une liste de ~2 000 libellés d'objets domestiques FR/EN pré-embarqués (`shared/ml/labels_fr_en.txt`) → top 3 proposés.
 - C13 (réponse générative, P1, dernier lot) : pack optionnel « LLM » (Qwen3-0.6B ou Gemma 3 1B via LiteRT-LM), utilisé uniquement pour reformuler une réponse déjà trouvée ou répondre à une question composée sur un sous-ensemble de fiches passé en contexte. Jamais sur le chemin critique.
 - Les APIs système (Foundation Models, Gemini Nano, ML Kit) peuvent remplacer un pack quand elles sont présentes, derrière la même interface `TextEmbedder` / `ImageEmbedder` / `Rephraser`, mais ne sont jamais une condition.

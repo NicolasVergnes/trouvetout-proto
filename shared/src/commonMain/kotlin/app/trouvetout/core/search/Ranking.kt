@@ -24,6 +24,34 @@ internal object Ranking {
         return out
     }
 
+    /**
+     * Combines the two lists as [SearchTuning.fusion] says. The linear fusion keeps the strength of each match: an
+     * exact name beats a near meaning, a strong meaning beats a weak word.
+     */
+    fun combine(
+        keyword: List<Pair<String, Double>>,
+        semantic: List<Pair<String, Double>>,
+        tuning: SearchTuning,
+        /** Mean cosine of all the semantic candidates, before any floor ([SearchTuning.semanticGap]). */
+        semanticMean: Double = 0.0,
+    ): Map<String, Double> {
+        if (tuning.fusion == FusionMethod.RRF) return fuse(keyword, semantic, tuning)
+        val out = HashMap<String, Double>()
+        val best = keyword.firstOrNull()?.second ?: 0.0
+        if (best > 0) for ((id, score) in keyword) out[id] = tuning.keywordShare * score / best
+        val semanticShare = 1 - tuning.keywordShare
+        for ((id, cosine) in semantic) {
+            val strength =
+                if (tuning.semanticGap > 0f) {
+                    ((cosine - semanticMean) / tuning.semanticGap).coerceIn(0.0, 1.0)
+                } else {
+                    ((cosine - tuning.semanticFloor) / tuning.semanticSpan).coerceIn(0.0, 1.0)
+                }
+            out[id] = (out[id] ?: 0.0) + semanticShare * strength
+        }
+        return out
+    }
+
     /** 1-based competition ranks of a list sorted best first (« 1, 1, 3 »). */
     fun ranks(sorted: List<Pair<String, Double>>): List<Pair<String, Int>> {
         var rank = 0

@@ -179,7 +179,7 @@
     <string name="search_answer_taken">Sorti %1$s</string>
     <string name="search_answer_lent">Prêté à %1$s %2$s</string>
     <string name="search_answer_archived">%1$s · archivé</string>
-    <string name="search_mode_indexing">Préparation de la recherche intelligente sur le téléphone : %1$d objets sur %2$d. Les mots-clés fonctionnent déjà.</string>
+    <string name="search_mode_indexing">Préparation de la recherche intelligente sur le téléphone (%1$d / %2$d). Les mots-clés fonctionnent déjà.</string>
     <string name="search_mode_no_model">Recherche par mots-clés : cette version de l’app n’inclut pas le modèle de recherche intelligente.</string>
     <string name="search_mode_unsupported">Recherche par mots-clés : ce téléphone ne peut pas faire tourner le modèle de recherche intelligente.</string>
     <string name="search_mode_failed">Recherche par mots-clés : le modèle de recherche intelligente n’a pas pu se charger. Nouvel essai au prochain lancement.</string>
