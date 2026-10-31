@@ -1,6 +1,7 @@
 package app.trouvetout.android
 
 import android.app.Application
+import android.content.ComponentCallbacks2
 import androidx.core.content.edit
 import app.trouvetout.android.ui.common.clearCameraCaptures
 import app.trouvetout.android.ui.settings.ExportSharing
@@ -10,6 +11,7 @@ import app.trouvetout.core.di.SharedConfig
 import app.trouvetout.core.di.SharedFactory
 import app.trouvetout.core.log.LogcatLogger
 import app.trouvetout.core.log.NoopLogger
+import app.trouvetout.core.ml.AssetTextModelSource
 import app.trouvetout.core.platform.AndroidDeviceInfo
 import app.trouvetout.core.platform.AndroidImageCodec
 import kotlinx.coroutines.CoroutineScope
@@ -44,7 +46,7 @@ class App : Application() {
      */
     val searchRequest = MutableStateFlow<String?>(null)
 
-    /** Process-wide scope for work that must not die with an Activity (warm-up, later: reindexing). */
+    /** Process-wide scope for work that must not die with an Activity (warm-up, releasing the model). */
     val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
@@ -77,6 +79,19 @@ class App : Application() {
         }
     }
 
+    /**
+     * Once no screen is visible, the search stops computing vectors and frees the model (N6: no background work;
+     * the model only stays resident while the app is in the foreground). The next search loads it again.
+     */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        @Suppress("DEPRECATION") // the only signal of « UI hidden » that exists on API 29
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+            val factory = readyState.value ?: return
+            appScope.launch { factory.search.release() }
+        }
+    }
+
     private fun createShared(): SharedFactory {
         // Excluded from Auto Backup: the only backup channel is the app's own encrypted one (A9).
         val dataDirectory = noBackupFilesDir
@@ -94,7 +109,15 @@ class App : Application() {
                 storageReady = databaseDirectory.isDirectory || databaseDirectory.mkdirs(),
                 appVersion = BuildConfig.VERSION_NAME,
                 captureLang = if (Locale.getDefault().language == "fr") Lang.FR else Lang.EN,
-            ),
+            ).apply {
+                textModel =
+                    AssetTextModelSource(
+                        this@App,
+                        BuildConfig.TEXT_MODEL_ASSET,
+                        BuildConfig.TEXT_MODEL_ID,
+                        BuildConfig.TEXT_MODEL_BYTES,
+                    )
+            },
         )
     }
 }

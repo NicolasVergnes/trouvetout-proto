@@ -3,6 +3,7 @@ package app.trouvetout.core.search
 import app.trouvetout.core.data.db.TrouveToutDb
 import app.trouvetout.core.data.repository.ItemView
 import app.trouvetout.core.domain.model.LocationStatus
+import app.trouvetout.core.domain.model.PhotoOwnerType
 import app.trouvetout.core.log.LogLevel
 import app.trouvetout.core.log.Logger
 import app.trouvetout.core.ml.KeywordOnlyReason
@@ -57,6 +58,12 @@ public class SearchService internal constructor(
         scope.launch { runCatchingLogged("prepare") { startIndexing(fresh()) } }
     }
 
+    /** [prepare], then waits until every vector is computed (evaluation tool, tests). */
+    public suspend fun prepareAndWait() {
+        startIndexing(fresh())
+        indexing?.join()
+    }
+
     /**
      * Searches the active items. A blank [query] with [filters] lists the filtered items (pinned first, most
      * recently moved first); a blank query without filters returns nothing.
@@ -100,7 +107,7 @@ public class SearchService internal constructor(
                         }
                     SearchHit(view, kind)
                 }
-        return SearchResult(query, filters, hits, hits.firstOrNull()?.view?.let(::answerOf))
+        return SearchResult(query, filters, hits, hits.firstOrNull()?.view?.let { answerOf(it) })
     }
 
     /** Filters without a query: pinned first, then the most recently moved. */
@@ -237,9 +244,14 @@ public class SearchService internal constructor(
                 modeState.value = idleMode()
                 return
             }
+            // A vector with NaN (a known float16 pitfall of the model) is never stored: keywords still find the item.
+            val computed = batch.zip(vectors).filter { (_, vector) ->
+                vector.size == tuning.dimension &&
+                    vector.all { it.isFinite() }
+            }
             withContext(dispatchers.io) {
                 db.transaction {
-                    batch.zip(vectors).forEach { (id, vector) ->
+                    computed.forEach { (id, vector) ->
                         db.embeddingQueries.upsert(
                             OWNER_ITEM,
                             id,
@@ -251,7 +263,7 @@ public class SearchService internal constructor(
                     }
                 }
             }
-            lock.withLock { batch.zip(vectors).forEach { (id, vector) -> semantic.put(id, vector) } }
+            lock.withLock { computed.forEach { (id, vector) -> semantic.put(id, vector) } }
             done += batch.size
             modeState.value = SearchMode.Indexing(done, missing.size)
         }
@@ -368,8 +380,8 @@ public class SearchService internal constructor(
         }
     }
 
-    /** One-line answer of an item (C4). */
-    private fun answerOf(view: ItemView): AnswerLine = AnswerLine(
+    /** One-line answer of an item (C4), with its first photo. */
+    private suspend fun answerOf(view: ItemView): AnswerLine = AnswerLine(
         itemId = view.item.id,
         itemName = view.item.name,
         places = view.path.places.map { AnswerPlace(it.id, it.name) },
@@ -379,5 +391,12 @@ public class SearchService internal constructor(
         archived = view.item.archived,
         lentTo = view.location.lentTo,
         since = view.location.since,
+        photoThumbName =
+            withContext(dispatchers.io) {
+                db.photoQueries.selectByOwner(
+                    PhotoOwnerType.ITEM.name,
+                    view.item.id,
+                ).executeAsList().firstOrNull()?.thumb_name
+            },
     )
 }

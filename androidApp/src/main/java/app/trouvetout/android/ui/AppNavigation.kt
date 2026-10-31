@@ -7,11 +7,14 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import app.trouvetout.android.ui.capture.CaptureRoute
 import app.trouvetout.android.ui.item.ItemRoute
 import app.trouvetout.android.ui.places.BrowseNavigation
 import app.trouvetout.android.ui.places.BrowseRoute
 import app.trouvetout.android.ui.places.BrowseTarget
+import app.trouvetout.android.ui.search.SearchNavigation
+import app.trouvetout.android.ui.search.SearchRoute
 import app.trouvetout.android.ui.settings.SettingsRoute
 
 @Composable
@@ -41,8 +44,24 @@ fun AppNavigation(
                 onOpenSettings = { controller.navigate(Routes.SETTINGS) },
                 onOpenPlaces = { controller.navigate(Routes.PLACES) },
                 onOpenItem = { controller.navigate(Routes.item(it)) },
+                onOpenSearch = { controller.navigate(Routes.search(it)) },
                 searchRequest = searchRequest,
                 onSearchRequestHandled = onSearchRequestHandled,
+            )
+        }
+        composable(
+            Routes.SEARCH,
+            arguments = listOf(navArgument("q") { defaultValue = "" }),
+        ) { entry ->
+            SearchRoute(
+                initialQuery = entry.arguments?.getString("q").orEmpty(),
+                navigation =
+                    SearchNavigation(
+                        onBack = { controller.popBackStack() },
+                        onOpenItem = { controller.navigate(Routes.item(it)) },
+                        onOpenPlace = { controller.navigate(Routes.place(it)) },
+                        onOpenContainer = { controller.navigate(Routes.container(it)) },
+                    ),
             )
         }
         composable(Routes.SETTINGS) { SettingsRoute(onBack = { controller.popBackStack() }) }

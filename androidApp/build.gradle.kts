@@ -29,7 +29,11 @@ android {
 
         // The bundled model (ADR-021): asset path (null without it), identity (name + checksum prefix), size.
         buildConfigField("String", "TEXT_MODEL_ASSET", if (bundleModel) "\"${textModel["file"]}\"" else "null")
-        buildConfigField("String", "TEXT_MODEL_ID", "\"${textModel["id"]}@${(textModel["sha256"] as String).take(12)}\"")
+        buildConfigField(
+            "String",
+            "TEXT_MODEL_ID",
+            "\"${textModel["id"]}@${(textModel["sha256"] as String).take(12)}\"",
+        )
         buildConfigField("long", "TEXT_MODEL_BYTES", "${textModel["bytes"]}L")
     }
 

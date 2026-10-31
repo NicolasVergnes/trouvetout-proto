@@ -46,6 +46,8 @@ public data class AnswerLine(
     val lentTo: String?,
     /** When the item reached its current state. */
     val since: Instant,
+    /** Thumbnail file of the item's first photo, for `PhotoStore.absolutePath`. */
+    val photoThumbName: String? = null,
 )
 
 public data class AnswerPlace(

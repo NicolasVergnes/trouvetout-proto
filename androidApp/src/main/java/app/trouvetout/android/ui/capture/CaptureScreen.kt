@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -80,6 +81,8 @@ fun CaptureRoute(
     onOpenPlaces: () -> Unit,
     onOpenItem: (String) -> Unit,
     modifier: Modifier = Modifier,
+    /** Opens the search screen (lot 6), with the question asked here or in the quick capture (C5). */
+    onOpenSearch: (String) -> Unit = {},
     /** A question asked from the quick capture (widget, tile), shown here as a search (C5). */
     searchRequest: String? = null,
     onSearchRequestHandled: () -> Unit = {},
@@ -97,8 +100,14 @@ fun CaptureRoute(
             onSearchRequestHandled()
         }
     }
+    LaunchedEffect(state.searchQuery) {
+        state.searchQuery?.let {
+            viewModel.dismissMessages() // the search screen takes the question over
+            onOpenSearch(it)
+        }
+    }
     val callbacks =
-        remember(viewModel, mic, onOpenSettings, onOpenPlaces, onOpenItem) {
+        remember(viewModel, mic, onOpenSettings, onOpenPlaces, onOpenItem, onOpenSearch) {
             CaptureCallbacks(
                 onInputChange = viewModel::onInputChange,
                 onSubmit = viewModel::submit,
@@ -113,6 +122,7 @@ fun CaptureRoute(
                 onOpenSettings = onOpenSettings,
                 onOpenPlaces = onOpenPlaces,
                 onOpenItem = onOpenItem,
+                onOpenSearch = { onOpenSearch("") },
                 mic = mic,
                 onStartBatch = viewModel::startBatch,
                 onStopBatch = viewModel::stopBatch,
@@ -146,6 +156,7 @@ data class CaptureCallbacks(
     val mic: MicActions = MicActions({}, {}, {}, {}),
     val onStartBatch: (LocationRef) -> Unit = {},
     val onStopBatch: () -> Unit = {},
+    val onOpenSearch: () -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -164,6 +175,9 @@ fun CaptureScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
+                    IconButton(onClick = callbacks.onOpenSearch, modifier = Modifier.testTag("open_search")) {
+                        Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_title))
+                    }
                     TextButton(onClick = callbacks.onOpenPlaces) { Text(stringResource(R.string.places_title)) }
                     TextButton(onClick = callbacks.onOpenSettings) { Text(stringResource(R.string.settings_title)) }
                 },
@@ -199,7 +213,7 @@ fun CaptureScreen(
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
-            ItemList(state, items, callbacks)
+            ItemList(items, callbacks)
         }
     }
     CaptureDialogs(state, callbacks)
@@ -342,48 +356,28 @@ private fun cardDetail(card: ConfirmationCard): String = when (card.intent) {
 
 @Composable
 private fun ItemList(
-    state: CaptureUiState,
     items: List<ItemView>,
     callbacks: CaptureCallbacks,
 ) {
-    val query = state.searchQuery
-    val shown = remember(items, query) {
-        if (query ==
-            null
-        ) {
-            items
-        } else {
-            items.filter { it.item.name.contains(query, ignoreCase = true) }
-        }
-    }
-    if (query != null) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                stringResource(R.string.capture_search_title, query),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = callbacks.onDismissMessages) { Text(stringResource(R.string.action_close)) }
-        }
-    }
-    if (shown.isEmpty()) {
+    if (items.isEmpty()) {
         Text(
-            stringResource(if (query == null) R.string.capture_empty else R.string.capture_search_empty),
+            stringResource(R.string.capture_empty),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 24.dp),
         )
         return
     }
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(shown, key = { it.item.id }) { view ->
+        items(items, key = { it.item.id }) { view ->
             ItemRow(view, onOpen = { callbacks.onOpenItem(view.item.id) })
             HorizontalDivider()
         }
     }
 }
 
+/** One item and where it is; shared by the home list and the search results. */
 @Composable
-private fun ItemRow(
+internal fun ItemRow(
     view: ItemView,
     onOpen: () -> Unit,
 ) {
