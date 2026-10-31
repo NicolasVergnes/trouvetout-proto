@@ -79,6 +79,8 @@ kotlin {
             implementation(libs.sqldelight.android.driver)
             // Dispatchers.Main for CoroutineDispatchers' default on Android.
             implementation(libs.kotlinx.coroutines.android)
+            // EmbeddingGemma 2 runtime (ADR-021): arm64-v8a and x86_64 native code only.
+            implementation(libs.litertlm.android)
         }
         jvmMain.dependencies {
             implementation(libs.sqldelight.sqlite.driver)

@@ -31,3 +31,4 @@ rootProject.name = "trouvetout"
 include(":shared")
 include(":androidApp")
 include(":tools")
+include(":models")

@@ -22,7 +22,7 @@ env:
   GRADLE_OPTS: -Dorg.gradle.daemon=false
   # Every task of both CI jobs, dry-run: resolves all their configurations without building.
   GRADLE_TASKS: >-
-    :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :androidApp:assembleRelease :tools:build
+    :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :androidApp:assembleRelease :tools:build :tools:evalSearch
     :androidApp:assembleDebugAndroidTest
     ktlintCheck ktlintFormat detekt :shared:iosSimulatorArm64Test :shared:embedAndSignAppleFrameworkForXcode
 
