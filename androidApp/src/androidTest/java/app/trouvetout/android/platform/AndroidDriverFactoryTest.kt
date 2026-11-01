@@ -105,6 +105,48 @@ class AndroidDriverFactoryTest {
     }
 
     @Test
+    fun a_plain_database_with_commits_still_in_its_wal_loses_nothing() {
+        file.parentFile!!.mkdirs()
+        val plain = AndroidSqliteDriver(TrouveToutDb.Schema, context, file.absolutePath)
+        val copy = File(directory, "crashed/test.db")
+        try {
+            assertEquals("wal", pragma(plain, "journal_mode = WAL"))
+            pragma(plain, "wal_autocheckpoint = 0")
+            val db = TrouveToutDb(plain)
+            db.transaction {
+                for (i in 0 until 500L) {
+                    db.eventQueries.insert(
+                        "w$i",
+                        i,
+                        "device",
+                        "me",
+                        "ItemCreated",
+                        "{}",
+                        "TEXT",
+                        null,
+                    )
+                }
+            }
+            // The files as a process killed now would leave them: the commits are only in the journal.
+            copy.parentFile!!.mkdirs()
+            for (suffix in listOf("", "-wal", "-shm")) {
+                File(file.path + suffix).takeIf { it.exists() }?.copyTo(File(copy.path + suffix), overwrite = true)
+            }
+        } finally {
+            plain.close()
+        }
+        assertTrue("the journal holds the commits", File(copy.path + "-wal").length() > 0)
+
+        val driver = AndroidDriverFactory(context, copy.absolutePath, keys).create()
+        try {
+            assertEquals(500L, TrouveToutDb(driver).eventQueries.count().executeAsOne())
+        } finally {
+            driver.close()
+        }
+        assertFalse(isPlain(copy))
+    }
+
+    @Test
     fun without_its_key_the_encrypted_database_is_not_replaced() {
         AndroidDriverFactory(context, file.absolutePath, keys).create().close()
         val before = file.readBytes()

@@ -47,8 +47,10 @@ fun QuickCaptureRoute(
     startWithVoice: Boolean,
     onClose: () -> Unit,
     onSearch: (String) -> Unit,
+    onOpenApp: (String) -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as App
+    val locked by app.locked.collectAsStateWithLifecycle(initialValue = true)
     val viewModel: CaptureViewModel = viewModel { CaptureViewModel(app) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val mic = rememberMicActions(viewModel)
@@ -83,6 +85,8 @@ fun QuickCaptureRoute(
         callbacks,
         focusField = !startWithVoice || state.voiceNotice != null,
         onClose = onClose,
+        locked = locked,
+        onOpenApp = onOpenApp,
     )
 }
 
@@ -92,6 +96,9 @@ fun QuickCaptureScreen(
     callbacks: CaptureCallbacks,
     focusField: Boolean,
     onClose: () -> Unit,
+    /** H3: the app is locked; a question is then handed to the home screen with the sentence. */
+    locked: Boolean = false,
+    onOpenApp: (String) -> Unit = {},
 ) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(focusField) { if (focusField) focus.requestFocus() }
@@ -140,7 +147,16 @@ fun QuickCaptureScreen(
             }
         }
     }
-    CaptureDialogs(state, callbacks)
+    val pending = state.pending
+    if (locked && pending != null) {
+        // H3, H4: a question would list places or objects of a locked app: the home screen asks it, once unlocked.
+        LockedQuestionDialog(
+            onOpen = { onOpenApp(pending.proposal.parse.input) },
+            onDismiss = callbacks.onDismissDecision,
+        )
+    } else {
+        CaptureDialogs(state, callbacks)
+    }
 }
 
 @Preview(showBackground = true)
@@ -171,4 +187,19 @@ private fun QuickCapturePreview() {
             onClose = noop,
         )
     }
+}
+
+/** H3, H4: the locked app's quick capture asks no question; the sentence goes to the (locked) home screen. */
+@Composable
+private fun LockedQuestionDialog(
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.quick_locked_question_title)) },
+        text = { Text(stringResource(R.string.quick_locked_question_text)) },
+        confirmButton = { TextButton(onClick = onOpen) { Text(stringResource(R.string.quick_locked_question_open)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+    )
 }

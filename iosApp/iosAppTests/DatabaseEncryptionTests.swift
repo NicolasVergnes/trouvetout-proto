@@ -11,11 +11,12 @@ final class MemoryKeychainItem: NSObject, KeychainItem {
         IosDatabaseKeys(item: MemoryKeychainItem())
     }
 
-    func read() -> Data? {
-        stored
+    func read() -> KeychainRead {
+        KeychainRead(data: stored, failed: false)
     }
 
     func write(data: Data) -> Bool {
+        guard stored == nil else { return false }
         stored = data
         return true
     }
@@ -64,7 +65,7 @@ final class DatabaseEncryptionTests: XCTestCase {
         XCTAssertEqual(DatabaseFixtures.shared.probeCount(path: path, keyLiteral: key), 1000)
         XCTAssertEqual(DatabaseFixtures.shared.probeCount(path: path, keyLiteral: nil), -1, "unreadable without key")
         XCTAssertFalse(FileManager.default.fileExists(atPath: path + ".enc"))
-        XCTAssertNotNil(item.read(), "the key is in the Keychain")
+        XCTAssertNotNil(item.stored, "the key is in the Keychain")
     }
 
     func testTheWipeDeletesTheKeyAndALostKeyIsSaid() async throws {
@@ -79,7 +80,7 @@ final class DatabaseEncryptionTests: XCTestCase {
         let reopened = try await second.warmUp()
         XCTAssertFalse(reopened.boolValue)
         XCTAssertEqual(second.storeFailure, .keyLost)
-        XCTAssertNil(item.read(), "no new key that would hide the loss")
+        XCTAssertNil(item.stored, "no new key that would hide the loss")
 
         // H6 still works on a store that cannot open, and leaves nothing behind.
         _ = try await second.wipeAllData()
@@ -88,7 +89,7 @@ final class DatabaseEncryptionTests: XCTestCase {
         let fresh = try await third.warmUp()
         XCTAssertTrue(fresh.boolValue, "a new key and an empty database after the wipe")
         _ = try await third.wipeAllData()
-        XCTAssertNil(item.read(), "the wipe deletes the Keychain item")
+        XCTAssertNil(item.stored, "the wipe deletes the Keychain item")
     }
 
     private func makeShared() -> SharedFactory {

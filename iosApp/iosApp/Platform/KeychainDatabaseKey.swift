@@ -22,31 +22,38 @@ final class KeychainDatabaseKey: NSObject, KeychainItem {
         ]
     }
 
-    func read() -> Data? {
+    /// « No item » only for `errSecItemNotFound`: any other status (locked before the first unlock, missing
+    /// entitlement) is a failure, which the core reports as an unavailable store, never as a lost key.
+    func read() -> KeychainRead {
         var lookup = query
         lookup[kSecReturnData as String] = true
         lookup[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: CFTypeRef?
-        guard SecItemCopyMatching(lookup as CFDictionary, &result) == errSecSuccess else { return nil }
-        return result as? Data
+        let status = SecItemCopyMatching(lookup as CFDictionary, &result)
+        switch status {
+        case errSecSuccess:
+            return KeychainRead(data: result as? Data, failed: result as? Data == nil)
+        case errSecItemNotFound:
+            return KeychainRead(data: nil, failed: false)
+        default:
+            return KeychainRead(data: nil, failed: true)
+        }
     }
 
+    /// Adds the key; an existing item is never replaced (a duplicate is a failure, the core then stops).
     func write(data: Data) -> Bool {
         var item = query
         item[kSecValueData as String] = data
         item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        let added = SecItemAdd(item as CFDictionary, nil)
-        if added == errSecDuplicateItem {
-            let update: [String: Any] = [
-                kSecValueData as String: data,
-                kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-            ]
-            return SecItemUpdate(query as CFDictionary, update as CFDictionary) == errSecSuccess
-        }
-        return added == errSecSuccess
+        return SecItemAdd(item as CFDictionary, nil) == errSecSuccess
     }
 
     func remove() {
         SecItemDelete(query as CFDictionary)
+    }
+
+    /// Tests: whether the item is there.
+    var stored: Data? {
+        read().data
     }
 }

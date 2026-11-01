@@ -97,6 +97,7 @@ private struct StorageUnavailableView: View {
                 if keyLost {
                     Button("settings_wipe", role: .destructive) { confirm = true }
                         .buttonStyle(.bordered)
+                        .controlSize(.large)
                 }
             }
             .padding(24)
@@ -131,12 +132,14 @@ private struct LockView: View {
                         .multilineTextAlignment(.center)
                     Button("lock_unlock", action: onUnlock)
                         .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
                         .accessibilityIdentifier("unlock")
                 }
                 .padding(24)
                 .frame(maxWidth: .infinity)
             }
         }
+        .accessibilityAddTraits(.isModal)
         .onAppear(perform: onUnlock)
     }
 }

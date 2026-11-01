@@ -102,6 +102,14 @@ fun CaptureRoute(
     val containers by viewModel.containers.collectAsStateWithLifecycle()
     val photoModel by viewModel.photoModel.collectAsStateWithLifecycle()
     val simpleMode by app.uiPrefs.simpleMode.collectAsStateWithLifecycle()
+    // A sentence the locked quick capture handed over (it would have asked a question): back in the field.
+    val draft by app.captureDraft.collectAsStateWithLifecycle()
+    LaunchedEffect(draft) {
+        draft?.let {
+            viewModel.onInputChange(it)
+            app.captureDraft.value = null
+        }
+    }
     val mic = rememberMicActions(viewModel)
     LaunchedEffect(searchRequest) {
         searchRequest?.let {

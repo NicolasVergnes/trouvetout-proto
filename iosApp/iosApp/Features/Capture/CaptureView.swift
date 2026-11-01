@@ -5,6 +5,7 @@ import SwiftUI
 struct CaptureView: View {
     @StateObject private var viewModel: CaptureViewModel
     @EnvironmentObject private var router: CaptureRouter
+    @EnvironmentObject private var appContainer: AppContainer
     @Environment(\.scenePhase) private var scenePhase
     @FocusState private var fieldFocused: Bool
     @AppStorage(UiPrefs.simpleModeKey) private var simpleMode = false
@@ -81,6 +82,7 @@ struct CaptureView: View {
             }
         }
         .onReceive(router.$request) { handle($0) }
+        .onChange(of: appContainer.locked) { _ in handle(router.request) }
         // A change, not the current value: a new subscription must not replay an old question.
         .onChange(of: viewModel.searchQuery) { query in
             guard let query else { return }
@@ -102,6 +104,8 @@ struct CaptureView: View {
     /// cannot start in the background); the questions and pickers in the way are closed first.
     private func handle(_ request: CaptureRouter.Request?) {
         guard let request, request.serial > handledSerial, scenePhase == .active else { return }
+        // H3: under the lock the request waits (the keyboard would show above the cover, the microphone behind it).
+        guard !(appContainer.ready && appContainer.locked != false) else { return }
         handledSerial = request.serial
         // Cleared outside the publisher's willSet, so that a recreated screen never replays it.
         Task { @MainActor in router.consume() }

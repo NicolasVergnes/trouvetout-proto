@@ -27,6 +27,9 @@ class CaptureActivity : ComponentActivity() {
         // Listening starts once per gesture, not again after a rotation.
         val voice = savedInstanceState == null && intent.getStringExtra(EXTRA_MODE) == MODE_VOICE
         val app = application as App
+        if (app.current?.privacySettings?.state?.value?.lockEnabled == true) {
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        }
         setContent {
             // H3: with the app lock on, the panel is kept out of screenshots too (it shows the card it wrote).
             val lockEnabled by app.lockEnabled.collectAsStateWithLifecycle(initialValue = false)
@@ -40,7 +43,12 @@ class CaptureActivity : ComponentActivity() {
             }
             AppTheme {
                 NoKeyboardLearning(noLearning) {
-                    QuickCaptureRoute(startWithVoice = voice, onClose = ::finish, onSearch = ::openSearch)
+                    QuickCaptureRoute(
+                        startWithVoice = voice,
+                        onClose = ::finish,
+                        onSearch = ::openSearch,
+                        onOpenApp = ::openApp,
+                    )
                 }
             }
         }
@@ -48,6 +56,11 @@ class CaptureActivity : ComponentActivity() {
 
     private fun openSearch(query: String) {
         MainActivity.openSearch(this, query)
+        finish()
+    }
+
+    private fun openApp(sentence: String) {
+        MainActivity.openCapture(this, sentence)
         finish()
     }
 

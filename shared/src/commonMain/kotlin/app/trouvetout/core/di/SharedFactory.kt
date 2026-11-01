@@ -92,6 +92,8 @@ public class SharedFactory(
             containerCommands,
             config.dispatchers.io,
             config.captureLang,
+            hideSensitive = { appLock.revealNeedsAuthentication },
+            locked = { appLock.locked.value },
         )
     }
 
@@ -184,7 +186,8 @@ public class SharedFactory(
      */
     public suspend fun warmUp(): Boolean = withContext(config.dispatchers.io) {
         if (wiped) return@withContext false
-        val attempt = runCatching { deviceId }
+        // The privacy state is read here, off the main thread, before any screen or lifecycle callback needs it.
+        val attempt = runCatching { deviceId.also { appLock } }
         attempt.exceptionOrNull()?.let { failure ->
             if (failure is CancellationException) throw failure
             config.logger.log(LogLevel.ERROR, TAG, "storage unavailable: ${failure::class.simpleName}")
@@ -227,9 +230,11 @@ public class SharedFactory(
         if (searchService.isInitialized()) searchService.value.shutdown()
         close()
         wiped = true
-        val removed = DATA_DIRECTORIES.filter { files.deleteDirectory(it) }
-        config.databaseKeys?.delete()
-        removed
+        try {
+            DATA_DIRECTORIES.filter { files.deleteDirectory(it) }
+        } finally {
+            config.databaseKeys?.delete()
+        }
     }
 
     /**

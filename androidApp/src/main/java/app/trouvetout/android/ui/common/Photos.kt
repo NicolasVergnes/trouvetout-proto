@@ -71,8 +71,8 @@ fun AddPhotoButtons(
         TextButton(
             enabled = enabled,
             onClick = {
-                (context.applicationContext as App).expectReturn()
                 gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                (context.applicationContext as App).expectReturn()
             },
         ) { Text(stringResource(R.string.photo_pick)) }
         if (hasCamera) {
@@ -82,9 +82,9 @@ fun AddPhotoButtons(
                     val dir = File(context.cacheDir, CAMERA_DIR).apply { mkdirs() }
                     val file = File(dir, "capture-${java.util.UUID.randomUUID()}.jpg")
                     cameraPath = file.absolutePath
-                    (context.applicationContext as App).expectReturn()
                     try {
                         camera.launch(cameraUri(context, file))
+                        (context.applicationContext as App).expectReturn()
                     } catch (_: android.content.ActivityNotFoundException) {
                         cameraPath = null
                         file.delete()

@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.trouvetout.android.R
 import app.trouvetout.core.privacy.LockDelay
@@ -34,7 +36,11 @@ data class PrivacySettingsUi(
 @Composable
 internal fun PrivacySection(settings: PrivacySettingsUi) {
     val state = settings.state ?: return
-    Text(stringResource(R.string.settings_privacy_section), style = MaterialTheme.typography.titleMedium)
+    Text(
+        stringResource(R.string.settings_privacy_section),
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.semantics { heading() },
+    )
     SwitchRow(
         label = stringResource(R.string.settings_lock),
         hint =

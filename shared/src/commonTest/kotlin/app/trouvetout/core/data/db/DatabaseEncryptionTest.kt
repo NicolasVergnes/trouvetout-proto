@@ -17,6 +17,7 @@ class DatabaseEncryptionTest {
     private class Keys : DatabaseKeyStore {
         var key: ByteArray? = null
         var created = 0
+        var deleted = 0
 
         override fun exists() = key != null
 
@@ -29,6 +30,7 @@ class DatabaseEncryptionTest {
 
         override fun delete() {
             key = null
+            deleted++
         }
     }
 
@@ -37,6 +39,7 @@ class DatabaseEncryptionTest {
         val files = HashMap<String, Pair<ByteArray, Map<String, Long>>>()
         val log = ArrayList<String>()
         var corruptCopy = false
+        var checkpointBusy = 0L
         val openKeys = ArrayList<String?>()
         val versions = HashMap<String, Long>()
 
@@ -50,8 +53,8 @@ class DatabaseEncryptionTest {
 
                 override fun exec(sql: String) {
                     log += sql.substringBefore(" KEY")
+                    check(!sql.startsWith("ATTACH")) { "the key must be bound, never in the SQL text" }
                     when {
-                        sql.startsWith("ATTACH") -> attached = sql.substringAfter("'").substringBefore("'")
                         sql.startsWith("PRAGMA user_version =") -> versions[path] = sql.substringAfter("= ").toLong()
                         sql.startsWith("SELECT sqlcipher_export") -> {
                             val rows = files.getValue(path).second
@@ -63,7 +66,19 @@ class DatabaseEncryptionTest {
                     }
                 }
 
+                override fun attach(
+                    path: String,
+                    keyLiteral: String,
+                ) {
+                    attached = path
+                    log += "ATTACH"
+                }
+
                 override fun long(sql: String): Long = when {
+                    sql == "PRAGMA wal_checkpoint(TRUNCATE)" -> {
+                        log += sql
+                        checkpointBusy
+                    }
                     sql == "PRAGMA user_version" -> versions[path] ?: 2
                     sql.startsWith("SELECT COUNT(*)") -> {
                         val table = sql.substringAfter("FROM \"").substringBefore("\"")
@@ -125,6 +140,7 @@ class DatabaseEncryptionTest {
         assertEquals(listOf(null, literal), support.openKeys, "plain first, then the copy with the key")
         val log = support.log
         assertEquals("PRAGMA wal_checkpoint(TRUNCATE)", log.first())
+        assertTrue(log.indexOf("ATTACH") < log.indexOf("export"))
         assertTrue(log.indexOf("export") < log.indexOf("replace"))
         assertTrue(log.indexOf("delete $path-wal") < log.indexOf("replace"))
     }
@@ -146,6 +162,27 @@ class DatabaseEncryptionTest {
         assertEquals("delete $path.enc", support.log.first(), "the leftover copy is dropped first")
         assertContentEquals(cipherHeader, support.header(path))
         assertEquals(1, keys.created, "the same key all along")
+    }
+
+    @Test
+    fun an_unfinished_checkpoint_leaves_the_plain_file_and_its_journal() {
+        val support = Support()
+        support.files[path] = plainHeader to mapOf("event" to 3L)
+        support.files["$path-wal"] = ByteArray(8) to emptyMap()
+        support.checkpointBusy = 1
+        assertFailsWith<EncryptionCheckException> { DatabaseEncryption.prepare(path, Keys(), support) }
+        assertContentEquals(plainHeader, support.header(path))
+        assertTrue(support.header("$path-wal") != null, "the journal still holds what the main file lacks")
+    }
+
+    @Test
+    fun a_plain_database_with_a_broken_key_store_gets_a_fresh_key() {
+        val keys = Keys()
+        val support = Support()
+        support.files[path] = plainHeader to mapOf("event" to 3L)
+        DatabaseEncryption.prepare(path, keys, support)
+        assertEquals(1, keys.deleted, "leftovers of the old key cleared first")
+        assertEquals(1, keys.created)
     }
 
     @Test

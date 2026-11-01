@@ -1,6 +1,8 @@
 package app.trouvetout.core.data.db
 
 import android.content.Context
+import android.system.Os
+import android.system.OsConstants
 import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
@@ -109,9 +111,16 @@ internal object AndroidEncryptionSupport : EncryptionSupport {
         db.disableWriteAheadLogging()
         return object : RawConnection {
             override fun exec(sql: String) {
-                // ATTACH goes through execSQL, which the framework handles apart (one connection from then on, the
-                // attachment kept on it); rawExecSQL would run it on a connection the next statements never see.
-                if (sql.startsWith("ATTACH")) db.execSQL(sql) else db.rawExecSQL(sql)
+                db.rawExecSQL(sql)
+            }
+
+            override fun attach(
+                path: String,
+                keyLiteral: String,
+            ) {
+                // execSQL, which the framework handles apart for an ATTACH (one connection from then on, the
+                // attachment kept on it); both values bound, so the key is in no SQL text.
+                db.execSQL("ATTACH DATABASE ? AS enc KEY ?", arrayOf<Any>(path, keyLiteral))
             }
 
             override fun long(sql: String): Long = db.rawQuery(sql, null).use { cursor ->
@@ -152,8 +161,17 @@ internal object AndroidEncryptionSupport : EncryptionSupport {
         from: String,
         to: String,
     ) {
-        // rename(2): atomic, replaces the destination on the same file system.
+        // rename(2): atomic, replaces the destination on the same file system; the directory entry is synced so a
+        // power cut cannot bring the plain file back after its side files are gone.
         check(File(from).renameTo(File(to))) { "rename failed" }
+        runCatching {
+            val fd = Os.open(checkNotNull(File(to).parent), OsConstants.O_RDONLY, 0)
+            try {
+                Os.fsync(fd)
+            } finally {
+                Os.close(fd)
+            }
+        }
     }
 
     private const val HEADER_BYTES = 16

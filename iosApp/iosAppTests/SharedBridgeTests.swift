@@ -31,19 +31,21 @@ final class SharedBridgeTests: XCTestCase {
     }
 
     private func factory(in directory: URL, storageReady: Bool = true) -> SharedFactory {
+        let keys = MemoryKeychainItem.keys()
         let config = SharedConfig(
             dataDirectory: directory.path,
             deviceInfo: IosDeviceInfo(),
             driverFactory: IosDriverFactory(
                 directory: directory.appendingPathComponent("db").path,
-                keys: MemoryKeychainItem.keys(),
+                keys: keys,
                 fileName: "test.db"
             ),
             imageCodec: UIImageCodec(),
             logger: NoopLogger.shared,
             storageReady: storageReady,
             appVersion: "test",
-            captureLang: .fr
+            captureLang: .fr,
+            databaseKeys: keys
         )
         return SharedFactory(config: config)
     }

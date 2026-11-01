@@ -43,7 +43,9 @@ final class SettingsViewModel: ObservableObject {
     func setLockEnabled(_ on: Bool) {
         Task { [self] in
             let reason = NSLocalizedString("lock_prompt_reason", comment: "")
-            if await DeviceOwner.authenticate(reason: reason) {
+            // Without a passcode there is nothing to ask: turning the lock off must stay possible.
+            let allowed = (!on && !DeviceOwner.available) ? true : await DeviceOwner.authenticate(reason: reason)
+            if allowed {
                 try? await container.shared.privacySettings.setLockEnabled(value: on)
             }
             refreshPrivacy()

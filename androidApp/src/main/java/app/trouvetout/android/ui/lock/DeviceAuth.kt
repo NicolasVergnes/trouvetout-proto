@@ -6,6 +6,7 @@ import android.hardware.biometrics.BiometricManager
 import android.hardware.biometrics.BiometricPrompt
 import android.os.Build
 import android.os.CancellationSignal
+import app.trouvetout.android.App
 
 /**
  * The device owner's authentication (H3, H4) through the framework's `BiometricPrompt` (API 28+, no extra library):
@@ -27,10 +28,17 @@ object DeviceAuth {
             onResult(false)
             return
         }
+        // On Android 10 the device-code prompt is an activity that stops the app's: not a departure (AppLock).
+        val lock = (context.applicationContext as App).current?.appLock
+        lock?.authenticationStarted()
+        val done: (Boolean) -> Unit = { ok ->
+            lock?.authenticationEnded()
+            onResult(ok)
+        }
         val builder = BiometricPrompt.Builder(context).setTitle(title)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             builder.setAllowedAuthenticators(
-                BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL,
+                BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL,
             )
         } else {
             @Suppress("DEPRECATION") // the only way on API 29 to offer the device code next to the biometrics
@@ -41,14 +49,14 @@ object DeviceAuth {
             context.mainExecutor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
-                    onResult(true)
+                    done(true)
                 }
 
                 override fun onAuthenticationError(
                     errorCode: Int,
                     errString: CharSequence?,
                 ) {
-                    onResult(false)
+                    done(false)
                 }
             },
         )

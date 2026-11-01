@@ -219,14 +219,14 @@
     <string name="storage_unavailable_text">L\'app ne peut pas ouvrir son espace privé pour le moment (mémoire du téléphone pleine ou indisponible). Rien n\'a été écrit. Libérez de la place, puis rouvrez l\'app.</string>
     <string name="settings_privacy_section">Vie privée</string>
     <string name="settings_lock">Verrouiller l\'app</string>
-    <string name="settings_lock_hint">Demande votre empreinte, votre visage ou le code du téléphone à l\'ouverture et avant d\'afficher les objets sensibles ; masque l\'app des captures d\'écran et des apps récentes.</string>
+    <string name="settings_lock_hint">Demande votre empreinte, votre visage ou le code du téléphone à l\'ouverture et avant d\'afficher les objets sensibles ; masque l\'app des captures d\'écran et des apps récentes. Le widget et la tuile permettent toujours de ranger un objet sans déverrouiller.</string>
     <string name="settings_lock_unavailable">Définissez d\'abord un verrouillage de l\'écran sur le téléphone (Paramètres > Sécurité).</string>
     <string name="settings_lock_delay">Reverrouiller</string>
     <string name="settings_lock_delay_now">Dès que je quitte l\'app</string>
     <string name="settings_lock_delay_minute">Après 1 minute d\'absence</string>
     <string name="settings_lock_delay_five">Après 5 minutes d\'absence</string>
     <string name="settings_keyboard">Empêcher le clavier d\'apprendre ce que je tape</string>
-    <string name="settings_keyboard_hint">Dans l\'app, le clavier n\'ajoutera pas vos lieux et prénoms à son dictionnaire. Il ne vous les proposera plus non plus.</string>
+    <string name="settings_keyboard_hint">L\'app demande au clavier de ne pas apprendre ce que vous tapez ici (lieux, prénoms). La plupart des claviers, dont Gboard, respectent cette demande ; la dictée du clavier n\'est pas concernée.</string>
     <string name="settings_licences_sqlcipher">SQLCipher de Zetetic LLC (licence de type BSD) chiffre la base sur ce téléphone.</string>
     <string name="reveal_prompt_title">Afficher les objets sensibles</string>
     <string name="search_sensitive_masked">Objet sensible : touchez pour l\'afficher</string>
@@ -242,4 +242,8 @@
     <string name="settings_display_section">Affichage</string>
     <string name="settings_simple_mode">Mode simplifié</string>
     <string name="settings_simple_mode_hint">L\'accueil ne montre que deux grands boutons : ranger, retrouver. Les réglages restent en haut.</string>
+    <string name="action_retry">Réessayer</string>
+    <string name="quick_locked_question_title">Terminer dans l\'app</string>
+    <string name="quick_locked_question_text">Cette phrase demande un choix, et l\'app est verrouillée. Ouvrez-la pour terminer : votre phrase vous y attend.</string>
+    <string name="quick_locked_question_open">Ouvrir l\'app</string>
 </resources>

@@ -11,19 +11,21 @@ final class BrowseBridgeTests: XCTestCase {
         directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("tt-browse-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let keys = MemoryKeychainItem.keys()
         let config = SharedConfig(
             dataDirectory: directory.path,
             deviceInfo: IosDeviceInfo(),
             driverFactory: IosDriverFactory(
                 directory: directory.appendingPathComponent("db").path,
-                keys: MemoryKeychainItem.keys(),
+                keys: keys,
                 fileName: "test.db"
             ),
             imageCodec: UIImageCodec(),
             logger: NoopLogger.shared,
             storageReady: true,
             appVersion: "test",
-            captureLang: .fr
+            captureLang: .fr,
+            databaseKeys: keys
         )
         factory = SharedFactory(config: config)
         _ = try await factory.warmUp()

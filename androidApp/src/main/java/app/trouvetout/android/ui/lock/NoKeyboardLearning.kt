@@ -2,6 +2,8 @@ package app.trouvetout.android.ui.lock
 
 import android.view.inputmethod.EditorInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.InterceptPlatformTextInput
 import androidx.compose.ui.platform.PlatformTextInputMethodRequest
@@ -17,20 +19,22 @@ fun NoKeyboardLearning(
     enabled: Boolean,
     content: @Composable () -> Unit,
 ) {
-    if (!enabled) {
-        content()
-        return
-    }
+    // Always wrapped, decided per request: switching the setting must not rebuild the screens below.
+    val noLearning by rememberUpdatedState(enabled)
     InterceptPlatformTextInput(
         interceptor = { request, nextHandler ->
-            val noLearning =
-                PlatformTextInputMethodRequest { outAttributes ->
-                    request.createInputConnection(outAttributes).also {
-                        outAttributes.imeOptions =
-                            outAttributes.imeOptions or EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
+            val asked =
+                if (!noLearning) {
+                    request
+                } else {
+                    PlatformTextInputMethodRequest { outAttributes ->
+                        request.createInputConnection(outAttributes).also {
+                            outAttributes.imeOptions =
+                                outAttributes.imeOptions or EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
+                        }
                     }
                 }
-            nextHandler.startInputMethod(noLearning)
+            nextHandler.startInputMethod(asked)
         },
         content = content,
     )

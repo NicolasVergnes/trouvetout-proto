@@ -19,7 +19,7 @@ for f in $BUILD_FILES; do
 done
 
 echo "== Permissions Android =="
-ALLOWED_PERMS="android.permission.RECORD_AUDIO|android.permission.CAMERA|android.permission.POST_NOTIFICATIONS|android.permission.RECEIVE_BOOT_COMPLETED|android.permission.VIBRATE|android.permission.USE_BIOMETRIC|com.android.vending.BILLING|android.permission.SCHEDULE_EXACT_ALARM|android.permission.USE_EXACT_ALARM"
+ALLOWED_PERMS="android.permission.RECORD_AUDIO|android.permission.CAMERA|android.permission.POST_NOTIFICATIONS|android.permission.RECEIVE_BOOT_COMPLETED|android.permission.VIBRATE|android.permission.USE_BIOMETRIC|com.android.vending.BILLING"
 for m in $(find "$ROOT/androidApp" -name AndroidManifest.xml -not -path "*/build/*" 2>/dev/null || true); do
   # Boucle dans le shell courant (substitution de processus) pour que status=1 soit conservé.
   while read -r p; do

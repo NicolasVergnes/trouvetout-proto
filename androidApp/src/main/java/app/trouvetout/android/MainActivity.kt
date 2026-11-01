@@ -35,6 +35,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = app
+        // Before the first frame (a rotation, a relaunch): never one frame without the flag.
+        secure(app.current?.privacySettings?.state?.value?.lockEnabled == true)
         setContent {
             val searchRequest by app.searchRequest.collectAsStateWithLifecycle()
             val failure by app.storeFailure.collectAsStateWithLifecycle()
@@ -49,7 +51,11 @@ class MainActivity : ComponentActivity() {
                 val lockState = locked
                 when {
                     storeFailure != null ->
-                        StoreFailureScreen(storeFailure, onWipe = { app.appScope.launch { app.wipeAll() } })
+                        StoreFailureScreen(
+                            storeFailure,
+                            onWipe = { app.appScope.launch { app.wipeAll() } },
+                            onRetry = { app.recreateShared() },
+                        )
                     lockState == null -> Opening()
                     else ->
                         LockGate(locked = lockState, onUnlock = ::unlock) {
@@ -116,6 +122,15 @@ class MainActivity : ComponentActivity() {
             query: String,
         ) {
             (context.applicationContext as App).searchRequest.value = query
+            context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+
+        /** Opens the home screen (locked if the lock is on) with [sentence] in its field (H3: quick capture). */
+        fun openCapture(
+            context: Context,
+            sentence: String,
+        ) {
+            (context.applicationContext as App).captureDraft.value = sentence
             context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
     }

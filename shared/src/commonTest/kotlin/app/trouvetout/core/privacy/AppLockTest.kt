@@ -127,6 +127,26 @@ class AppLockTest {
     }
 
     @Test
+    fun the_prompt_activity_of_android_10_does_not_lock_again_nor_hide_what_was_asked() = runTest {
+        val settings = settings()
+        settings.setLockEnabled(true)
+        val lock = AppLock(settings, clock, monotonic)
+        lock.unlocked()
+
+        lock.authenticationStarted()
+        lock.backgrounded() // the device-code activity covers the app
+        lock.revealed()
+        lock.foregrounded()
+        lock.authenticationEnded()
+        assertFalse(lock.locked.value)
+        assertTrue(lock.sensitiveRevealed.value, "the reveal survives its own prompt")
+
+        lock.backgrounded()
+        lock.foregrounded()
+        assertTrue(lock.locked.value, "a real departure still counts")
+    }
+
+    @Test
     fun a_foreground_without_a_background_does_not_lock() = runTest {
         val settings = settings()
         settings.setLockEnabled(true)

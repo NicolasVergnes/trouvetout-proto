@@ -163,6 +163,15 @@ final class AppContainer: ObservableObject {
     func appLeft() {
         guard ready else { return }
         shared.appLock.backgrounded()
+        // H3: a sheet or an alert is presented above the root and so above the lock cover: closed before the app
+        // switcher snapshot, and never left open behind a lock.
+        if lockEnabled {
+            for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
+                for window in scene.windows {
+                    window.rootViewController?.dismiss(animated: false)
+                }
+            }
+        }
     }
 
     func appCameBack() {

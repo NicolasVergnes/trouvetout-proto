@@ -4,9 +4,12 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import android.security.keystore.StrongBoxUnavailableException
+import android.system.Os
+import android.system.OsConstants
 import java.io.File
+import java.io.FileOutputStream
 import java.security.KeyStore
+import java.security.ProviderException
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -34,10 +37,16 @@ public class AndroidDatabaseKeys(
         if (file.isFile) return unwrap(file.readBytes())
         val key = ByteArray(KEY_BYTES).also(SecureRandom()::nextBytes)
         val wrapped = wrap(key)
-        file.parentFile?.mkdirs()
+        val directory = checkNotNull(file.parentFile).apply { mkdirs() }
         val temp = File(file.path + ".tmp")
-        temp.writeBytes(wrapped)
+        // On the disk before the database is encrypted with it: a power cut must never leave an encrypted base
+        // without its key (the file, then the directory entry of the rename).
+        FileOutputStream(temp).use { out ->
+            out.write(wrapped)
+            out.fd.sync()
+        }
         check(temp.renameTo(file)) { "key file not written" }
+        syncDirectory(directory)
         return key
     }
 
@@ -45,6 +54,17 @@ public class AndroidDatabaseKeys(
         file.delete()
         File(file.path + ".tmp").delete()
         runCatching { keyStore().deleteEntry(alias) }
+    }
+
+    private fun syncDirectory(directory: File) {
+        runCatching {
+            val fd = Os.open(directory.path, OsConstants.O_RDONLY, 0)
+            try {
+                Os.fsync(fd)
+            } finally {
+                Os.close(fd)
+            }
+        }
     }
 
     private fun wrap(key: ByteArray): ByteArray {
@@ -68,7 +88,8 @@ public class AndroidDatabaseKeys(
         return if (strongBox) {
             try {
                 generate(strongBox = true)
-            } catch (_: StrongBoxUnavailableException) {
+            } catch (_: ProviderException) {
+                // StrongBoxUnavailableException, or a chip that refuses a size or mode it claims: the TEE keeps it.
                 generate(strongBox = false)
             }
         } else {

@@ -28,6 +28,7 @@ public class AppLock internal constructor(
     private val revealedFlow = MutableStateFlow(false)
     private var leftAt: Pair<Instant, TimeMark>? = null
     private var returnExpected = false
+    private var authenticating = false
 
     init {
         settings.onLockChanged = { enabled ->
@@ -55,14 +56,29 @@ public class AppLock internal constructor(
         returnExpected = true
     }
 
+    /**
+     * The system prompt is shown. On Android 10 the device-code prompt is an activity of its own, which stops
+     * the app's: until [authenticationEnded] the trip does not count, or the app would lock again behind the prompt
+     * and hide what the user just asked to see.
+     */
+    public fun authenticationStarted() {
+        authenticating = true
+    }
+
+    public fun authenticationEnded() {
+        authenticating = false
+    }
+
     /** The app left the foreground: the clock of the delay starts, sensitive items are hidden again. */
     public fun backgrounded() {
+        if (authenticating) return
         leftAt = clock.now() to timeSource.markNow()
         revealedFlow.value = false
     }
 
     /** The app came back: it locks when the lock is on and the delay has passed. */
     public fun foregrounded() {
+        if (authenticating) return
         val expected = returnExpected
         returnExpected = false
         val (wallLeft, monotonicLeft) = leftAt ?: return

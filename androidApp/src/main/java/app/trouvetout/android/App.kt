@@ -81,6 +81,12 @@ class App : Application() {
      */
     val searchRequest = MutableStateFlow<String?>(null)
 
+    /**
+     * A sentence the quick capture could not finish while the app was locked (it asked a question): shown in the
+     * home field once the app is unlocked. Process memory only, like [searchRequest].
+     */
+    val captureDraft = MutableStateFlow<String?>(null)
+
     /** Process-wide scope for work that must not die with an Activity (warm-up, releasing the model). */
     val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -119,7 +125,8 @@ class App : Application() {
 
     /** H6 from anywhere (settings, unreadable store): core files and key, then the app's caches and preferences. */
     suspend fun wipeAll() {
-        shared.wipeAllData()
+        // A wipe that fails half-way still leaves a fresh core: the files left are wiped at the next attempt.
+        runCatching { shared.wipeAllData() }
         kotlinx.coroutines.withContext(Dispatchers.IO) { cacheDir.deleteRecursively() }
         uiPrefs.clear()
         recreateShared()

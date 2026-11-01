@@ -91,6 +91,18 @@ internal object IosEncryptionSupport : EncryptionSupport {
                 connection.rawExecSql(sql)
             }
 
+            override fun attach(
+                path: String,
+                keyLiteral: String,
+            ) {
+                // Both values bound: the key is in no SQL text.
+                connection.withStatement("ATTACH DATABASE ? AS enc KEY ?") {
+                    bindString(1, path)
+                    bindString(2, keyLiteral)
+                    execute()
+                }
+            }
+
             override fun long(sql: String): Long = connection.longForQuery(sql)
 
             override fun texts(sql: String): List<String> = connection.withStatement(sql) {

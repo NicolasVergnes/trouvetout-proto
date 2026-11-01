@@ -111,6 +111,7 @@ public sealed interface CaptureOutcome {
  * [CaptureProposal] shown on the confirmation card → [commit] turns it into events through the lot 1 commands.
  * Nothing is written before [commit].
  */
+@Suppress("LongParameterList") // collaborators injected by the factory; the last two are the H3/H4 state
 public class CaptureService internal constructor(
     private val db: TrouveToutDb,
     private val items: ItemCommands,
@@ -118,6 +119,10 @@ public class CaptureService internal constructor(
     private val containers: ContainerCommands,
     private val dispatcher: CoroutineDispatcher,
     private val defaultLang: Lang = Lang.FR,
+    /** H4: sensitive items are left out of the matches (and so of every question) while this is true. */
+    private val hideSensitive: () -> Boolean = { false },
+    /** H3: the app is locked, so only the widget or the tile can be typing: no list of places is shown. */
+    private val locked: () -> Boolean = { false },
 ) {
     /** [lang] is the UI language, used only when a sentence gives no clue about its own. */
     public suspend fun propose(
@@ -152,7 +157,9 @@ public class CaptureService internal constructor(
     public suspend fun suggestPlaces(
         prefix: String,
         limit: Int = PlaceResolver.MAX_SUGGESTIONS,
-    ): List<LocationCandidate> = withContext(dispatcher) { PlaceResolver(locations()).suggest(prefix, limit) }
+    ): List<LocationCandidate> = withContext(dispatcher) {
+        if (locked()) emptyList() else PlaceResolver(locations()).suggest(prefix, limit)
+    }
 
     /**
      * B10 « je range » : the sentence goes into [location] unless it names a place itself; a bare list of
@@ -401,7 +408,13 @@ public class CaptureService internal constructor(
 
     private fun snapshot(): Snapshot = Snapshot(
         locations = locations(),
-        itemNames = db.itemQueries.selectActive().executeAsList().map { it.toItem() }.map { it.id to it.name },
+        itemNames =
+            db.itemQueries
+                .selectActive()
+                .executeAsList()
+                .map { it.toItem() }
+                .filter { !it.sensitive || !hideSensitive() }
+                .map { it.id to it.name },
     )
 
     private fun locations(): List<LocationCandidate> {

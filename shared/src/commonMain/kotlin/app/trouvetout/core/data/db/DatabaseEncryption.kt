@@ -32,6 +32,15 @@ public interface RawConnection {
     /** Runs [sql] to completion on this very connection (rows, if any, are dropped). */
     public fun exec(sql: String)
 
+    /**
+     * `ATTACH DATABASE ? AS enc KEY ?` with both values bound: the key never appears in an SQL text that SQLite or
+     * the platform could log with an error.
+     */
+    public fun attach(
+        path: String,
+        keyLiteral: String,
+    )
+
     public fun long(sql: String): Long
 
     public fun texts(sql: String): List<String>
@@ -90,6 +99,8 @@ public object DatabaseEncryption {
         val plain = header != null && header.contentEquals(PLAIN_HEADER)
         val encrypted = header != null && header.isNotEmpty() && !plain
         if (encrypted && !keys.exists()) throw DatabaseKeyLostException()
+        // A plain database needs no old key: leftovers of a reset key store are cleared and a new key made.
+        if (plain && !keys.exists()) keys.delete()
         val key = keys.obtain()
         val literal = keyLiteral(key)
         key.fill(0)
@@ -102,6 +113,7 @@ public object DatabaseEncryption {
         if (cipherVersion.isNullOrBlank()) throw CipherMissingException()
     }
 
+    @Suppress("ThrowsCount") // one refusal per check, each named in the exception
     private fun encrypt(
         path: String,
         literal: String,
@@ -112,13 +124,14 @@ public object DatabaseEncryption {
         val expected: Map<String, Long>
         val version: Long
         try {
-            // Everything in the main file first: the side files are deleted before the rename.
-            plain.exec("PRAGMA wal_checkpoint(TRUNCATE)")
+            // Everything in the main file first: the side files are deleted before the rename, so the checkpoint
+            // must have completed (first column « busy » = 0).
+            if (plain.long("PRAGMA wal_checkpoint(TRUNCATE)") != 0L) throw EncryptionCheckException("checkpoint")
             version = plain.long("PRAGMA user_version")
             expected = counts(plain)
             // The two statements that need the attached copy run back to back; closing the connection detaches it.
             // Anything else is done on the copy itself: Android's pool does not promise one connection per call.
-            plain.exec("ATTACH DATABASE '${temp.replace("'", "''")}' AS enc KEY \"$literal\"")
+            plain.attach(temp, literal)
             plain.exec("SELECT sqlcipher_export('enc')")
         } finally {
             plain.close()

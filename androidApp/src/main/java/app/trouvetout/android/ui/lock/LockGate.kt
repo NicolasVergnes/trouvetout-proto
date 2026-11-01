@@ -21,10 +21,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
@@ -49,7 +51,15 @@ fun LockGate(
     Box(Modifier.fillMaxSize()) {
         Box(if (locked) Modifier.fillMaxSize().clearAndSetSemantics {} else Modifier.fillMaxSize()) { content() }
         if (locked) {
-            LaunchedEffect(Unit) { onUnlock() }
+            val focus = LocalFocusManager.current
+            var prompted by rememberSaveable { mutableStateOf(false) }
+            LaunchedEffect(Unit) {
+                focus.clearFocus(force = true)
+                if (!prompted) {
+                    prompted = true
+                    onUnlock()
+                }
+            }
             LockScreen(onUnlock)
         }
     }
@@ -86,6 +96,7 @@ fun LockScreen(onUnlock: () -> Unit) {
 fun StoreFailureScreen(
     failure: StoreFailure,
     onWipe: () -> Unit,
+    onRetry: () -> Unit = {},
 ) {
     var confirm by remember { mutableStateOf(false) }
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -114,6 +125,11 @@ fun StoreFailureScreen(
             if (keyLost) {
                 OutlinedButton(onClick = { confirm = true }, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.settings_wipe), color = MaterialTheme.colorScheme.error)
+                }
+            } else {
+                // Storage full or busy, an interrupted migration: the next attempt may well succeed.
+                Button(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.action_retry))
                 }
             }
         }

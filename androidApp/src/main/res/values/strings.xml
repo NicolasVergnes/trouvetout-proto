@@ -219,14 +219,14 @@
     <string name="storage_unavailable_text">The app cannot open its private storage right now (phone storage full or unavailable). Nothing was written. Free some space, then reopen the app.</string>
     <string name="settings_privacy_section">Privacy</string>
     <string name="settings_lock">Lock the app</string>
-    <string name="settings_lock_hint">Asks for your fingerprint, face or phone code when the app opens, hides it from screenshots and the recent apps, and before showing sensitive objects.</string>
+    <string name="settings_lock_hint">Asks for your fingerprint, face or phone code when the app opens and before showing sensitive objects, and hides the app from screenshots and the recent apps. The widget and the tile can still put something away without unlocking.</string>
     <string name="settings_lock_unavailable">Set a screen lock on the phone first (Settings > Security).</string>
     <string name="settings_lock_delay">Lock again</string>
     <string name="settings_lock_delay_now">As soon as I leave the app</string>
     <string name="settings_lock_delay_minute">After 1 minute away</string>
     <string name="settings_lock_delay_five">After 5 minutes away</string>
     <string name="settings_keyboard">Keep the keyboard from learning what I type</string>
-    <string name="settings_keyboard_hint">In the app, the keyboard will not add your places and names to its dictionary. It will not suggest them either.</string>
+    <string name="settings_keyboard_hint">The app asks the keyboard not to learn what you type here (places, first names). Most keyboards, Gboard included, respect it; the keyboard\'s own dictation is not covered.</string>
     <string name="settings_licences_sqlcipher">SQLCipher by Zetetic LLC (BSD-style licence) encrypts the database on this phone.</string>
     <string name="reveal_prompt_title">Show the sensitive objects</string>
     <string name="search_sensitive_masked">Sensitive object: tap to show it</string>
@@ -241,4 +241,8 @@
     <string name="settings_display_section">Display</string>
     <string name="settings_simple_mode">Simplified mode</string>
     <string name="settings_simple_mode_hint">The home screen shows two large buttons only: put something away, find it. The settings stay at the top.</string>
+    <string name="action_retry">Try again</string>
+    <string name="quick_locked_question_title">Finish in the app</string>
+    <string name="quick_locked_question_text">This sentence needs a choice, and the app is locked. Open it to finish: your sentence will be waiting.</string>
+    <string name="quick_locked_question_open">Open the app</string>
 </resources>
