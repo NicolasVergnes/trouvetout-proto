@@ -32,7 +32,7 @@ object DeviceAuth {
         val lock = (context.applicationContext as App).current?.appLock
         lock?.authenticationStarted()
         val done: (Boolean) -> Unit = { ok ->
-            lock?.authenticationEnded()
+            lock?.authenticationEnded(ok)
             onResult(ok)
         }
         val builder = BiometricPrompt.Builder(context).setTitle(title)

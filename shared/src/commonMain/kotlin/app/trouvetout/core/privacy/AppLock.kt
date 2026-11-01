@@ -28,7 +28,8 @@ public class AppLock internal constructor(
     private val revealedFlow = MutableStateFlow(false)
     private var leftAt: Pair<Instant, TimeMark>? = null
     private var returnExpected = false
-    private var authenticating = false
+    private var authenticationMark: TimeMark? = null
+    private var inFront = true
 
     init {
         settings.onLockChanged = { enabled ->
@@ -58,27 +59,45 @@ public class AppLock internal constructor(
 
     /**
      * The system prompt is shown. On Android 10 the device-code prompt is an activity of its own, which stops
-     * the app's: until [authenticationEnded] the trip does not count, or the app would lock again behind the prompt
-     * and hide what the user just asked to see.
+     * the app's: a return during the prompt is decided when it ends ([authenticationEnded]), or the app would lock
+     * again behind the prompt and hide what the user just asked to see. The window closes by itself after
+     * [AUTHENTICATION_WINDOW] (a prompt that never answers cannot disable the lock).
      */
     public fun authenticationStarted() {
-        authenticating = true
+        authenticationMark = timeSource.markNow()
     }
 
-    public fun authenticationEnded() {
-        authenticating = false
+    /**
+     * The prompt answered. Succeeded: the departure was the prompt's own activity and is forgotten. Failed or
+     * cancelled: the departure counts as any other, now if the app is in front, else at its return.
+     */
+    public fun authenticationEnded(succeeded: Boolean) {
+        authenticationMark = null
+        if (succeeded) {
+            leftAt = null
+            returnExpected = false
+        } else if (inFront) {
+            decideReturn()
+        }
     }
 
     /** The app left the foreground: the clock of the delay starts, sensitive items are hidden again. */
     public fun backgrounded() {
-        if (authenticating) return
+        inFront = false
         leftAt = clock.now() to timeSource.markNow()
         revealedFlow.value = false
     }
 
     /** The app came back: it locks when the lock is on and the delay has passed. */
     public fun foregrounded() {
-        if (authenticating) return
+        inFront = true
+        if (!authenticating) decideReturn()
+    }
+
+    private val authenticating: Boolean
+        get() = authenticationMark?.let { it.elapsedNow() < AUTHENTICATION_WINDOW } == true
+
+    private fun decideReturn() {
         val expected = returnExpected
         returnExpected = false
         val (wallLeft, monotonicLeft) = leftAt ?: return
@@ -106,5 +125,8 @@ public class AppLock internal constructor(
     public companion object {
         /** The longest stay in the camera app or the share sheet that does not lock (« immediately » delay). */
         public val EXPECTED_RETURN_GRACE: Duration = 60.seconds
+
+        /** The longest a system prompt may hold back the lock decision. */
+        public val AUTHENTICATION_WINDOW: Duration = 120.seconds
     }
 }

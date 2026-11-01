@@ -137,13 +137,42 @@ class AppLockTest {
         lock.backgrounded() // the device-code activity covers the app
         lock.revealed()
         lock.foregrounded()
-        lock.authenticationEnded()
+        lock.authenticationEnded(succeeded = true)
         assertFalse(lock.locked.value)
         assertTrue(lock.sensitiveRevealed.value, "the reveal survives its own prompt")
 
         lock.backgrounded()
         lock.foregrounded()
         assertTrue(lock.locked.value, "a real departure still counts")
+    }
+
+    @Test
+    fun a_prompt_cancelled_or_left_counts_as_a_departure_and_cannot_hold_the_lock_forever() = runTest {
+        val settings = settings()
+        settings.setLockEnabled(true)
+        val lock = AppLock(settings, clock, monotonic)
+        lock.unlocked()
+
+        lock.authenticationStarted()
+        lock.backgrounded()
+        lock.foregrounded()
+        lock.authenticationEnded(succeeded = false)
+        assertTrue(lock.locked.value, "cancelled: the departure counts")
+
+        lock.unlocked()
+        lock.authenticationStarted()
+        lock.backgrounded()
+        lock.authenticationEnded(succeeded = false) // the user went home during the prompt
+        assertFalse(lock.locked.value)
+        lock.foregrounded()
+        assertTrue(lock.locked.value, "decided at the return")
+
+        lock.unlocked()
+        lock.authenticationStarted() // a prompt that never answers
+        lock.backgrounded()
+        monotonic += 121.seconds
+        lock.foregrounded()
+        assertTrue(lock.locked.value, "the window closes by itself")
     }
 
     @Test
