@@ -7,8 +7,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.trouvetout.android.App
 import app.trouvetout.android.MainActivity
 import app.trouvetout.android.ui.capture.QuickCaptureRoute
+import app.trouvetout.android.ui.lock.NoKeyboardLearning
 import app.trouvetout.android.ui.theme.AppTheme
 
 /**
@@ -21,9 +26,22 @@ class CaptureActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Listening starts once per gesture, not again after a rotation.
         val voice = savedInstanceState == null && intent.getStringExtra(EXTRA_MODE) == MODE_VOICE
+        val app = application as App
         setContent {
+            // H3: with the app lock on, the panel is kept out of screenshots too (it shows the card it wrote).
+            val lockEnabled by app.lockEnabled.collectAsStateWithLifecycle(initialValue = false)
+            val noLearning by app.noKeyboardLearning.collectAsStateWithLifecycle(initialValue = false)
+            LaunchedEffect(lockEnabled) {
+                if (lockEnabled) {
+                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                } else {
+                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                }
+            }
             AppTheme {
-                QuickCaptureRoute(startWithVoice = voice, onClose = ::finish, onSearch = ::openSearch)
+                NoKeyboardLearning(noLearning) {
+                    QuickCaptureRoute(startWithVoice = voice, onClose = ::finish, onSearch = ::openSearch)
+                }
             }
         }
     }

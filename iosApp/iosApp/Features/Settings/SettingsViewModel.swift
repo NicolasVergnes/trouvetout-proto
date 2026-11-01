@@ -19,6 +19,8 @@ final class SettingsViewModel: ObservableObject {
     @Published var exportURL: URL?
     /// The photo side of the model (B8, C10, ADR-022): what this phone can do and the user's two settings.
     @Published private(set) var photoModel: PhotoModelState?
+    /// H3 (lot 8): the app lock and its delay.
+    @Published private(set) var privacy: PrivacyState?
 
     private let container: AppContainer
 
@@ -30,6 +32,29 @@ final class SettingsViewModel: ObservableObject {
     func refreshPhotoModel() {
         guard container.ready else { return }
         photoModel = container.shared.modelSettings.state.value as? PhotoModelState
+    }
+
+    func refreshPrivacy() {
+        guard container.ready else { return }
+        privacy = container.shared.privacySettings.state.value as? PrivacyState
+    }
+
+    /// Asks the owner first, both ways: a lock nobody can open must not be turned on, nor off by someone else.
+    func setLockEnabled(_ on: Bool) {
+        Task { [self] in
+            let reason = NSLocalizedString("lock_prompt_reason", comment: "")
+            if await DeviceOwner.authenticate(reason: reason) {
+                try? await container.shared.privacySettings.setLockEnabled(value: on)
+            }
+            refreshPrivacy()
+        }
+    }
+
+    func setLockDelay(_ delay: LockDelay) {
+        Task { [self] in
+            try? await container.shared.privacySettings.setLockDelay(value: delay)
+            refreshPrivacy()
+        }
     }
 
     /// « Name objects from their photo » off = text model only: less memory, photos still attached.

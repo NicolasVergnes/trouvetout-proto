@@ -69,7 +69,7 @@ final class CaptureViewModel: ObservableObject {
         containers = []
         guard let shared else { return }
         let scope = shared.uiScope
-        flows.watch(shared.itemRepository.observeActive(), scope: scope) { [weak self] (list: NSArray) in
+        flows.watch(shared.itemRepository.observeListed(), scope: scope) { [weak self] (list: NSArray) in
             self?.items = (list as? [ItemView]) ?? []
         }
         flows.watch(shared.placeRepository.observeActive(), scope: scope) { [weak self] (list: NSArray) in

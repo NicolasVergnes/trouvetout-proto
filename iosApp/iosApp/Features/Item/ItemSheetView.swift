@@ -221,6 +221,12 @@ struct ItemSheetView: View {
     private func flagsSection(_ view: ItemView) -> some View {
         Section {
             Toggle("item_pinned", isOn: Binding(get: { view.item.pinned }, set: { viewModel.setPinned($0) }))
+            Toggle(isOn: Binding(get: { view.item.sensitive }, set: { viewModel.setSensitive($0) })) {
+                VStack(alignment: .leading) {
+                    Text("item_sensitive")
+                    Text("item_sensitive_hint").font(.footnote).foregroundStyle(.secondary)
+                }
+            }
             Toggle("item_archived", isOn: Binding(get: { view.item.archived }, set: { viewModel.setArchived($0) }))
             Toggle("item_show_history", isOn: $viewModel.showHistory)
         }

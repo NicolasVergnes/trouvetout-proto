@@ -24,6 +24,7 @@ private enum PickerDialog: Identifiable {
 /// Root level, one place, or one container (C6, C7, D1–D6). Destinations are registered by `ContentView`.
 struct BrowseView: View {
     @StateObject private var viewModel: BrowseViewModel
+    @ObservedObject private var app: AppContainer
     @Environment(\.dismiss) private var dismiss
     @State private var nameDialog: NameDialog?
     @State private var pickerDialog: PickerDialog?
@@ -31,6 +32,7 @@ struct BrowseView: View {
 
     init(container: AppContainer, target: BrowseTarget) {
         _viewModel = StateObject(wrappedValue: BrowseViewModel(container: container, target: target))
+        app = container
     }
 
     var body: some View {
@@ -124,7 +126,8 @@ struct BrowseView: View {
             ForEach(content.items, id: \.item.id) { view in
                 ItemRowView(view: view)
             }
-            if content.children.isEmpty, content.containers.isEmpty, content.items.isEmpty {
+            HiddenItemRows(hidden: content.hidden, app: app)
+            if content.children.isEmpty, content.containers.isEmpty, content.items.isEmpty, content.hidden.isEmpty {
                 Text("place_empty")
                     .foregroundStyle(.secondary)
             }
@@ -135,7 +138,7 @@ struct BrowseView: View {
     private var containerSections: some View {
         if let content = viewModel.container {
             photoRows(content.photos)
-            if content.items.isEmpty {
+            if content.items.isEmpty, content.hidden.isEmpty {
                 Button("container_delete", role: .destructive) { viewModel.deleteContainer() }
                     .disabled(viewModel.busy)
                 Text("container_empty")
@@ -144,6 +147,7 @@ struct BrowseView: View {
             ForEach(content.items, id: \.item.id) { view in
                 ItemRowView(view: view)
             }
+            HiddenItemRows(hidden: content.hidden, app: app)
         }
     }
 

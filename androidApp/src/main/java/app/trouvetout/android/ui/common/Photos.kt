@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import app.trouvetout.android.App
 import app.trouvetout.android.R
 import app.trouvetout.core.domain.model.Photo
 import kotlinx.coroutines.Dispatchers
@@ -69,7 +70,10 @@ fun AddPhotoButtons(
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TextButton(
             enabled = enabled,
-            onClick = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            onClick = {
+                (context.applicationContext as App).expectReturn()
+                gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
         ) { Text(stringResource(R.string.photo_pick)) }
         if (hasCamera) {
             TextButton(
@@ -78,6 +82,7 @@ fun AddPhotoButtons(
                     val dir = File(context.cacheDir, CAMERA_DIR).apply { mkdirs() }
                     val file = File(dir, "capture-${java.util.UUID.randomUUID()}.jpg")
                     cameraPath = file.absolutePath
+                    (context.applicationContext as App).expectReturn()
                     try {
                         camera.launch(cameraUri(context, file))
                     } catch (_: android.content.ActivityNotFoundException) {

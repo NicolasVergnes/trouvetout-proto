@@ -11,9 +11,12 @@ enum ItemProblem {
 /// Per-device display preferences (never business data); H6 clears them with the data.
 enum UiPrefs {
     static let showHistoryKey = "showHistory"
+    /// I7: the simplified home (two large buttons).
+    static let simpleModeKey = "simpleMode"
 
     static func clear() {
         UserDefaults.standard.removeObject(forKey: showHistoryKey)
+        UserDefaults.standard.removeObject(forKey: simpleModeKey)
     }
 }
 
@@ -137,6 +140,26 @@ final class ItemViewModel: ObservableObject {
             clearUnit: false,
             sensitive: nil,
             pinned: KotlinBoolean(value: pinned)
+        )
+        perform { [self] in
+            let result = try await appContainer.shared.itemCommands.update(itemId: itemId, patch: patch, source: .text)
+            record(result)
+        }
+    }
+
+    /// H4: kept out of the home list, the suggestions and the thumbnails; behind the lock when it is on.
+    func setSensitive(_ sensitive: Bool) {
+        let patch = ItemPatch(
+            name: nil,
+            description: nil,
+            clearDescription: false,
+            tags: nil,
+            quantity: nil,
+            clearQuantity: false,
+            unit: nil,
+            clearUnit: false,
+            sensitive: KotlinBoolean(value: sensitive),
+            pinned: nil
         )
         perform { [self] in
             let result = try await appContainer.shared.itemCommands.update(itemId: itemId, patch: patch, source: .text)

@@ -33,6 +33,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -46,6 +47,9 @@ import app.trouvetout.android.ui.common.AddPhotoButtons
 import app.trouvetout.android.ui.common.LocationPickerDialog
 import app.trouvetout.android.ui.common.PhotoStrip
 import app.trouvetout.android.ui.common.descendantsOf
+import app.trouvetout.android.ui.lock.HiddenRow
+import app.trouvetout.android.ui.lock.LocalSensitive
+import app.trouvetout.android.ui.lock.SensitiveAccess
 import app.trouvetout.core.data.repository.ItemView
 import app.trouvetout.core.domain.model.LocationStatus
 import app.trouvetout.core.domain.model.Place
@@ -206,6 +210,7 @@ private fun PlaceBody(
     onAddContainer: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as App
+    val sensitive = LocalSensitive.current
     if (content == null) return
     PhotoStrip(content.photos, pathOf = {
         app.shared.photoStore.absolutePath(it)
@@ -244,7 +249,8 @@ private fun PlaceBody(
             ItemRow(view, onOpen = { navigation.onOpenItem(view.item.id) })
             HorizontalDivider()
         }
-        if (content.children.isEmpty() && content.containers.isEmpty() && content.items.isEmpty()) {
+        hiddenItems(content.hidden, sensitive, navigation)
+        if (listOf(content.children, content.containers, content.items, content.hidden).all { it.isEmpty() }) {
             item { Text(stringResource(R.string.place_empty), modifier = Modifier.padding(top = 16.dp)) }
         }
     }
@@ -258,12 +264,14 @@ private fun ContainerBody(
     navigation: BrowseNavigation,
 ) {
     val app = LocalContext.current.applicationContext as App
+    val sensitive = LocalSensitive.current
     if (content == null) return
     PhotoStrip(content.photos, pathOf = {
         app.shared.photoStore.absolutePath(it)
     }, onDetach = viewModel::detachPhoto, enabled = !busy)
     AddPhotoButtons(onPicked = viewModel::attachPhoto, enabled = !busy)
-    if (content.items.isEmpty()) {
+    // A container with only sensitive items is not empty: it cannot be deleted.
+    if (content.items.isEmpty() && content.hidden.isEmpty()) {
         TextButton(onClick = viewModel::deleteContainer) { Text(stringResource(R.string.container_delete)) }
     }
     LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -271,10 +279,33 @@ private fun ContainerBody(
             ItemRow(view, onOpen = { navigation.onOpenItem(view.item.id) })
             HorizontalDivider()
         }
-        if (content.items.isEmpty()) {
+        hiddenItems(content.hidden, sensitive, navigation)
+        if (content.items.isEmpty() && content.hidden.isEmpty()) {
             item {
                 Text(stringResource(R.string.container_empty), modifier = Modifier.padding(top = 16.dp))
             }
+        }
+    }
+}
+
+/** H4: sensitive items are counted, and listed once the user asked (owner's authentication with the lock on). */
+private fun androidx.compose.foundation.lazy.LazyListScope.hiddenItems(
+    hidden: List<ItemView>,
+    sensitive: SensitiveAccess,
+    navigation: BrowseNavigation,
+) {
+    if (hidden.isEmpty()) return
+    if (sensitive.revealed) {
+        items(hidden, key = { "h" + it.item.id }) { view ->
+            ItemRow(view, onOpen = { navigation.onOpenItem(view.item.id) })
+            HorizontalDivider()
+        }
+    } else {
+        item(key = "hidden") {
+            HiddenRow(
+                pluralStringResource(R.plurals.browse_hidden_count, hidden.size, hidden.size),
+                sensitive.onReveal,
+            )
         }
     }
 }

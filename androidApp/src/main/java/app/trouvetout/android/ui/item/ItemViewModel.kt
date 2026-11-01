@@ -113,6 +113,11 @@ class ItemViewModel(
         record(app.shared.itemCommands.update(itemId, ItemPatch(pinned = pinned), EventSource.TEXT))
     }
 
+    /** H4: kept out of the home list, the suggestions and the thumbnails; behind the lock when it is on. */
+    fun setSensitive(sensitive: Boolean) = run {
+        record(app.shared.itemCommands.update(itemId, ItemPatch(sensitive = sensitive), EventSource.TEXT))
+    }
+
     fun setArchived(archived: Boolean) = run {
         record(app.shared.itemCommands.setArchived(itemId, archived, EventSource.TEXT))
     }

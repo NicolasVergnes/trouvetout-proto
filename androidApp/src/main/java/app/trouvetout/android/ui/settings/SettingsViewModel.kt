@@ -11,6 +11,8 @@ import app.trouvetout.core.data.export.MAX_ARCHIVE_BYTES
 import app.trouvetout.core.di.SharedFactory
 import app.trouvetout.core.domain.ids.Ulid
 import app.trouvetout.core.ml.PhotoModelState
+import app.trouvetout.core.privacy.LockDelay
+import app.trouvetout.core.privacy.PrivacyState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -71,6 +73,26 @@ class SettingsViewModel(
             .flatMapLatest { it.modelSettings.state }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
+    /** H3 and the keyboard switch (lot 8). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val privacy: StateFlow<PrivacyState?> =
+        app.readyShared
+            .flatMapLatest { it.privacySettings.state }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+
+    /** The screen asked the device owner first (both ways: a lock nobody can open must not be turned on). */
+    fun setLockEnabled(value: Boolean) {
+        viewModelScope.launch { app.readyShared.first().privacySettings.setLockEnabled(value) }
+    }
+
+    fun setLockDelay(value: LockDelay) {
+        viewModelScope.launch { app.readyShared.first().privacySettings.setLockDelay(value) }
+    }
+
+    fun setNoKeyboardLearning(value: Boolean) {
+        viewModelScope.launch { app.readyShared.first().privacySettings.setNoKeyboardLearning(value) }
+    }
+
     fun setForceTextOnly(value: Boolean) {
         viewModelScope.launch { app.readyShared.first().modelSettings.setForceTextOnly(value) }
     }
@@ -120,11 +142,9 @@ class SettingsViewModel(
     /** H6: the core wipes its data directory; the host then drops its own leftovers (share copies in the cache). */
     fun wipeAll() {
         run {
-            shared.wipeAllData()
-            withContext(Dispatchers.IO) { app.cacheDir.deleteRecursively() }
-            app.uiPrefs.clear()
             _state.update { it.copy(exportToShare = null) }
-            app.recreateShared()
+            // Data, database key (H2), caches and display preferences.
+            app.wipeAll()
             _state.update { it.copy(message = SettingsMessage.Wiped) }
         }
     }

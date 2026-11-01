@@ -1,14 +1,18 @@
+import AVFoundation
 import PhotosUI
 import Shared
 import SwiftUI
 
-/// Two buttons: pick from the library (system picker, no permission) or take a photo (camera, asked at first use).
+/// Two buttons: pick from the library (system picker, no permission) or take a photo (camera, asked at first use
+/// after an explanation, H9; refused: the way to the Settings). Every photo button of the app is this one.
 struct AddPhotoButtons: View {
     let enabled: Bool
     let onPicked: (Data) -> Void
 
     @State private var selection: PhotosPickerItem?
     @State private var cameraShown = false
+    @State private var cameraRationale = false
+    @State private var cameraDenied = false
 
     var body: some View {
         HStack {
@@ -26,7 +30,7 @@ struct AddPhotoButtons: View {
                 }
             }
             if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                Button("photo_take") { cameraShown = true }
+                Button("photo_take") { takePhoto() }
                     .disabled(!enabled)
             }
         }
@@ -40,6 +44,40 @@ struct AddPhotoButtons: View {
                 }
             }
             .ignoresSafeArea()
+        }
+        .alert("camera_rationale_title", isPresented: $cameraRationale) {
+            Button("action_continue") { askCamera() }
+            Button("action_cancel", role: .cancel) {}
+        } message: {
+            Text("camera_rationale_text")
+        }
+        .alert("camera_denied_title", isPresented: $cameraDenied) {
+            Button("action_phone_settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("action_cancel", role: .cancel) {}
+        } message: {
+            Text("camera_denied_text")
+        }
+    }
+
+    private func takePhoto() {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized: cameraShown = true
+        case .notDetermined: cameraRationale = true
+        default: cameraDenied = true
+        }
+    }
+
+    private func askCamera() {
+        Task { @MainActor in
+            if await AVCaptureDevice.requestAccess(for: .video) {
+                cameraShown = true
+            } else {
+                cameraDenied = true
+            }
         }
     }
 }

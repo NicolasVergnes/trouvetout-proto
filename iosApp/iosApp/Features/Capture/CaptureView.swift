@@ -7,6 +7,7 @@ struct CaptureView: View {
     @EnvironmentObject private var router: CaptureRouter
     @Environment(\.scenePhase) private var scenePhase
     @FocusState private var fieldFocused: Bool
+    @AppStorage(UiPrefs.simpleModeKey) private var simpleMode = false
     @State private var pickingBatch = false
     /// Requests are replayed to every new subscriber: each serial is handled once.
     @State private var handledSerial = 0
@@ -22,14 +23,19 @@ struct CaptureView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Group {
+                if simpleMode {
+                    SimpleModeButtons(onStore: simpleStore, onFind: { onSearch("") })
+                }
                 field
                 VoiceStatusView(
                     listening: viewModel.listening,
                     notice: viewModel.voiceNotice,
                     onOpenSettings: openAppSettings
                 )
-                batchRow
-                CapturePhotoRow(viewModel: viewModel) { fieldFocused = true }
+                if !simpleMode {
+                    batchRow
+                    CapturePhotoRow(viewModel: viewModel) { fieldFocused = true }
+                }
                 if !viewModel.suggestions.isEmpty {
                     suggestionRow
                 }
@@ -50,7 +56,11 @@ struct CaptureView: View {
                 }
             }
             .padding(.horizontal, 16)
-            itemList
+            if !simpleMode {
+                itemList
+            } else {
+                Spacer()
+            }
         }
         .sheet(isPresented: pendingPresented) {
             if let pending = viewModel.pending {
@@ -78,6 +88,14 @@ struct CaptureView: View {
             onSearch(query)
         }
         .onDisappear { viewModel.stopListening() }
+    }
+
+    /// I7 « Ranger »: listens when the phone recognises speech on the device, otherwise opens the keyboard.
+    private func simpleStore() {
+        viewModel.micTapped()
+        if !viewModel.listening, viewModel.voiceNotice != nil {
+            fieldFocused = true
+        }
     }
 
     /// A capture asked by a widget, a URL or the App Intent, once the app is really in front (the audio session

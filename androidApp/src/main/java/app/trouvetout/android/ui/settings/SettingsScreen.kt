@@ -41,6 +41,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
+import app.trouvetout.android.ui.lock.DeviceAuth
+import app.trouvetout.android.ui.lock.rememberOwnerCheck
 import app.trouvetout.android.ui.theme.AppTheme
 import app.trouvetout.core.data.export.ImportRejection
 
@@ -55,12 +57,16 @@ fun SettingsRoute(
     val viewModel: SettingsViewModel = viewModel { SettingsViewModel(app) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val photoModel by viewModel.photoModel.collectAsStateWithLifecycle()
+    val privacy by viewModel.privacy.collectAsStateWithLifecycle()
+    val ownerCheck = rememberOwnerCheck()
+    val promptTitle = stringResource(R.string.lock_prompt_title)
     val picker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) viewModel.import(uri)
         }
     LaunchedEffect(state.exportToShare) {
         state.exportToShare?.let { uri ->
+            app.expectReturn()
             ExportSharing.launch(context, uri)
             viewModel.exportShared()
         }
@@ -70,12 +76,21 @@ fun SettingsRoute(
         onBack = onBack,
         onExport = viewModel::export,
         onImport = {
+            app.expectReturn()
             picker.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
         },
         onWipe = viewModel::wipeAll,
         onDismissMessage = viewModel::dismissMessage,
         modifier = modifier,
         photo = PhotoSettings(photoModel, viewModel::setForceTextOnly, viewModel::setPhotoSearch),
+        privacy =
+            PrivacySettingsUi(
+                state = privacy,
+                lockAvailable = DeviceAuth.available(context),
+                onLock = { on -> ownerCheck(promptTitle) { viewModel.setLockEnabled(on) } },
+                onDelay = viewModel::setLockDelay,
+                onKeyboard = viewModel::setNoKeyboardLearning,
+            ),
     )
 }
 
@@ -90,6 +105,7 @@ fun SettingsScreen(
     onDismissMessage: () -> Unit,
     modifier: Modifier = Modifier,
     photo: PhotoSettings = PhotoSettings(null, {}, {}),
+    privacy: PrivacySettingsUi = PrivacySettingsUi(),
 ) {
     var confirmWipe by remember { mutableStateOf(false) }
     Scaffold(
@@ -138,11 +154,17 @@ fun SettingsScreen(
                 val busyLabel = stringResource(R.string.settings_busy)
                 CircularProgressIndicator(Modifier.semantics { contentDescription = busyLabel })
             }
+            PrivacySection(privacy)
             // Lot 6: what runs the search, and the licences the bundled model and runtime require (Apache 2.0).
             Text(stringResource(R.string.settings_search_section), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.settings_search_text), style = MaterialTheme.typography.bodyMedium)
             Text(
                 stringResource(R.string.settings_search_licences),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                stringResource(R.string.settings_licences_sqlcipher),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

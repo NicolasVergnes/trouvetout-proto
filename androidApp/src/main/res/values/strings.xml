@@ -209,4 +209,31 @@
     <string name="settings_photos_stopped">Last time, the photo model did not fit in the phone\'s free memory and the app closed: naming objects from their photo was turned off. Turn it on to try again.</string>
     <string name="settings_photos_absent">This version of the app does not include the photo model.</string>
     <string name="settings_search_licences">EmbeddingGemma 2 by Google and LiteRT-LM, under the Apache License 2.0.</string>
+    <string name="lock_title">TrouveTout is locked</string>
+    <string name="lock_text">Unlock with your fingerprint, your face or the phone\'s code.</string>
+    <string name="lock_unlock">Unlock</string>
+    <string name="lock_prompt_title">Unlock TrouveTout</string>
+    <string name="store_key_lost_title">Your objects cannot be read</string>
+    <string name="store_key_lost_text">The key that protects them on this phone was erased by the system. Nobody can open them any more, the app neither. Erase the data to start again, then import an export if you have one.</string>
+    <string name="storage_unavailable_title">Storage unavailable</string>
+    <string name="storage_unavailable_text">The app cannot open its private storage right now (phone storage full or unavailable). Nothing was written. Free some space, then reopen the app.</string>
+    <string name="settings_privacy_section">Privacy</string>
+    <string name="settings_lock">Lock the app</string>
+    <string name="settings_lock_hint">Asks for your fingerprint, face or phone code when the app opens, hides it from screenshots and the recent apps, and before showing sensitive objects.</string>
+    <string name="settings_lock_unavailable">Set a screen lock on the phone first (Settings > Security).</string>
+    <string name="settings_lock_delay">Lock again</string>
+    <string name="settings_lock_delay_now">As soon as I leave the app</string>
+    <string name="settings_lock_delay_minute">After 1 minute away</string>
+    <string name="settings_lock_delay_five">After 5 minutes away</string>
+    <string name="settings_keyboard">Keep the keyboard from learning what I type</string>
+    <string name="settings_keyboard_hint">In the app, the keyboard will not add your places and names to its dictionary. It will not suggest them either.</string>
+    <string name="settings_licences_sqlcipher">SQLCipher by Zetetic LLC (BSD-style licence) encrypts the database on this phone.</string>
+    <string name="reveal_prompt_title">Show the sensitive objects</string>
+    <string name="search_sensitive_masked">Sensitive object: tap to show it</string>
+    <string name="item_sensitive">Sensitive object</string>
+    <string name="item_sensitive_hint">Kept out of the home list, the suggestions and the thumbnails, and behind the lock when it is on. The search still finds it.</string>
+    <plurals name="browse_hidden_count">
+        <item quantity="one">%d sensitive object hidden: tap to show it</item>
+        <item quantity="other">%d sensitive objects hidden: tap to show them</item>
+    </plurals>
 </resources>
