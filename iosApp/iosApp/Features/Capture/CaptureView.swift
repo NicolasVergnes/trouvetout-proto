@@ -31,7 +31,7 @@ struct CaptureView: View {
                 VoiceStatusView(
                     listening: viewModel.listening,
                     notice: viewModel.voiceNotice,
-                    onOpenSettings: openAppSettings
+                    onOpenSettings: CaptureTexts.openAppSettings
                 )
                 if !simpleMode {
                     batchRow
@@ -50,7 +50,7 @@ struct CaptureView: View {
                         }
                 }
                 if let problem = viewModel.problem {
-                    Text(problemKey(problem))
+                    Text(CaptureTexts.problemKey(problem))
                         .font(.callout)
                         .foregroundStyle(.red)
                         .accessibilityAddTraits(.updatesFrequently)
@@ -164,10 +164,6 @@ struct CaptureView: View {
         )
     }
 
-    private func openAppSettings() {
-        if let url = URL(string: UIApplication.openSettingsURLString) {
-            UIApplication.shared.open(url)
-        }
     }
 
     private var typedText: Binding<String> {
@@ -234,7 +230,7 @@ struct CaptureView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(view.item.name)
                             .font(.headline)
-                        Text(whereText(view))
+                        Text(CaptureTexts.whereText(view))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -254,30 +250,6 @@ struct CaptureView: View {
                 }
             }
         )
-    }
-
-    private func whereText(_ view: ItemView) -> String {
-        switch view.location.status {
-        case .taken: NSLocalizedString("state_taken", comment: "")
-        case .lent: String(format: NSLocalizedString("state_lent", comment: ""), view.location.lentTo ?? "")
-        default:
-            if view.path.isUnknown {
-                NSLocalizedString("state_unknown_place", comment: "")
-            } else {
-                view.path.labels.joined(separator: " › ")
-            }
-        }
-    }
-
-    private func problemKey(_ problem: CaptureProblem) -> LocalizedStringKey {
-        switch problem {
-        case .nothingUnderstood: "capture_problem_nothing"
-        case .placeUndecided: "capture_problem_place"
-        case .itemNotFound: "capture_problem_item"
-        case .personMissing: "capture_problem_person"
-        case .inputTooLong: "capture_problem_too_long"
-        default: "capture_problem_rejected"
-        }
     }
 }
 

@@ -125,11 +125,14 @@ class App : Application() {
 
     /** H6 from anywhere (settings, unreadable store): core files and key, then the app's caches and preferences. */
     suspend fun wipeAll() {
-        // A wipe that fails half-way still leaves a fresh core: the files left are wiped at the next attempt.
-        runCatching { shared.wipeAllData() }
-        kotlinx.coroutines.withContext(Dispatchers.IO) { cacheDir.deleteRecursively() }
-        uiPrefs.clear()
-        recreateShared()
+        // Whatever happens, the spent core is replaced; a failure still reaches the caller, which says so.
+        try {
+            shared.wipeAllData()
+        } finally {
+            kotlinx.coroutines.withContext(Dispatchers.IO) { cacheDir.deleteRecursively() }
+            uiPrefs.clear()
+            recreateShared()
+        }
     }
 
     /**

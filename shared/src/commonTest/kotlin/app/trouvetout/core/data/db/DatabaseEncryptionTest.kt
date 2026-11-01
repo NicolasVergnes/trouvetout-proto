@@ -186,6 +186,14 @@ class DatabaseEncryptionTest {
     }
 
     @Test
+    fun no_database_with_a_broken_key_store_gets_a_fresh_key() {
+        val keys = Keys()
+        DatabaseEncryption.prepare(path, keys, Support())
+        assertEquals(1, keys.deleted, "an orphaned key file never reads as a lost key")
+        assertEquals(1, keys.created)
+    }
+
+    @Test
     fun an_encrypted_database_without_its_key_is_left_untouched() {
         val keys = Keys()
         val support = Support()
@@ -204,6 +212,7 @@ class DatabaseEncryptionTest {
         DatabaseEncryption.prepare(path, keys, support)
         assertTrue(support.openKeys.isEmpty())
         assertTrue(support.log.isEmpty())
+        assertEquals(0, keys.deleted, "a working key is kept")
     }
 
     @Test

@@ -27,7 +27,10 @@ public class AppLock internal constructor(
     private val lockedFlow = MutableStateFlow(settings.state.value.lockEnabled)
     private val revealedFlow = MutableStateFlow(false)
     private var leftAt: Pair<Instant, TimeMark>? = null
-    private var returnExpected = false
+
+    /** When [expectReturn] was called: it covers the departure that follows within seconds, nothing later. */
+    private var returnAnnounced: TimeMark? = null
+    private var departureExpected = false
     private var authenticationMark: Pair<Instant, TimeMark>? = null
     private var inFront = true
 
@@ -54,7 +57,7 @@ public class AppLock internal constructor(
      * photo taken with the « immediately » delay does not ask for the device owner every time.
      */
     public fun expectReturn() {
-        returnExpected = true
+        returnAnnounced = timeSource.markNow()
     }
 
     /**
@@ -75,7 +78,7 @@ public class AppLock internal constructor(
         authenticationMark = null
         if (succeeded) {
             leftAt = null
-            returnExpected = false
+            departureExpected = false
         } else if (inFront) {
             decideReturn()
         }
@@ -84,6 +87,10 @@ public class AppLock internal constructor(
     /** The app left the foreground: the clock of the delay starts, sensitive items are hidden again. */
     public fun backgrounded() {
         inFront = false
+        // A system screen that only paused the app (a translucent picker) never sent it away: an old announcement
+        // must not give its grace to a later, real departure.
+        departureExpected = returnAnnounced?.let { it.elapsedNow() < ANNOUNCED_DEPARTURE_WINDOW } == true
+        returnAnnounced = null
         leftAt = clock.now() to timeSource.markNow()
         revealedFlow.value = false
     }
@@ -91,6 +98,7 @@ public class AppLock internal constructor(
     /** The app came back: it locks when the lock is on and the delay has passed. */
     public fun foregrounded() {
         inFront = true
+        returnAnnounced = null
         if (!authenticating) decideReturn()
     }
 
@@ -105,8 +113,8 @@ public class AppLock internal constructor(
         }
 
     private fun decideReturn() {
-        val expected = returnExpected
-        returnExpected = false
+        val expected = departureExpected
+        departureExpected = false
         val (wallLeft, monotonicLeft) = leftAt ?: return
         leftAt = null
         val state = settings.state.value
@@ -132,6 +140,9 @@ public class AppLock internal constructor(
     public companion object {
         /** The longest stay in the camera app or the share sheet that does not lock (« immediately » delay). */
         public val EXPECTED_RETURN_GRACE: Duration = 60.seconds
+
+        /** How soon after [expectReturn] the departure must happen to be the announced one. */
+        public val ANNOUNCED_DEPARTURE_WINDOW: Duration = 10.seconds
 
         /** The longest a system prompt may hold back the lock decision. */
         public val AUTHENTICATION_WINDOW: Duration = 120.seconds

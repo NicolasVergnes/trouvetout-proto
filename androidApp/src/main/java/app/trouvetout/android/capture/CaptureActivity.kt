@@ -54,6 +54,17 @@ class CaptureActivity : ComponentActivity() {
         }
     }
 
+    /** The quick capture is the app too (H3): its returns count, so the lock delay holds for the widget and tile. */
+    override fun onStart() {
+        super.onStart()
+        (application as App).current?.appLock?.foregrounded()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) (application as App).current?.appLock?.backgrounded()
+    }
+
     private fun openSearch(query: String) {
         MainActivity.openSearch(this, query)
         finish()

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Lot 8 (dette du lot 6) : les bibliothèques natives liées à l'app iOS (LiteRT-LM, SQLCipher) n'appellent aucune API
-# réseau. Lit les symboles non définis (`nm -u`) de leur tranche iOS arm64 dans les paquets résolus par Xcode, et
-# liste leurs manifestes de confidentialité. À lancer sur macOS après `xcodebuild` (CI, job iOS).
+# réseau. Lit les symboles non définis (`nm -u`) de chaque binaire Mach-O de leur tranche iOS arm64 dans les paquets
+# résolus par Xcode, et liste leurs manifestes de confidentialité. À lancer sur macOS après `xcodebuild` (CI, job iOS),
+# avec le dossier DerivedData de ce build.
 # Usage : tools/check-native-network.sh [DerivedData]   (exit 1 en cas de violation)
 set -euo pipefail
 DERIVED="${1:-$HOME/Library/Developer/Xcode/DerivedData}"
@@ -12,20 +13,35 @@ found=0
 while IFS= read -r framework; do
   name=$(basename "$framework" .xcframework)
   slice=$(find "$framework" -maxdepth 1 -type d -name "ios-arm64" | head -1)
-  [ -z "$slice" ] && { echo "INFO: $name sans tranche ios-arm64"; continue; }
-  binary=$(find "$slice" -type f \( -perm -u+x -o -name "*.a" \) ! -name "*.plist" ! -name "*.h" | head -1)
-  [ -z "$binary" ] && { echo "INFO: $name : binaire introuvable"; continue; }
-  found=$((found + 1))
-  hits=$(nm -u "$binary" 2>/dev/null | awk '{print $NF}' | grep -E "$NETWORK" | sort -u || true)
-  if [ -n "$hits" ]; then
-    echo "VIOLATION: $name appelle des API réseau :"
-    printf '  %s\n' $hits
+  if [ -z "$slice" ]; then
+    echo "VIOLATION: $name sans tranche ios-arm64"
     status=1
-  else
-    echo "OK: $name ($(basename "$binary")) : aucun symbole réseau"
+    continue
   fi
-  privacy=$(find "$framework" -name PrivacyInfo.xcprivacy | head -1)
-  if [ -n "$privacy" ]; then
+  # Every Mach-O file or static archive of the slice, not only the first one found.
+  checked=0
+  while IFS= read -r binary; do
+    case "$(file -b "$binary")" in
+      *Mach-O*|*"ar archive"*) ;;
+      *) continue ;;
+    esac
+    checked=$((checked + 1))
+    hits=$(nm -u "$binary" 2>/dev/null | awk '{print $NF}' | grep -E "$NETWORK" | sort -u || true)
+    if [ -n "$hits" ]; then
+      echo "VIOLATION: $name ($(basename "$binary")) appelle des API réseau :"
+      printf '  %s\n' $hits
+      status=1
+    else
+      echo "OK: $name ($(basename "$binary")) : aucun symbole réseau"
+    fi
+  done < <(find "$slice" -type f)
+  if [ "$checked" -eq 0 ]; then
+    echo "VIOLATION: $name : aucun binaire dans la tranche"
+    status=1
+    continue
+  fi
+  found=$((found + 1))
+  if [ -n "$(find "$framework" -name PrivacyInfo.xcprivacy | head -1)" ]; then
     echo "  manifeste de confidentialité : présent"
   else
     echo "  manifeste de confidentialité : absent (à déclarer dans celui de l'app si une API à raison est utilisée)"

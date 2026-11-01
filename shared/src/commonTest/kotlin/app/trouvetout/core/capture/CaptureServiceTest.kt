@@ -74,7 +74,6 @@ class CaptureServiceTest {
                 PlaceCommands(ctx),
                 ContainerCommands(ctx),
                 Dispatchers.Unconfined,
-                hideSensitive = { true },
                 locked = { true },
             )
         assertTrue(hidden.propose("je prends le passeport").targets.single().matches.isEmpty(), "never named")

@@ -111,7 +111,6 @@ public sealed interface CaptureOutcome {
  * [CaptureProposal] shown on the confirmation card → [commit] turns it into events through the lot 1 commands.
  * Nothing is written before [commit].
  */
-@Suppress("LongParameterList") // collaborators injected by the factory; the last two are the H3/H4 state
 public class CaptureService internal constructor(
     private val db: TrouveToutDb,
     private val items: ItemCommands,
@@ -119,9 +118,11 @@ public class CaptureService internal constructor(
     private val containers: ContainerCommands,
     private val dispatcher: CoroutineDispatcher,
     private val defaultLang: Lang = Lang.FR,
-    /** H4: sensitive items are left out of the matches (and so of every question) while this is true. */
-    private val hideSensitive: () -> Boolean = { false },
-    /** H3: the app is locked, so only the widget or the tile can be typing: no list of places is shown. */
+    /**
+     * H3, H4: the app is locked, so only the widget or the tile can be typing: sensitive items are left out of the
+     * matches (and so of every question) and no list of places is shown. The unlocked app keeps acting on them
+     * (« je prends le passeport » moves the existing one, never creates a twin).
+     */
     private val locked: () -> Boolean = { false },
 ) {
     /** [lang] is the UI language, used only when a sentence gives no clue about its own. */
@@ -413,7 +414,7 @@ public class CaptureService internal constructor(
                 .selectActive()
                 .executeAsList()
                 .map { it.toItem() }
-                .filter { !it.sensitive || !hideSensitive() }
+                .filter { !it.sensitive || !locked() }
                 .map { it.id to it.name },
     )
 

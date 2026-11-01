@@ -92,7 +92,6 @@ public class SharedFactory(
             containerCommands,
             config.dispatchers.io,
             config.captureLang,
-            hideSensitive = { appLock.revealNeedsAuthentication },
             locked = { appLock.locked.value },
         )
     }

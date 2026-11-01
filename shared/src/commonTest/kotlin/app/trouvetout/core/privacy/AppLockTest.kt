@@ -124,6 +124,14 @@ class AppLockTest {
         clock.millis += 61_000
         lock.foregrounded()
         assertTrue(lock.locked.value, "a long stay elsewhere locks")
+
+        lock.unlocked()
+        lock.expectReturn() // a translucent picker: the app is only paused, never sent away
+        monotonic += 30.seconds
+        lock.backgrounded() // later, a real departure
+        clock.millis += 5_000
+        lock.foregrounded()
+        assertTrue(lock.locked.value, "an old announcement gives no grace")
     }
 
     @Test

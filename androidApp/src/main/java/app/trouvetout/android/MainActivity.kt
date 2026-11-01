@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.rememberNavController
 import app.trouvetout.android.ui.AppNavigation
 import app.trouvetout.android.ui.lock.DeviceAuth
 import app.trouvetout.android.ui.lock.LocalSensitive
@@ -45,6 +46,8 @@ class MainActivity : ComponentActivity() {
             val lockEnabled by app.lockEnabled.collectAsStateWithLifecycle(initialValue = false)
             val revealed by app.sensitiveRevealed.collectAsStateWithLifecycle(initialValue = false)
             val noLearning by app.noKeyboardLearning.collectAsStateWithLifecycle(initialValue = false)
+            // Kept above the lock: the screens are not composed while locked, the way back to them is kept.
+            val navController = rememberNavController()
             LaunchedEffect(lockEnabled) { secure(lockEnabled) }
             AppTheme {
                 val storeFailure = failure
@@ -53,7 +56,7 @@ class MainActivity : ComponentActivity() {
                     storeFailure != null ->
                         StoreFailureScreen(
                             storeFailure,
-                            onWipe = { app.appScope.launch { app.wipeAll() } },
+                            onWipe = { app.appScope.launch { runCatching { app.wipeAll() } } },
                             onRetry = { app.recreateShared() },
                         )
                     lockState == null -> Opening()
@@ -64,6 +67,7 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 NoKeyboardLearning(noLearning) {
                                     AppNavigation(
+                                        controller = navController,
                                         searchRequest = searchRequest,
                                         onSearchRequestHandled = { app.searchRequest.value = null },
                                     )

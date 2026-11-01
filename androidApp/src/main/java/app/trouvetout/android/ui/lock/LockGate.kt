@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -39,8 +38,9 @@ import app.trouvetout.android.ui.theme.AppTheme
 import app.trouvetout.core.di.StoreFailure
 
 /**
- * H3: while [locked], the content stays composed (navigation kept) but is covered by an opaque screen and hidden from
- * TalkBack; the system prompt opens by itself once, then on the button.
+ * H3: while [locked], the content is not composed at all: nothing to read for TalkBack, no dialog or sheet of the
+ * content left above the cover, no Back handled by the screens below (the caller keeps the navigation state above).
+ * The system prompt opens by itself once per lock, then on the button.
  */
 @Composable
 fun LockGate(
@@ -49,7 +49,7 @@ fun LockGate(
     content: @Composable () -> Unit,
 ) {
     Box(Modifier.fillMaxSize()) {
-        Box(if (locked) Modifier.fillMaxSize().clearAndSetSemantics {} else Modifier.fillMaxSize()) { content() }
+        if (!locked) content()
         if (locked) {
             val focus = LocalFocusManager.current
             var prompted by rememberSaveable { mutableStateOf(false) }

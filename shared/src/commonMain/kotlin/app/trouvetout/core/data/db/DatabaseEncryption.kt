@@ -99,8 +99,9 @@ public object DatabaseEncryption {
         val plain = header != null && header.contentEquals(PLAIN_HEADER)
         val encrypted = header != null && header.isNotEmpty() && !plain
         if (encrypted && !keys.exists()) throw DatabaseKeyLostException()
-        // A plain database needs no old key: leftovers of a reset key store are cleared and a new key made.
-        if (plain && !keys.exists()) keys.delete()
+        // Nothing encrypted needs the old key (plain or no database): leftovers of a reset key store are cleared and
+        // a new key made.
+        if (!encrypted && !keys.exists()) keys.delete()
         val key = keys.obtain()
         val literal = keyLiteral(key)
         key.fill(0)
