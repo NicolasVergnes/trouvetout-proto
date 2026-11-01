@@ -164,8 +164,6 @@ struct CaptureView: View {
         )
     }
 
-    }
-
     private var typedText: Binding<String> {
         Binding(get: { viewModel.input }, set: { viewModel.typed($0) })
     }
