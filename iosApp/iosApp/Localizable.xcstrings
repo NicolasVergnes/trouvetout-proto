@@ -2214,13 +2214,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What are you looking for?"
+            "value": "Object or place"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Que cherchez-vous ?"
+            "value": "Objet ou lieu"
           }
         }
       }

@@ -161,6 +161,8 @@ struct SearchView: View {
                 }
             }
             .controlSize(.large)
+            // The default tint on a bordered fill fails the contrast check (I6): primary text instead.
+            .tint(.primary)
         }
         .listRowSeparator(.hidden)
     }

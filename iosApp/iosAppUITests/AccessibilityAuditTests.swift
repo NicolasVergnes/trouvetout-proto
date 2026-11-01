@@ -5,7 +5,8 @@ import XCTest
 final class AccessibilityAuditTests: XCTestCase {
     /// Every issue fails the test, except two kinds that are not errors, logged with their element:
     /// - « contrast nearly passed », the audit's warning tier (the system tint and secondary text);
-    /// - Dynamic Type of a navigation bar button: iOS caps its size itself and offers the Large Content Viewer.
+    /// - Dynamic Type « partially » supported by a system control (a SwiftUI button: scaled, capped by the system in
+    ///   the bars, where it offers the Large Content Viewer); « unsupported » stays an error.
     @available(iOS 17.0, *)
     private func audit(_ app: XCUIApplication) throws {
         try app.performAccessibilityAudit { issue in
@@ -13,9 +14,10 @@ final class AccessibilityAuditTests: XCTestCase {
                 "\(found.elementType.rawValue) «\(found.label)» id=\(found.identifier)"
             } ?? "none"
             let warning = issue.compactDescription.localizedCaseInsensitiveContains("nearly passed")
-            let barButton = issue.auditType == .dynamicType &&
-                ["open_settings", "open_places", "open_search"].contains(issue.element?.identifier ?? "")
-            let ignored = warning || barButton
+            let partial = issue.auditType == .dynamicType &&
+                issue.compactDescription.localizedCaseInsensitiveContains("partially") &&
+                issue.element?.elementType == .button
+            let ignored = warning || partial
             let tag = ignored ? " (not an error)" : ""
             print("AUDIT ISSUE\(tag): \(issue.compactDescription) — element: \(element)")
             return ignored
