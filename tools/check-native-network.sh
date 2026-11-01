@@ -35,10 +35,16 @@ while IFS= read -r framework; do
     allowed_var="ALLOWED_$name"
     allowed="${!allowed_var:-}"
     if [ -n "$allowed" ] && [ -n "$hits" ]; then
+      # No case statement inside $( ): macOS bash 3.2 cannot parse it.
+      remaining=""
       for symbol in $hits; do
-        case " $allowed " in *" $symbol "*) echo "ACCEPTED: $name $symbol (ADR-023)" ;; esac
+        if echo " $allowed " | grep -q " $symbol "; then
+          echo "ACCEPTED: $name $symbol (ADR-023)"
+        else
+          remaining="$remaining $symbol"
+        fi
       done
-      hits=$(for symbol in $hits; do case " $allowed " in *" $symbol "*) ;; *) echo "$symbol" ;; esac; done)
+      hits=$(echo $remaining)
     fi
     if [ -n "$hits" ]; then
       echo "VIOLATION: $name ($(basename "$binary")) appelle des API réseau :"
