@@ -6,7 +6,9 @@ final class AccessibilityAuditTests: XCTestCase {
     /// Every issue fails the test, except two kinds that are not errors, logged with their element:
     /// - « contrast nearly passed », the audit's warning tier (the system tint and secondary text);
     /// - Dynamic Type « partially » supported by a system control (a SwiftUI button: scaled, capped by the system in
-    ///   the bars, where it offers the Large Content Viewer); « unsupported » stays an error.
+    ///   the bars, where it offers the Large Content Viewer); « unsupported » stays an error;
+    /// - « text clipped » on the system search field of `.searchable` (its placeholder, drawn by UIKit, out of the
+    ///   app's hands even for two words).
     @available(iOS 17.0, *)
     private func audit(_ app: XCUIApplication) throws {
         try app.performAccessibilityAudit { issue in
@@ -17,7 +19,8 @@ final class AccessibilityAuditTests: XCTestCase {
             let partial = issue.auditType == .dynamicType &&
                 issue.compactDescription.localizedCaseInsensitiveContains("partially") &&
                 issue.element?.elementType == .button
-            let ignored = warning || partial
+            let systemSearch = issue.auditType == .textClipped && issue.element?.elementType == .searchField
+            let ignored = warning || partial || systemSearch
             let tag = ignored ? " (not an error)" : ""
             print("AUDIT ISSUE\(tag): \(issue.compactDescription) — element: \(element)")
             return ignored
