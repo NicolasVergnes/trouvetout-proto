@@ -7,6 +7,11 @@
 set -euo pipefail
 DERIVED="${1:-$HOME/Library/Developer/Xcode/DerivedData}"
 NETWORK='^_(getaddrinfo|gethostbyname|connect|socket|nw_[a-z_]+|CFSocket[A-Za-z]*|CFStream[A-Za-z]*Socket[A-Za-z]*|CFNetwork[A-Za-z]*)$|NSURLSession|OBJC_CLASS_\$_NSURLConnection'
+# Accepted references (ADR-023, decision of the user, 1 Nov 2026): LiteRT-LM's iOS framework links socket calls
+# (most likely the model download of its Hugging Face tokenizer) that the app never reaches, since it reads the
+# bundled file; the dynamic test of lot 12 (blocking proxy, search with the model loaded) proves it. Any other
+# symbol, or any symbol in another library, still fails.
+ALLOWED_CLiteRTLM='_connect _getaddrinfo _socket'
 status=0
 found=0
 
@@ -27,6 +32,14 @@ while IFS= read -r framework; do
     esac
     checked=$((checked + 1))
     hits=$(nm -u "$binary" 2>/dev/null | awk '{print $NF}' | grep -E "$NETWORK" | sort -u || true)
+    allowed_var="ALLOWED_$name"
+    allowed="${!allowed_var:-}"
+    if [ -n "$allowed" ] && [ -n "$hits" ]; then
+      for symbol in $hits; do
+        case " $allowed " in *" $symbol "*) echo "ACCEPTED: $name $symbol (ADR-023)" ;; esac
+      done
+      hits=$(for symbol in $hits; do case " $allowed " in *" $symbol "*) ;; *) echo "$symbol" ;; esac; done)
+    fi
     if [ -n "$hits" ]; then
       echo "VIOLATION: $name ($(basename "$binary")) appelle des API réseau :"
       printf '  %s\n' $hits
