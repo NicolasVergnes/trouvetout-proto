@@ -138,6 +138,10 @@ final class AppContainer: ObservableObject {
 
     private func markReady(_ factory: SharedFactory) {
         if factory === shared {
+            // The lock state is known before any screen observes the store: nothing shows while it is unknown.
+            locked = (factory.appLock.locked.value as? KotlinBoolean)?.boolValue ?? true
+            lockEnabled = (factory.privacySettings.state.value as? PrivacyState)?.lockEnabled ?? true
+            sensitiveRevealed = false
             ready = true
             lockFlows.cancelAll()
             lockFlows.watch(factory.appLock.locked, scope: factory.uiScope) { [weak self] (value: KotlinBoolean) in

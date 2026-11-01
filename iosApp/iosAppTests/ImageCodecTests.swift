@@ -87,7 +87,7 @@ final class ImageCodecTests: XCTestCase {
         XCTAssertNil(exif?[kCGImagePropertyExifUserComment], "no EXIF comment")
         let orientation = properties[kCGImagePropertyOrientation] as? Int
         XCTAssertTrue(orientation == nil || orientation == 1, "no rotation left for a reader to apply")
-        XCTAssertFalse(String(decoding: encoded.data, as: UTF8.self).contains("secret note"))
+        XCTAssertNil(encoded.data.range(of: Data("secret note".utf8)), "the comment bytes are gone")
     }
 
     func testUndecodableInputGivesNil() {

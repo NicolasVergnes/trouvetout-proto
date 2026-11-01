@@ -55,6 +55,11 @@ class DatabaseEncryptionTest {
                         sql.startsWith("ATTACH") -> attached = sql.substringAfter("'").substringBefore("'")
                         sql.startsWith("PRAGMA enc.user_version") ->
                             versions[attached!!] = sql.substringAfter("= ").toLong()
+                        sql.startsWith("SELECT sqlcipher_export") -> {
+                            val rows = files.getValue(path).second
+                            files[attached!!] = cipherHeader to if (corruptCopy) rows.mapValues { it.value - 1 } else rows
+                            log += "export"
+                        }
                     }
                 }
 
@@ -69,12 +74,6 @@ class DatabaseEncryptionTest {
 
                 override fun texts(sql: String): List<String> = when {
                     sql.startsWith("SELECT name FROM sqlite_master") -> files.getValue(path).second.keys.sorted()
-                    sql.startsWith("SELECT sqlcipher_export") -> {
-                        val rows = files.getValue(path).second
-                        files[attached!!] = cipherHeader to if (corruptCopy) rows.mapValues { it.value - 1 } else rows
-                        log += "export"
-                        emptyList()
-                    }
                     else -> error(sql)
                 }
 

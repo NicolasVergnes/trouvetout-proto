@@ -237,4 +237,9 @@
         <item quantity="many">%d objets sensibles masqués : touchez pour les afficher</item>
         <item quantity="other">%d objets sensibles masqués : touchez pour les afficher</item>
     </plurals>
+    <string name="simple_store">Ranger</string>
+    <string name="simple_find">Retrouver</string>
+    <string name="settings_display_section">Affichage</string>
+    <string name="settings_simple_mode">Mode simplifié</string>
+    <string name="settings_simple_mode_hint">L\'accueil ne montre que deux grands boutons : ranger, retrouver. Les réglages restent en haut.</string>
 </resources>

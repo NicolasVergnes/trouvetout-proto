@@ -12,11 +12,16 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             navigation
-                .accessibilityHidden(container.locked == true)
-            if container.locked == true {
+                .accessibilityHidden(covered)
+            if covered {
                 LockView(onUnlock: container.unlock)
             }
         }
+    }
+
+    /// H3: an open store whose lock state is not « unlocked » stays covered (fail closed).
+    private var covered: Bool {
+        container.ready && container.locked != false
     }
 
     private var navigation: some View {
@@ -53,8 +58,10 @@ struct ContentView: View {
                         }
                         .accessibilityIdentifier("open_search")
                         NavigationLink("places_title", value: BrowseTarget.root)
+                            .accessibilityIdentifier("open_places")
                     }
                     NavigationLink("settings_title", value: SettingsRoute())
+                        .accessibilityIdentifier("open_settings")
                 }
             }
             .navigationTitle(Text(verbatim: "TrouveTout"))

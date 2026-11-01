@@ -101,6 +101,7 @@ fun CaptureRoute(
     val places by viewModel.places.collectAsStateWithLifecycle()
     val containers by viewModel.containers.collectAsStateWithLifecycle()
     val photoModel by viewModel.photoModel.collectAsStateWithLifecycle()
+    val simpleMode by app.uiPrefs.simpleMode.collectAsStateWithLifecycle()
     val mic = rememberMicActions(viewModel)
     LaunchedEffect(searchRequest) {
         searchRequest?.let {
@@ -147,6 +148,7 @@ fun CaptureRoute(
         places = places,
         containers = containers,
         photoModel = photoModel,
+        simpleMode = simpleMode,
     )
 }
 
@@ -184,6 +186,8 @@ fun CaptureScreen(
     places: List<Place> = emptyList(),
     containers: List<Container> = emptyList(),
     photoModel: PhotoModelState? = null,
+    /** I7: two large buttons and the field; no batch, no photo row, no list. */
+    simpleMode: Boolean = false,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -191,10 +195,12 @@ fun CaptureScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
-                    IconButton(onClick = callbacks.onOpenSearch, modifier = Modifier.testTag("open_search")) {
-                        Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_title))
+                    if (!simpleMode) {
+                        IconButton(onClick = callbacks.onOpenSearch, modifier = Modifier.testTag("open_search")) {
+                            Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_title))
+                        }
+                        TextButton(onClick = callbacks.onOpenPlaces) { Text(stringResource(R.string.places_title)) }
                     }
-                    TextButton(onClick = callbacks.onOpenPlaces) { Text(stringResource(R.string.places_title)) }
                     TextButton(onClick = callbacks.onOpenSettings) { Text(stringResource(R.string.settings_title)) }
                 },
             )
@@ -209,10 +215,17 @@ fun CaptureScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             val field = remember { FocusRequester() }
+            if (simpleMode) {
+                SimpleModeButtons(onStore = callbacks.mic.onMic, onFind = callbacks.onOpenSearch)
+                // « Ranger » without on-device speech: the explanation shows and the keyboard opens.
+                LaunchedEffect(state.voiceNotice) { if (state.voiceNotice != null) field.requestFocus() }
+            }
             CaptureField(state, callbacks, Modifier.focusRequester(field))
             VoiceStatus(state, callbacks.mic.onOpenAppSettings)
-            BatchRow(state, places, containers, callbacks)
-            CapturePhotoRow(state, photoModel, callbacks, onNameUsed = { field.requestFocus() })
+            if (!simpleMode) {
+                BatchRow(state, places, containers, callbacks)
+                CapturePhotoRow(state, photoModel, callbacks, onNameUsed = { field.requestFocus() })
+            }
             if (state.suggestions.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(state.suggestions, key = { it.id }) { candidate ->
@@ -231,7 +244,7 @@ fun CaptureScreen(
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
-            ItemList(items, callbacks)
+            if (!simpleMode) ItemList(items, callbacks)
         }
     }
     CaptureDialogs(state, callbacks)

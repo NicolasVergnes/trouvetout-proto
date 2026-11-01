@@ -99,15 +99,30 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.trouvetout.proto.tests
         GENERATE_INFOPLIST_FILE: "YES"
+  # I6 (lot 8): the Xcode accessibility audit on the main screens, through the real app.
+  iosAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: iosAppUITests
+    dependencies:
+      - target: iosApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.trouvetout.proto.uitests
+        GENERATE_INFOPLIST_FILE: "YES"
+        TEST_TARGET_NAME: iosApp
 schemes:
   iosApp:
     build:
       targets:
         iosApp: all
         iosAppTests: [test]
+        iosAppUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
         - iosAppTests
+        - iosAppUITests

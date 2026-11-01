@@ -177,11 +177,25 @@ class UiPrefs(
         get() = prefs.getBoolean(KEY_SHOW_HISTORY, false)
         set(value) = prefs.edit { putBoolean(KEY_SHOW_HISTORY, value) }
 
+    private val simpleModeState = MutableStateFlow(prefs.getBoolean(KEY_SIMPLE_MODE, false))
+
+    /** I7: the simplified home (two large buttons). */
+    val simpleMode: kotlinx.coroutines.flow.StateFlow<Boolean> get() = simpleModeState
+
+    fun setSimpleMode(value: Boolean) {
+        prefs.edit { putBoolean(KEY_SIMPLE_MODE, value) }
+        simpleModeState.value = value
+    }
+
     /** H6: display preferences go with the data. */
-    fun clear() = prefs.edit { clear() }
+    fun clear() {
+        prefs.edit { clear() }
+        simpleModeState.value = false
+    }
 
     private companion object {
         const val KEY_SHOW_HISTORY = "show_history"
+        const val KEY_SIMPLE_MODE = "simple_mode"
     }
 }
 

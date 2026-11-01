@@ -67,10 +67,10 @@ else
 fi
 APK=$(find "$ROOT/androidApp/build/outputs/apk/release" -name "*.apk" 2>/dev/null | head -1 || true)
 if [ -n "$APK" ]; then
-  # Repli 32 bits exclu (ADR-021) : seules arm64-v8a et x86_64 embarquent du code natif.
+  # ADR-021, ADR-023 : arm64-v8a et x86_64 (modèle et base), armeabi-v7a (base seule : recherche par mots-clés).
   ABIS=$(unzip -Z1 "$APK" 'lib/*' 2>/dev/null | cut -d/ -f2 | sort -u || true)
   for abi in $ABIS; do
-    case "$abi" in arm64-v8a|x86_64) ;; *) echo "VIOLATION: ABI '$abi' dans l'APK de la release"; status=1 ;; esac
+    case "$abi" in arm64-v8a|armeabi-v7a|x86_64) ;; *) echo "VIOLATION: ABI '$abi' dans l'APK de la release"; status=1 ;; esac
   done
 else
   echo "INFO: APK de la release absent"

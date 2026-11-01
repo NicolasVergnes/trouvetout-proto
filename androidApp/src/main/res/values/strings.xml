@@ -236,4 +236,9 @@
         <item quantity="one">%d sensitive object hidden: tap to show it</item>
         <item quantity="other">%d sensitive objects hidden: tap to show them</item>
     </plurals>
+    <string name="simple_store">Put away</string>
+    <string name="simple_find">Find</string>
+    <string name="settings_display_section">Display</string>
+    <string name="settings_simple_mode">Simplified mode</string>
+    <string name="settings_simple_mode_hint">The home screen shows two large buttons only: put something away, find it. The settings stay at the top.</string>
 </resources>

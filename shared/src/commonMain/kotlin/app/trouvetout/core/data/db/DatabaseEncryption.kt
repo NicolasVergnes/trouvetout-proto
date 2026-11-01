@@ -29,6 +29,7 @@ public class EncryptionCheckException(
 
 /** One raw SQLCipher connection, without schema handling, for the migration. */
 public interface RawConnection {
+    /** Runs [sql] to completion on this very connection (rows, if any, are dropped). */
     public fun exec(sql: String)
 
     public fun long(sql: String): Long
@@ -116,7 +117,8 @@ public object DatabaseEncryption {
             version = plain.long("PRAGMA user_version")
             expected = counts(plain)
             plain.exec("ATTACH DATABASE '${temp.replace("'", "''")}' AS enc KEY \"$literal\"")
-            plain.texts("SELECT sqlcipher_export('enc')")
+            // On the same connection as the ATTACH: Android's pool may run a query on another connection.
+            plain.exec("SELECT sqlcipher_export('enc')")
             plain.exec("PRAGMA enc.user_version = $version")
             plain.exec("DETACH DATABASE enc")
         } finally {

@@ -58,6 +58,7 @@ fun SettingsRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val photoModel by viewModel.photoModel.collectAsStateWithLifecycle()
     val privacy by viewModel.privacy.collectAsStateWithLifecycle()
+    val simpleMode by app.uiPrefs.simpleMode.collectAsStateWithLifecycle()
     val ownerCheck = rememberOwnerCheck()
     val promptTitle = stringResource(R.string.lock_prompt_title)
     val picker =
@@ -83,6 +84,8 @@ fun SettingsRoute(
         onDismissMessage = viewModel::dismissMessage,
         modifier = modifier,
         photo = PhotoSettings(photoModel, viewModel::setForceTextOnly, viewModel::setPhotoSearch),
+        simpleMode = simpleMode,
+        onSimpleMode = app.uiPrefs::setSimpleMode,
         privacy =
             PrivacySettingsUi(
                 state = privacy,
@@ -106,6 +109,8 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     photo: PhotoSettings = PhotoSettings(null, {}, {}),
     privacy: PrivacySettingsUi = PrivacySettingsUi(),
+    simpleMode: Boolean = false,
+    onSimpleMode: (Boolean) -> Unit = {},
 ) {
     var confirmWipe by remember { mutableStateOf(false) }
     Scaffold(
@@ -154,6 +159,13 @@ fun SettingsScreen(
                 val busyLabel = stringResource(R.string.settings_busy)
                 CircularProgressIndicator(Modifier.semantics { contentDescription = busyLabel })
             }
+            Text(stringResource(R.string.settings_display_section), style = MaterialTheme.typography.titleMedium)
+            SwitchRow(
+                label = stringResource(R.string.settings_simple_mode),
+                hint = stringResource(R.string.settings_simple_mode_hint),
+                checked = simpleMode,
+                onChange = onSimpleMode,
+            )
             PrivacySection(privacy)
             // Lot 6: what runs the search, and the licences the bundled model and runtime require (Apache 2.0).
             Text(stringResource(R.string.settings_search_section), style = MaterialTheme.typography.titleMedium)
