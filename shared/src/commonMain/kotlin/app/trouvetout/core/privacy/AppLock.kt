@@ -28,7 +28,7 @@ public class AppLock internal constructor(
     private val revealedFlow = MutableStateFlow(false)
     private var leftAt: Pair<Instant, TimeMark>? = null
     private var returnExpected = false
-    private var authenticationMark: TimeMark? = null
+    private var authenticationMark: Pair<Instant, TimeMark>? = null
     private var inFront = true
 
     init {
@@ -64,7 +64,7 @@ public class AppLock internal constructor(
      * [AUTHENTICATION_WINDOW] (a prompt that never answers cannot disable the lock).
      */
     public fun authenticationStarted() {
-        authenticationMark = timeSource.markNow()
+        authenticationMark = clock.now() to timeSource.markNow()
     }
 
     /**
@@ -94,8 +94,15 @@ public class AppLock internal constructor(
         if (!authenticating) decideReturn()
     }
 
+    /** Closed after the window on either clock (the monotonic one stops in deep sleep), or by a clock set back. */
     private val authenticating: Boolean
-        get() = authenticationMark?.let { it.elapsedNow() < AUTHENTICATION_WINDOW } == true
+        get() {
+            val (wallStart, monotonicStart) = authenticationMark ?: return false
+            val wall = clock.now() - wallStart
+            return wall >= Duration.ZERO &&
+                wall < AUTHENTICATION_WINDOW &&
+                monotonicStart.elapsedNow() < AUTHENTICATION_WINDOW
+        }
 
     private fun decideReturn() {
         val expected = returnExpected

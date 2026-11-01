@@ -173,6 +173,13 @@ class AppLockTest {
         monotonic += 121.seconds
         lock.foregrounded()
         assertTrue(lock.locked.value, "the window closes by itself")
+
+        lock.unlocked()
+        lock.authenticationStarted() // the phone sleeps with the prompt shown: only the wall clock moves
+        lock.backgrounded()
+        clock.millis += 121_000
+        lock.foregrounded()
+        assertTrue(lock.locked.value, "deep sleep does not keep the window open")
     }
 
     @Test
