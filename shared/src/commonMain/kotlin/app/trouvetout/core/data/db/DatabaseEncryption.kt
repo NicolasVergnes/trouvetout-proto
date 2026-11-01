@@ -62,9 +62,9 @@ public interface EncryptionSupport {
 /**
  * Turns the database file into an SQLCipher one, once, before the driver opens it (H2, ADR-023):
  * - no file: nothing to do, the driver creates an encrypted database;
- * - a plain file (lots 1 to 7): copied into `<file>.enc` by `sqlcipher_export`, the copy is reopened with the key
- *   and compared (user version, every table's row count), then renamed over the plain file; any failure before
- *   the rename leaves the plain file as it was, and the next launch starts again;
+ * - a plain file (lots 1 to 7): copied into `<file>.enc` by `sqlcipher_export`, the copy is reopened with the key,
+ *   given the schema version and compared (every table's row count), then renamed over the plain file; any failure
+ *   before the rename leaves the plain file as it was, and the next launch starts again;
  * - an encrypted file without a key: [DatabaseKeyLostException], nothing is touched.
  */
 public object DatabaseEncryption {
@@ -116,16 +116,16 @@ public object DatabaseEncryption {
             plain.exec("PRAGMA wal_checkpoint(TRUNCATE)")
             version = plain.long("PRAGMA user_version")
             expected = counts(plain)
+            // The two statements that need the attached copy run back to back; closing the connection detaches it.
+            // Anything else is done on the copy itself: Android's pool does not promise one connection per call.
             plain.exec("ATTACH DATABASE '${temp.replace("'", "''")}' AS enc KEY \"$literal\"")
-            // On the same connection as the ATTACH: Android's pool may run a query on another connection.
             plain.exec("SELECT sqlcipher_export('enc')")
-            plain.exec("PRAGMA enc.user_version = $version")
-            plain.exec("DETACH DATABASE enc")
         } finally {
             plain.close()
         }
         val copy = support.open(temp, literal)
         try {
+            copy.exec("PRAGMA user_version = $version")
             if (copy.long("PRAGMA user_version") != version) throw EncryptionCheckException("version")
             if (counts(copy) != expected) throw EncryptionCheckException("rows")
         } finally {

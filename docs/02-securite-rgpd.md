@@ -35,8 +35,9 @@ Objectif : que la fiche « App Privacy » (Apple) et « Data safety » (Google) 
 - Base dans `noBackupFilesDir/db/` (Android, `Context.getNoBackupFilesDir()` : exclu d'Auto Backup et du transfert appareil-à-appareil ; jamais `filesDir/`) et `Application Support/<bundle>/` avec `isExcludedFromBackup = true` (iOS). Photos idem. En défense en profondeur, le manifeste déclare `allowBackup="false"` **et** des règles `dataExtractionRules` / `fullBackupContent` qui excluent tous les domaines.
 - Les exceptions levées par `shared` ne portent que des identifiants ou des compteurs dans leur message : un `Throwable.message` peut finir dans un log de debug ou un `LocalizedError` affiché par l'OS.
 - Aucune donnée métier dans les logs. Les logs de debug sont désactivés en release (`BuildConfig.DEBUG`, `#if DEBUG`). Pas de `Log.d(…)` contenant un nom d'objet ou de lieu, même en debug : utiliser des identifiants.
-- Clés : Android Keystore (AES-256-GCM, `setUserAuthenticationRequired(false)` pour la clé de base, StrongBox si disponible) ; iOS Keychain `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, `kSecAttrSynchronizable = false`.
-- Suppression totale (H6) : fermer la base, supprimer les fichiers, supprimer les clés, effacer `meta` et les préférences, annuler les notifications programmées, puis redémarrer l'état initial.
+- Base chiffrée (H2, lot 8, ADR-023) : SQLCipher, clé brute de 256 bits aléatoire ; une base en clair d'un lot précédent est chiffrée une fois, vérifiée, puis remplacée ; chaque ouverture exige `PRAGMA cipher_version` (jamais le SQLite du système à la place). Les photos ne sont pas chiffrées par l'app : conteneur privé et chiffrement du système.
+- Clés : Android Keystore (AES-256-GCM, `setUserAuthenticationRequired(false)` pour la clé de base, StrongBox si disponible) qui enveloppe la clé de la base (`no_backup/keys/db.key`) ; iOS Keychain `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, `kSecAttrSynchronizable = false`. Une base chiffrée sans sa clé n'est jamais remplacée : l'app l'explique et propose l'effacement total.
+- Suppression totale (H6) : fermer la base, supprimer les fichiers, supprimer les clés (Keystore et `keys/`, élément Keychain), effacer `meta` et les préférences, vider les caches (`cacheDir` Android, `Caches/litertlm` iOS), annuler les notifications programmées, puis redémarrer l'état initial.
 
 ### Entrées
 - Le parseur traite du texte libre : pas d'injection possible côté SQL (requêtes paramétrées SQLDelight uniquement ; FTS5 : échapper les guillemets et opérateurs de la requête utilisateur).
@@ -45,8 +46,9 @@ Objectif : que la fiche « App Privacy » (Apple) et « Data safety » (Google) 
 - Photos et modèle (lot 7, ADR-022) : le modèle reçoit un JPEG ré-encodé par le codec de la plateforme (orientation appliquée, sans métadonnées EXIF/GPS) ; les vecteurs des photos sont un cache local recalculable (table `embedding`), jamais exporté, effacé par la suppression totale ; la photo d'une recherche par photo et la photo en attente d'une capture ne sont jamais conservées : en mémoire seulement, sauf le fichier temporaire de l'application Appareil photo d'Android (`cacheDir/camera`, privé, effacé dès sa lecture, purgé au démarrage et par la suppression totale) ; seule la photo attachée à un objet est stockée, comme toute photo ; les vecteurs d'une photo détachée ou purgée sont effacés au passage d'indexation suivant, même quand les photos sont désactivées.
 
 ### UI
-- iOS : `UIApplication.willResignActive` → vue de protection (flou) si H3 activé ; Android : `FLAG_SECURE` si H3 activé.
-- Les objets `sensitive` n'apparaissent ni dans les widgets, ni dans les notifications, ni dans les suggestions de requête (C12), ni dans l'index système (G3, P3).
+- Verrouillage (H3, optionnel) : authentification du propriétaire du téléphone (biométrie ou code, `BiometricPrompt` du système / `LAContext`), aucun mot de passe propre à l'app ; contenu couvert tant que l'état n'est pas « déverrouillé » ; délai immédiat, 1 min ou 5 min, mesuré par l'horloge murale et une horloge monotone (une horloge reculée verrouille). Verrou actif : iOS → vue de protection dès que la scène n'est plus active ; Android → `FLAG_SECURE` sur l'accueil et la capture rapide.
+- Les objets `sensitive` (H4) n'apparaissent ni dans les widgets, ni dans les notifications, ni dans les suggestions (C12, étiquettes), ni dans la liste d'accueil, ni en miniature, ni dans l'index système (G3, P3) ; dans un lieu ou un contenant, une ligne « N objets sensibles masqués » les montre sur demande ; la recherche les trouve ; verrou actif, les afficher demande l'authentification, valable jusqu'au passage en arrière-plan.
+- Clavier : réglage « empêcher le clavier d'apprendre ce que je tape » (Android, `IME_FLAG_NO_PERSONALIZED_LEARNING` sur tous les champs) ; iOS n'offre pas ce levier, le réglage le dit.
 
 ### Dépendances et chaîne de build
 - Versions épinglées (`gradle/libs.versions.toml`, Swift Package `Package.resolved`), vérification des sommes des packs de modèles, pas de scripts de build qui téléchargent du code à la volée. Seule exception, des données et non du code : le fichier du modèle d'embeddings, téléchargé au build depuis une révision épinglée et refusé si son SHA-256 diffère de `models/manifest.json` (ADR-021).
@@ -55,14 +57,16 @@ Objectif : que la fiche « App Privacy » (Apple) et « Data safety » (Google) 
 
 ## 4. Liste de contrôle avant chaque release
 
-- [ ] `tools/check-network.sh` : zéro requête en usage normal.
-- [ ] `tools/check-deps.sh` : aucune dépendance interdite ; permissions Android = micro, caméra, notifications ; jamais `INTERNET` (vérifier aussi le manifeste fusionné de la release, une bibliothèque pourrait l'ajouter).
-- [ ] Fiches App Privacy / Data safety : « aucune donnée collectée » ; politique de confidentialité en ligne (J7) à jour.
-- [ ] H6 testée : après suppression totale, `ls filesDir` vide, Keystore/Keychain vides, notifications annulées.
-- [ ] Export → réinstallation → import : identique (test automatisé, N9).
-- [ ] Objets sensibles absents des widgets/notifications (test UI).
-- [ ] Aucun log métier en release (grep `Log.|print(|NSLog` sur les chemins métier).
-- [ ] Revue `/security-review` de Claude Code sur la branche, et passage de l'agent `security-reviewer` du projet.
+État au lot 8 : chaque point vérifiable sans magasin est automatisé en CI ; les fiches des magasins et la page J7 arrivent au lot 12.
+
+- [x] `tools/check-network.sh` : zéro requête en usage normal (vérification statique en CI ; le test avec proxy bloquant arrive avec les parcours dynamiques du lot 12). Bibliothèques natives iOS : `tools/check-native-network.sh` (aucun symbole réseau dans LiteRT-LM et SQLCipher).
+- [x] `tools/check-deps.sh` : aucune dépendance interdite ; permissions Android = micro et biométrie (caméra par l'application Appareil photo, notifications au lot 9) ; jamais `INTERNET`, **manifeste fusionné de la release compris** ; ABI `arm64-v8a`, `armeabi-v7a`, `x86_64` ; aucun travail en arrière-plan (N6).
+- [ ] Fiches App Privacy / Data safety : « aucune donnée collectée » ; politique de confidentialité en ligne (J7) à jour — lot 12 (avec la déclaration de chiffrement d'Apple, ADR-023).
+- [x] H6 testée : après suppression totale, dossier de données vide et clé de la base supprimée (`AndroidDriverFactoryTest`, `DatabaseEncryptionTests`, `SharedFactoryTest`) ; notifications : lot 9.
+- [x] Export → réinstallation → import : identique (test automatisé, N9, `ExportImportTest`).
+- [x] Objets sensibles absents des widgets et des notifications : par construction (widgets et tuile sans accès au noyau, vérifiés par `tools/check-network.sh` ; aucune notification avant le lot 9) ; absents de l'accueil, des suggestions et des miniatures (`ItemRepositoryTest`, `BrowseRepositoryTest`, `SearchServiceTest`).
+- [x] Aucun log métier en release : `tools/check-logs.sh` (aucun appel de journalisation hors du `Logger` injecté, `NoopLogger` en release) et règle SwiftLint `no_logging`.
+- [ ] Revue `/security-review` de Claude Code sur la branche, et passage de l'agent `security-reviewer` du projet — à chaque release.
 
 ## 5. Textes à fournir (J7)
 

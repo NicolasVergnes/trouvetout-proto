@@ -99,13 +99,19 @@ internal object AndroidEncryptionSupport : EncryptionSupport {
                 path,
                 keyLiteral?.encodeToByteArray() ?: ByteArray(0),
                 null,
-                SQLiteDatabase.OPEN_READWRITE,
+                // CREATE: an attached database inherits the flags, and the ATTACH must create the encrypted copy.
+                SQLiteDatabase.OPEN_READWRITE or SQLiteDatabase.CREATE_IF_NECESSARY,
                 null,
                 null,
             )
+        // One connection for every statement: with the framework's compatibility WAL the pool would run a SELECT
+        // (the export) on a second connection that never saw the ATTACH.
+        db.disableWriteAheadLogging()
         return object : RawConnection {
             override fun exec(sql: String) {
-                db.rawExecSQL(sql)
+                // ATTACH goes through execSQL, which the framework handles apart (one connection from then on, the
+                // attachment kept on it); rawExecSQL would run it on a connection the next statements never see.
+                if (sql.startsWith("ATTACH")) db.execSQL(sql) else db.rawExecSQL(sql)
             }
 
             override fun long(sql: String): Long = db.rawQuery(sql, null).use { cursor ->

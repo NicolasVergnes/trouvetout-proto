@@ -113,6 +113,7 @@ final class SettingsViewModel: ObservableObject {
             defer {
                 // Whatever happened, the spent factory is replaced, the preferences and the stale share link dropped.
                 UiPrefs.clear()
+                AppDirectories.clearCaches()
                 container.recreateShared()
                 exportURL = nil
             }

@@ -204,6 +204,7 @@ final class AppContainer: ObservableObject {
         Task {
             _ = try? await spent.wipeAllData()
             UiPrefs.clear()
+            AppDirectories.clearCaches()
             recreateShared()
         }
     }

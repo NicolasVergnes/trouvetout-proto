@@ -38,14 +38,13 @@ class DatabaseEncryptionTest {
         val log = ArrayList<String>()
         var corruptCopy = false
         val openKeys = ArrayList<String?>()
+        val versions = HashMap<String, Long>()
 
         override fun open(
             path: String,
             keyLiteral: String?,
         ): RawConnection {
             openKeys += keyLiteral
-            val versions = HashMap<String, Long>()
-            versions[path] = 2
             return object : RawConnection {
                 var attached: String? = null
 
@@ -53,18 +52,19 @@ class DatabaseEncryptionTest {
                     log += sql.substringBefore(" KEY")
                     when {
                         sql.startsWith("ATTACH") -> attached = sql.substringAfter("'").substringBefore("'")
-                        sql.startsWith("PRAGMA enc.user_version") ->
-                            versions[attached!!] = sql.substringAfter("= ").toLong()
+                        sql.startsWith("PRAGMA user_version =") -> versions[path] = sql.substringAfter("= ").toLong()
                         sql.startsWith("SELECT sqlcipher_export") -> {
                             val rows = files.getValue(path).second
-                            files[attached!!] = cipherHeader to if (corruptCopy) rows.mapValues { it.value - 1 } else rows
+                            val copied = if (corruptCopy) rows.mapValues { it.value - 1 } else rows
+                            files[attached!!] = cipherHeader to copied
+                            versions[attached!!] = 0 // the export does not carry the user version
                             log += "export"
                         }
                     }
                 }
 
                 override fun long(sql: String): Long = when {
-                    sql == "PRAGMA user_version" -> if (path.endsWith(".enc")) (versions[path] ?: 2) else 2
+                    sql == "PRAGMA user_version" -> versions[path] ?: 2
                     sql.startsWith("SELECT COUNT(*)") -> {
                         val table = sql.substringAfter("FROM \"").substringBefore("\"")
                         files.getValue(path).second.getValue(table)
