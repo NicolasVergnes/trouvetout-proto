@@ -34,6 +34,10 @@ kotlin {
             isStatic = true
             binaryOption("bundleId", "app.trouvetout.proto.shared")
         }
+        // The core's own Kotlin/Native tests use an in-memory plain database: the system SQLite is enough there.
+        target.binaries.all {
+            if (this is org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable) linkerOpts("-lsqlite3")
+        }
     }
 
     // Default hierarchy plus a `jvmCommon` source set shared by the Android and JVM targets
@@ -77,6 +81,8 @@ kotlin {
         getByName("androidHostTest").dependsOn(getByName("jvmCommonTest"))
         androidMain.dependencies {
             implementation(libs.sqldelight.android.driver)
+            // SQLCipher (H2, ADR-023): the database is encrypted with a key wrapped by the Keystore.
+            implementation(libs.sqlcipher.android)
             // Dispatchers.Main for CoroutineDispatchers' default on Android.
             implementation(libs.kotlinx.coroutines.android)
             // EmbeddingGemma 2 runtime (ADR-021): arm64-v8a and x86_64 native code only.
@@ -92,6 +98,8 @@ kotlin {
 }
 
 sqldelight {
+    // The iOS app links SQLCipher (SQLCipher.swift package), never the system SQLite (ADR-023).
+    linkSqlite.set(false)
     databases {
         create("TrouveToutDb") {
             packageName.set("app.trouvetout.core.data.db")

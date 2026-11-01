@@ -2,29 +2,49 @@ package app.trouvetout.core.data.db
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import net.zetetic.database.sqlcipher.SQLiteDatabase
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import java.io.File
 
 /**
- * Framework SQLite driver. [absolutePath] must live under `noBackupFilesDir` (never the default databases
- * directory) so the journal stays out of system backups. WAL is enabled for concurrent readers (Flows) with
- * `synchronous=FULL`: the journal has no other copy, a power cut must not lose a committed capture.
+ * SQLCipher driver (H2, ADR-023). [absolutePath] must live under `noBackupFilesDir` (never the default databases
+ * directory) so the journal stays out of system backups. A plain database left by lots 1 to 7 is encrypted once
+ * before the open ([DatabaseEncryption]). WAL is enabled for concurrent readers (Flows) with `synchronous=FULL`:
+ * the journal has no other copy, a power cut must not lose a committed capture.
  */
 public class AndroidDriverFactory(
     context: Context,
     private val absolutePath: String,
+    private val keys: DatabaseKeyStore,
 ) : DriverFactory {
     private val appContext = context.applicationContext
 
     override fun create(): SqlDriver {
+        loadSqlCipher()
         File(absolutePath).parentFile?.mkdirs()
-        return AndroidSqliteDriver(
-            schema = TrouveToutDb.Schema,
-            context = appContext,
-            name = absolutePath,
-            callback = Callback(absolutePath),
-        )
+        val literal = DatabaseEncryption.prepare(absolutePath, keys, AndroidEncryptionSupport)
+        val driver =
+            AndroidSqliteDriver(
+                schema = TrouveToutDb.Schema,
+                context = appContext,
+                name = absolutePath,
+                factory = SupportOpenHelperFactory(literal.encodeToByteArray()),
+                callback = Callback(absolutePath),
+            )
+        try {
+            DatabaseEncryption.requireCipher(
+                driver.executeQuery(null, "PRAGMA cipher_version", { cursor ->
+                    QueryResult.Value(if (cursor.next().value) cursor.getString(0) else null)
+                }, 0).value,
+            )
+        } catch (failure: CipherMissingException) {
+            driver.close()
+            throw failure
+        }
+        return driver
     }
 
     private class Callback(
@@ -54,4 +74,81 @@ public class AndroidDriverFactory(
             }
         }
     }
+
+    private companion object {
+        @Volatile
+        private var loaded = false
+
+        fun loadSqlCipher() {
+            if (!loaded) {
+                System.loadLibrary("sqlcipher")
+                loaded = true
+            }
+        }
+    }
+}
+
+/** Raw SQLCipher connections and plain file operations for the migration of a plain database. */
+internal object AndroidEncryptionSupport : EncryptionSupport {
+    override fun open(
+        path: String,
+        keyLiteral: String?,
+    ): RawConnection {
+        val db =
+            SQLiteDatabase.openDatabase(
+                path,
+                keyLiteral?.encodeToByteArray() ?: ByteArray(0),
+                null,
+                SQLiteDatabase.OPEN_READWRITE,
+                null,
+                null,
+            )
+        return object : RawConnection {
+            override fun exec(sql: String) {
+                db.rawExecSQL(sql)
+            }
+
+            override fun long(sql: String): Long = db.rawQuery(sql, null).use { cursor ->
+                check(cursor.moveToFirst()) { "no row" }
+                cursor.getLong(0)
+            }
+
+            override fun texts(sql: String): List<String> = db.rawQuery(sql, null).use { cursor ->
+                buildList { while (cursor.moveToNext()) add(cursor.getString(0) ?: "") }
+            }
+
+            override fun close() {
+                db.close()
+            }
+        }
+    }
+
+    override fun header(path: String): ByteArray? {
+        val file = File(path)
+        if (!file.isFile) return null
+        return file.inputStream().use { input ->
+            val buffer = ByteArray(HEADER_BYTES)
+            var read = 0
+            while (read < HEADER_BYTES) {
+                val n = input.read(buffer, read, HEADER_BYTES - read)
+                if (n < 0) break
+                read += n
+            }
+            buffer.copyOf(read)
+        }
+    }
+
+    override fun delete(path: String) {
+        File(path).delete()
+    }
+
+    override fun replace(
+        from: String,
+        to: String,
+    ) {
+        // rename(2): atomic, replaces the destination on the same file system.
+        check(File(from).renameTo(File(to))) { "rename failed" }
+    }
+
+    private const val HEADER_BYTES = 16
 }

@@ -17,6 +17,7 @@ final class CaptureBridgeTests: XCTestCase {
             deviceInfo: IosDeviceInfo(),
             driverFactory: IosDriverFactory(
                 directory: directory.appendingPathComponent("db").path,
+                keys: MemoryKeychainItem.keys(),
                 fileName: "test.db"
             ),
             imageCodec: UIImageCodec(),

@@ -4,21 +4,30 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 /**
  * When the app must ask for the device owner's authentication (H3), and whether sensitive items may be shown
  * (H4). Pure state, one per process: the hosts report the app going to the background and coming back, run the
  * system authentication (biometrics with the device code as fallback) and report its success.
+ *
+ * The time away is the longer of the wall clock and a monotonic clock: the monotonic clock stops in deep sleep
+ * on both platforms, the wall clock can be set back by whoever holds the unlocked phone; a wall clock that went
+ * backwards locks at once.
  */
 public class AppLock internal constructor(
     private val settings: PrivacySettings,
     private val clock: Clock,
+    private val timeSource: TimeSource = TimeSource.Monotonic,
 ) {
     private val lockedFlow = MutableStateFlow(settings.state.value.lockEnabled)
     private val revealedFlow = MutableStateFlow(false)
-    private var leftAt: Instant? = null
+    private var leftAt: Pair<Instant, TimeMark>? = null
+    private var returnExpected = false
 
     init {
         settings.onLockChanged = { enabled ->
@@ -37,18 +46,33 @@ public class AppLock internal constructor(
     public val revealNeedsAuthentication: Boolean
         get() = settings.state.value.lockEnabled && !revealedFlow.value
 
+    /**
+     * The app is about to open a system screen that sends it to the background (Android's camera app, the share
+     * sheet, a file picker): coming back from it waits at least [EXPECTED_RETURN_GRACE] before locking, so that a
+     * photo taken with the « immediately » delay does not ask for the device owner every time.
+     */
+    public fun expectReturn() {
+        returnExpected = true
+    }
+
     /** The app left the foreground: the clock of the delay starts, sensitive items are hidden again. */
     public fun backgrounded() {
-        leftAt = clock.now()
+        leftAt = clock.now() to timeSource.markNow()
         revealedFlow.value = false
     }
 
     /** The app came back: it locks when the lock is on and the delay has passed. */
     public fun foregrounded() {
-        val left = leftAt ?: return
+        val expected = returnExpected
+        returnExpected = false
+        val (wallLeft, monotonicLeft) = leftAt ?: return
         leftAt = null
         val state = settings.state.value
-        if (state.lockEnabled && clock.now() - left >= state.lockDelay.seconds.seconds) {
+        if (!state.lockEnabled) return
+        val wall = clock.now() - wallLeft
+        val away = maxOf(wall, monotonicLeft.elapsedNow())
+        val delay = state.lockDelay.seconds.seconds.let { if (expected) maxOf(it, EXPECTED_RETURN_GRACE) else it }
+        if (wall < Duration.ZERO || away >= delay) {
             lockedFlow.value = true
         }
     }
@@ -61,5 +85,10 @@ public class AppLock internal constructor(
     /** The user asked to see the sensitive items (and authenticated when [revealNeedsAuthentication]). */
     public fun revealed() {
         revealedFlow.value = true
+    }
+
+    public companion object {
+        /** The longest stay in the camera app or the share sheet that does not lock (« immediately » delay). */
+        public val EXPECTED_RETURN_GRACE: Duration = 60.seconds
     }
 }

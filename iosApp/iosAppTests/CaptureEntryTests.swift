@@ -56,7 +56,11 @@ final class CaptureEntryTests: XCTestCase {
         let factory = SharedFactory(config: SharedConfig(
             dataDirectory: directory.path,
             deviceInfo: IosDeviceInfo(),
-            driverFactory: IosDriverFactory(directory: directory.appendingPathComponent("db").path, fileName: "t.db"),
+            driverFactory: IosDriverFactory(
+                directory: directory.appendingPathComponent("db").path,
+                keys: MemoryKeychainItem.keys(),
+                fileName: "t.db"
+            ),
             imageCodec: UIImageCodec(),
             logger: NoopLogger.shared,
             storageReady: true,

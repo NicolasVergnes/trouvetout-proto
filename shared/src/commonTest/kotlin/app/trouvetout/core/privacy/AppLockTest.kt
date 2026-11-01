@@ -8,10 +8,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TestTimeSource
 
 class AppLockTest {
     private val db = openTestDatabase()
     private val clock = TickingClock()
+    private val monotonic = TestTimeSource()
 
     private fun settings() = PrivacySettings(db, Dispatchers.Unconfined)
 
@@ -27,7 +30,7 @@ class AppLockTest {
 
     @Test
     fun without_the_lock_nothing_is_ever_locked() = runTest {
-        val lock = AppLock(settings(), clock)
+        val lock = AppLock(settings(), clock, monotonic)
         assertFalse(lock.locked.value)
         lock.backgrounded()
         clock.millis += 3_600_000
@@ -40,7 +43,7 @@ class AppLockTest {
     fun a_launch_with_the_lock_on_starts_locked_and_unlocking_opens_it() = runTest {
         val settings = settings()
         settings.setLockEnabled(true)
-        val lock = AppLock(settings, clock)
+        val lock = AppLock(settings, clock, monotonic)
         assertTrue(lock.locked.value, "a new process starts locked")
         lock.unlocked()
         assertFalse(lock.locked.value)
@@ -51,7 +54,7 @@ class AppLockTest {
         val settings = settings()
         settings.setLockEnabled(true)
         settings.setLockDelay(LockDelay.ONE_MINUTE)
-        val lock = AppLock(settings, clock)
+        val lock = AppLock(settings, clock, monotonic)
         lock.unlocked()
 
         lock.backgrounded()
@@ -72,10 +75,62 @@ class AppLockTest {
     }
 
     @Test
+    fun a_clock_set_back_or_a_deep_sleep_cannot_shorten_the_time_away() = runTest {
+        val settings = settings()
+        settings.setLockEnabled(true)
+        settings.setLockDelay(LockDelay.FIVE_MINUTES)
+        val lock = AppLock(settings, clock, monotonic)
+        lock.unlocked()
+
+        lock.backgrounded()
+        monotonic += 400.seconds
+        clock.millis -= 1_000
+        lock.foregrounded()
+        assertTrue(lock.locked.value, "a wall clock set back locks")
+
+        lock.unlocked()
+        lock.backgrounded()
+        clock.millis += 600_000 // deep sleep: the monotonic clock did not move
+        lock.foregrounded()
+        assertTrue(lock.locked.value, "the wall clock counts the sleep")
+
+        lock.unlocked()
+        lock.backgrounded()
+        monotonic += 301.seconds
+        lock.foregrounded()
+        assertTrue(lock.locked.value, "the monotonic clock counts when the wall clock lags")
+    }
+
+    @Test
+    fun a_photo_taken_in_the_camera_app_does_not_lock_but_a_long_stay_does() = runTest {
+        val settings = settings()
+        settings.setLockEnabled(true)
+        val lock = AppLock(settings, clock, monotonic)
+        lock.unlocked()
+
+        lock.expectReturn()
+        lock.backgrounded()
+        clock.millis += 20_000
+        lock.foregrounded()
+        assertFalse(lock.locked.value, "back from the camera app")
+
+        lock.backgrounded()
+        lock.foregrounded()
+        assertTrue(lock.locked.value, "the grace is for one return only")
+
+        lock.unlocked()
+        lock.expectReturn()
+        lock.backgrounded()
+        clock.millis += 61_000
+        lock.foregrounded()
+        assertTrue(lock.locked.value, "a long stay elsewhere locks")
+    }
+
+    @Test
     fun a_foreground_without_a_background_does_not_lock() = runTest {
         val settings = settings()
         settings.setLockEnabled(true)
-        val lock = AppLock(settings, clock)
+        val lock = AppLock(settings, clock, monotonic)
         lock.unlocked()
         lock.foregrounded()
         assertFalse(lock.locked.value, "a second activity start is not a return")
@@ -84,7 +139,7 @@ class AppLockTest {
     @Test
     fun turning_the_lock_on_does_not_lock_the_user_out_and_off_unlocks() = runTest {
         val settings = settings()
-        val lock = AppLock(settings, clock)
+        val lock = AppLock(settings, clock, monotonic)
         settings.setLockEnabled(true)
         assertFalse(lock.locked.value)
         lock.backgrounded()
@@ -97,7 +152,7 @@ class AppLockTest {
     @Test
     fun sensitive_items_need_authentication_only_with_the_lock_until_the_app_leaves_H4() = runTest {
         val settings = settings()
-        val lock = AppLock(settings, clock)
+        val lock = AppLock(settings, clock, monotonic)
         assertFalse(lock.revealNeedsAuthentication)
         settings.setLockEnabled(true)
         lock.unlocked()

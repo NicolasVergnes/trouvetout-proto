@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
 /** How long the app may stay in the background before it locks again (H3). */
+@Suppress("MagicNumber") // the delays offered, in seconds
 public enum class LockDelay(
     public val seconds: Long,
 ) {

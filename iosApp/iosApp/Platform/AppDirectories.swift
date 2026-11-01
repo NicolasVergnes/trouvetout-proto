@@ -8,6 +8,8 @@ enum AppDirectories {
         case backupExclusionNotApplied
         /// The directory is fine but the core could not open its store (full disk, corrupt file).
         case storeUnavailable
+        /// The database is encrypted and its Keychain key is gone: only a total wipe opens the app again.
+        case keyLost
     }
 
     /// The data directory and, when the backup exclusion could not be created or verified, the reason.
