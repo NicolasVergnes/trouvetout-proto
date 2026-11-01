@@ -18,12 +18,25 @@ final class CaptureViewModel: ObservableObject {
     /// The explanation shown before the system prompts (H9).
     @Published private(set) var askMicPermission = false
     @Published private(set) var voiceNotice: VoiceNotice?
-    @Published private(set) var batch: BatchTarget?
+    /// Set by the batch extension (`CaptureViewModel+Batch.swift`).
+    @Published var batch: BatchTarget?
     /// Destinations of the « je range » picker.
     @Published private(set) var places: [Place_] = []
     @Published private(set) var containers: [Container_] = []
+    /// B8: the photo for the next sentence, and why one could not be used.
+    @Published var photo: CapturePhoto?
+    @Published var photoNotice: PhotoNotice?
+    /// What the photo side can do here (names need the text+vision model, ≥ 6 GB, ADR-022).
+    @Published private(set) var photoModel: PhotoModelState?
+    /// The bytes of `photo`, attached to the object once the sentence is recorded.
+    var photoData: Data?
+    var namingTask: Task<Void, Never>?
+    /// The proposed name last put in the field: a second tap replaces it instead of adding to it.
+    var usedName: String?
+    /// The photo the sentence being recorded attached, handed to its card.
+    var attachedPhoto: AttachedPhoto?
 
-    private let container: AppContainer
+    let container: AppContainer
     private let speech: SpeechListening
     private var cardToken = 0
     private let flows = FlowSubscriptions()
@@ -65,6 +78,9 @@ final class CaptureViewModel: ObservableObject {
         flows.watch(shared.containerRepository.observeActive(), scope: scope) { [weak self] (list: NSArray) in
             self?.containers = (list as? [Container_]) ?? []
         }
+        flows.watch(shared.modelSettings.state, scope: scope) { [weak self] (state: PhotoModelState) in
+            self?.photoModel = state
+        }
     }
 
     /// What the user types; programmatic changes to `input` go through `setInput` and never touch the search.
@@ -73,6 +89,7 @@ final class CaptureViewModel: ObservableObject {
         problem = nil
         searchQuery = nil
         voiceNotice = nil
+        photoNotice = nil
         suggestionTask?.cancel()
         guard let at = text.lastIndex(of: "@") else {
             suggestions = []
@@ -161,6 +178,12 @@ final class CaptureViewModel: ObservableObject {
         guard let card else { return }
         self.card = nil
         input = card.rawInput
+        // The photo was detached with the rest: it comes back with the sentence, to be attached again.
+        if let attached = card.photo {
+            photoData = attached.data
+            photo = attached.shown
+            photoNotice = nil
+        }
         revert(card)
     }
 
@@ -209,7 +232,8 @@ final class CaptureViewModel: ObservableObject {
             source: source
         )
         if let recorded = outcome as? CaptureOutcomeRecorded {
-            recordedOutcome(proposal, recorded)
+            let photoEvents = await attachPhoto(to: recorded)
+            recordedOutcome(proposal, recorded, photoEvents: photoEvents)
         } else if let refused = outcome as? CaptureOutcomeRefused {
             problem = refused.problem
         } else if let search = outcome as? CaptureOutcomeSearch {
@@ -218,12 +242,16 @@ final class CaptureViewModel: ObservableObject {
         }
     }
 
-    private func recordedOutcome(_ proposal: CaptureProposal, _ recorded: CaptureOutcomeRecorded) {
+    private func recordedOutcome(
+        _ proposal: CaptureProposal,
+        _ recorded: CaptureOutcomeRecorded,
+        photoEvents: [Event]
+    ) {
         let parse = proposal.parse
         input = ""
         suggestions = []
         // Nothing written (the object was already there): nothing to confirm or to undo.
-        guard !recorded.events.isEmpty else {
+        guard !recorded.events.isEmpty || !photoEvents.isEmpty else {
             card = nil
             return
         }
@@ -236,14 +264,16 @@ final class CaptureViewModel: ObservableObject {
             placeText: parse.place ?? resolved,
             person: parse.person,
             rawInput: parse.input,
-            events: recorded.events,
+            events: recorded.events + photoEvents,
             source: source,
-            token: cardToken
+            token: cardToken,
+            photo: attachedPhoto
         )
+        attachedPhoto = nil
     }
 
     /// The UI language at the time of the call.
-    private func uiLang() -> Lang {
+    func uiLang() -> Lang {
         Locale.current.language.languageCode?.identifier == "fr" ? .fr : .en
     }
 
@@ -316,23 +346,6 @@ extension CaptureViewModel {
             heardText = input
         }
         listening = false
-    }
-
-    func startBatch(_ ref: LocationRef) {
-        let label: String? =
-            if let place = ref as? LocationRefInPlace {
-                places.first { $0.id == place.placeId }?.name
-            } else if let box = ref as? LocationRefInContainer {
-                containers.first { $0.id == box.containerId }?.label
-            } else {
-                nil
-            }
-        guard let label else { return }
-        batch = BatchTarget(ref: ref, label: label)
-    }
-
-    func stopBatch() {
-        batch = nil
     }
 
     private func startListening() {

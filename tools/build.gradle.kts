@@ -6,7 +6,7 @@ kotlin {
     jvmToolchain(17)
 }
 
-/** The verified embedding model (ADR-021), for `evalSearch`. */
+/** The verified embedding models (ADR-021, ADR-022), for `evalSearch`, `evalPhotos` and `genLabels`. */
 val bundledModels by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
@@ -15,6 +15,7 @@ val bundledModels by configurations.creating {
 dependencies {
     implementation(project(":shared"))
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
     // JVM build of the runtime the apps embed: the same model file, prompts and normalisation (ADR-021).
     implementation(libs.litertlm.jvm)
     testImplementation(libs.kotlin.test)
@@ -46,8 +47,55 @@ tasks.register<JavaExec>("evalSearch") {
     val extra = providers.gradleProperty("evalArgs").orElse("")
     argumentProviders.add(
         CommandLineArgumentProvider {
-            val model = models.singleFile.resolve("models").listFiles().orEmpty().single { it.extension == "litertlm" }
+            val model = models.singleFile.resolve("models/embeddinggemma-2-text-270m.litertlm")
             listOf(corpusDir, reportsDir, model.absolutePath) + extra.get().split(' ').filter { it.isNotBlank() }
         },
     )
+}
+
+tasks.register<JavaExec>("genLabels") {
+    group = "models"
+    description = "Computes models/labels_fr_en.catalog, the label vectors bundled for photo naming (B8, lot 7)."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("app.trouvetout.tools.GenLabelsKt")
+    javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) })
+    inputs.files(bundledModels)
+    val models: FileCollection = bundledModels
+    val modelsDir = rootProject.file("models").absolutePath
+    // e.g. -PlabelTemplate=fr+en
+    val template = providers.gradleProperty("labelTemplate").orElse("")
+    argumentProviders.add(
+        CommandLineArgumentProvider {
+            listOf(modelsDir, models.singleFile.absolutePath) +
+                template.get().takeIf { it.isNotBlank() }?.let { listOf("--template", it) }.orEmpty()
+        },
+    )
+}
+
+tasks.register<JavaExec>("evalPhotos") {
+    group = "evaluation"
+    description = "Names the CC BY photos of corpus/photos-cc.jsonl and fails under the floors (B8, lot 7)."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("app.trouvetout.tools.EvalPhotosKt")
+    javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) })
+    inputs.files(bundledModels)
+    val models: FileCollection = bundledModels
+    val corpusDir = rootProject.file("corpus").absolutePath
+    val reportsDir = evalReportsDir.get().asFile.absolutePath
+    val modelsDir = rootProject.file("models").absolutePath
+    // Downloaded images live outside the sources (cached by CI), never committed.
+    val imageCache = rootProject.layout.buildDirectory.dir("eval-photos").get().asFile.absolutePath
+    // e.g. -PevalArgs="--templates" or -PevalArgs="--local D:/photos-maison"
+    val extra = providers.gradleProperty("evalArgs").orElse("")
+    argumentProviders.add(
+        CommandLineArgumentProvider {
+            listOf(corpusDir, reportsDir, modelsDir, models.singleFile.absolutePath, imageCache) +
+                extra.get().split(' ').filter { it.isNotBlank() }
+        },
+    )
+}
+
+tasks.test {
+    // LabelCatalogFreshnessTest reads models/ from the repository root.
+    systemProperty("trouvetout.root", rootProject.projectDir.absolutePath)
 }

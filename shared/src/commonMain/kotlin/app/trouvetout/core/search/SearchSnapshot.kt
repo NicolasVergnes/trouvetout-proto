@@ -9,6 +9,7 @@ import app.trouvetout.core.data.repository.ItemView
 import app.trouvetout.core.data.repository.LocationResolver
 import app.trouvetout.core.domain.model.LocationState
 import app.trouvetout.core.domain.model.LocationStatus
+import app.trouvetout.core.domain.model.PhotoOwnerType
 
 /** Identifies a state of the journal: any append (even an out-of-order import) changes it. */
 internal data class JournalVersion(
@@ -21,6 +22,8 @@ internal class SearchSnapshot(
     val version: JournalVersion,
     val views: List<ItemView>,
     val documents: List<SearchDocument>,
+    /** Photos attached to the active items (C10). */
+    val photos: List<ItemPhoto> = emptyList(),
 ) {
     val keyword: KeywordIndex = KeywordIndex(documents)
     val indexOf: Map<String, Int> = views.withIndex().associate { (i, view) -> view.item.id to i }
@@ -75,7 +78,13 @@ internal class SearchSnapshot(
                         rawInputs = rawInputs[view.item.id].orEmpty(),
                     )
                 }
-            SearchSnapshot(version, views, documents)
+            val active = items.mapTo(HashSet()) { it.id }
+            val photos =
+                db.photoQueries.selectAll().executeAsList()
+                    .filter { it.detached_at == null && it.owner_type == PhotoOwnerType.ITEM.name }
+                    .filter { it.owner_id in active }
+                    .map { ItemPhoto(it.id, it.owner_id, it.file_name, it.sha256) }
+            SearchSnapshot(version, views, documents, photos)
         }
     }
 }

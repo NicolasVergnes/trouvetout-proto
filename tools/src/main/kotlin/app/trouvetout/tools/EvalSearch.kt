@@ -231,8 +231,11 @@ private class CachingModel(
 
     override val modelId: String = "eval-" + file.nameWithoutExtension
     override val isSupported: Boolean = true
+    override val imageModelId: String? = null
 
-    override suspend fun load(): TextEmbedder {
+    override fun labelCatalog(): ByteArray? = null
+
+    override suspend fun load(withImages: Boolean): TextEmbedder {
         if (engine == null) {
             engine =
                 EmbeddingEngine(
@@ -254,7 +257,7 @@ private class CachingModel(
         ): List<FloatArray> = withContext(Dispatchers.Default) {
             val missing = texts.filter { (it to dim) !in cache && FILLER_MARK !in it }.distinct()
             if (missing.isNotEmpty()) {
-                if (engine == null) load()
+                if (engine == null) load(withImages = false)
                 val options = EmbeddingOptions(normalize = true, outputSize = dim)
                 val computed = checkNotNull(engine).computeEmbeddingBatch(
                     missing.map {

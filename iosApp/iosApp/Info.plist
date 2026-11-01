@@ -45,7 +45,7 @@
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Your sentence is recognised on this phone only, never by a server, then turned into an object and a place.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>To photograph an object or a place. Photos stay in the app, on this device: never in your photo library, never online.</string>
+	<string>To photograph an object or a place, or to find an object from a photo. Photos stay in the app, on this device: never in your photo library, never online.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

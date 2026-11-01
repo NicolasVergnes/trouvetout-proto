@@ -19,6 +19,7 @@ struct SearchView: View {
 
     var body: some View {
         List {
+            photoQuery
             modeBanner
             filters
             results
@@ -57,6 +58,38 @@ struct SearchView: View {
     private var shownSuggestions: [Suggestion] {
         let typed = viewModel.query.trimmingCharacters(in: .whitespaces)
         return viewModel.suggestions.filter { $0.text.caseInsensitiveCompare(typed) != .orderedSame }
+    }
+
+    /// C10: the photo asked about, with a way back to words; or the buttons to ask with a photo.
+    @ViewBuilder
+    private var photoQuery: some View {
+        if let photo = viewModel.photo {
+            HStack(spacing: 12) {
+                Image(uiImage: photo)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 56, height: 56)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .accessibilityHidden(true)
+                Text("search_photo_question").font(.callout)
+                Spacer(minLength: 0)
+                Button {
+                    viewModel.clearPhoto()
+                } label: {
+                    Image(systemName: "xmark.circle.fill").frame(minWidth: 44, minHeight: 44)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("search_photo_clear")
+            }
+        } else if viewModel.photoSearch {
+            AddPhotoButtons(enabled: true) { viewModel.search(byPhoto: $0) }
+        }
+        if viewModel.photoUnsupported {
+            Text("photo_unsupported").font(.callout).foregroundStyle(.red)
+        }
+        if viewModel.photoTooLarge {
+            Text("photo_too_large").font(.callout).foregroundStyle(.red)
+        }
     }
 
     /// Says when the search runs on keywords only (rule 7) or is still computing its vectors.
@@ -190,6 +223,9 @@ struct SearchView: View {
     }
 
     private func emptyText(_ result: SearchResult) -> String {
+        if result.byPhoto {
+            return NSLocalizedString("search_photo_empty", comment: "")
+        }
         let query = result.query.trimmingCharacters(in: .whitespaces)
         if query.isEmpty {
             return NSLocalizedString(result.filters.isEmpty ? "search_start" : "search_empty_filters", comment: "")

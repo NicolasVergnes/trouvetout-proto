@@ -1,5 +1,6 @@
 package app.trouvetout.core.search
 
+import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.data.db.TrouveToutDb
 import app.trouvetout.core.data.repository.ItemView
 import app.trouvetout.core.domain.model.LocationStatus
@@ -39,8 +40,13 @@ public class SearchService internal constructor(
     private val clock: Clock,
     private val dispatchers: CoroutineDispatchers,
     private val logger: Logger,
+    photoFiles: PhotoFiles? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + dispatchers.default)
+
+    /** Photo vectors and label catalog (B8, C10); absent without an image codec. */
+    private val photos: PhotoIndex? =
+        photoFiles?.let { PhotoIndex(db, runtime, tuning, it.codec, it.read, dispatchers, logger) }
 
     /** Guards [snapshot] and [semantic]. */
     private val lock = Mutex()
@@ -111,31 +117,75 @@ public class SearchService internal constructor(
         val semanticHits = Ranking.semanticCandidates(nearest, tuning)
         val semanticMean = nearest.map { it.second.toDouble() }.average().takeIf { !it.isNaN() } ?: 0.0
         val fused = Ranking.combine(keyword, semanticHits, tuning, semanticMean)
-        val opened = openedCounts()
-        val now = clock.now()
         val keywordSet = keyword.mapTo(HashSet()) { it.first }
         val semanticSet = semanticHits.mapTo(HashSet()) { it.first }
+        return finish(snap, fused, filters, limit, tuning) { id ->
+            when {
+                id in keywordSet && id in semanticSet -> MatchKind.BOTH
+                id in keywordSet -> MatchKind.KEYWORD
+                else -> MatchKind.SEMANTIC
+            }
+        }
+    }
+
+    /**
+     * B8: up to [limit] names for the object in [photo] (any image the platform decodes), in the user's language;
+     * empty when photos are not active on this device or nothing is close enough. The photo is not kept.
+     */
+    public suspend fun suggestNames(
+        photo: ByteArray,
+        lang: Lang,
+        limit: Int = DEFAULT_NAMES,
+    ): List<NameSuggestion> {
+        val index = photos ?: return emptyList()
+        val query = index.embedQuery(photo) ?: return emptyList()
+        return index.suggest(query, lang, limit)
+    }
+
+    /**
+     * C10: the items whose photos (image to image) or descriptions (image to text) look like [photo]. Empty when
+     * photos are not active. The photo of the question is never stored.
+     */
+    public suspend fun searchByPhoto(
+        photo: ByteArray,
+        filters: SearchFilters = SearchFilters(),
+        limit: Int = DEFAULT_LIMIT,
+    ): SearchResult {
+        val snap = fresh()
+        if (snap.version != indexedVersion) startIndexing(snap)
+        val index = photos
+        val query = index?.embedQuery(photo)
+        if (index == null || query == null) return SearchResult("", filters, emptyList(), null, byPhoto = true)
+        val allowed = allowedItems(snap, filters)
+        val byPhoto = index.nearestItems(query, allowed, tuning.semanticCandidates)
+        val byText = lock.withLock { semantic.nearest(query, tuning.semanticCandidates) { it in allowed } }
+        val fused = Ranking.combinePhoto(byPhoto, byText, tuning)
+        val hits = finish(snap, fused, filters, limit, tuning) { MatchKind.PHOTO }
+        return SearchResult("", filters, hits, hits.firstOrNull()?.view?.let { answerOf(it) }, byPhoto = true)
+    }
+
+    /** Recency, frequency and archive signals over fused scores; equal scores keep a stable order. */
+    private suspend fun finish(
+        snap: SearchSnapshot,
+        fused: Map<String, Double>,
+        filters: SearchFilters,
+        limit: Int,
+        tuning: SearchTuning,
+        kindOf: (String) -> MatchKind,
+    ): List<SearchHit> {
+        val opened = openedCounts()
+        val now = clock.now()
         val archivedRequested = filters.state == ItemStateFilter.ARCHIVED
         return fused.entries
             .map { (id, score) ->
                 val view = snap.views[snap.indexOf.getValue(id)]
                 view to Ranking.adjust(score, view, opened[id] ?: 0, now, tuning, archivedRequested)
             }.sortedWith(
-                // Equal scores: the most recently moved first, then a stable order.
                 compareByDescending<Pair<ItemView, Double>> { it.second }
                     .thenByDescending { it.first.location.since }
                     .thenBy { it.first.item.id },
             ).take(limit)
-            .map { (view, _) ->
-                val id = view.item.id
-                val kind =
-                    when {
-                        id in keywordSet && id in semanticSet -> MatchKind.BOTH
-                        id in keywordSet -> MatchKind.KEYWORD
-                        else -> MatchKind.SEMANTIC
-                    }
-                SearchHit(view, kind)
-            }
+            .map { (view, _) -> SearchHit(view, kindOf(view.item.id)) }
     }
 
     /** Filters without a query: pinned first, then the most recently moved. */
@@ -222,6 +272,15 @@ public class SearchService internal constructor(
         modeState.value = idleMode()
     }
 
+    /**
+     * The user switched between the text and the text+vision model: the model is freed and the next search runs the
+     * indexing again, so that the photos added meanwhile get their vectors.
+     */
+    internal suspend fun modelChanged() {
+        release()
+        indexLock.withLock { indexedVersion = null }
+    }
+
     /** Before the store closes ([app.trouvetout.core.di.SharedFactory.wipeAllData]): no write may still be running. */
     internal suspend fun shutdown() {
         indexLock.withLock { indexing?.cancelAndJoin() }
@@ -296,10 +355,12 @@ public class SearchService internal constructor(
         withContext(dispatchers.io) {
             db.transaction {
                 orphans.forEach { db.embeddingQueries.deleteOne(OWNER_ITEM, it, key) }
-                db.embeddingQueries.deleteOtherModels(key)
+                db.embeddingQueries.deleteOtherModelsOf(OWNER_ITEM, key)
             }
         }
         lock.withLock { semantic.retain(texts.keys) }
+        // Photos (B8, C10) after the texts, on the devices where the image model is active.
+        photos?.index(snap.photos) { done, total -> modeState.value = SearchMode.Indexing(done, total) }
         return true
     }
 
@@ -456,6 +517,7 @@ public class SearchService internal constructor(
         const val OWNER_ITEM = "item"
         const val DEFAULT_LIMIT = 20
         const val DEFAULT_SUGGESTIONS = 6
+        const val DEFAULT_NAMES = 3
         const val ITEM_WEIGHT = 1_000L
         const val BATCH = 8
         const val MAX_QUERY_CHARS = 200

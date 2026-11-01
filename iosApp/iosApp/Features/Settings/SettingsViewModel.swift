@@ -17,11 +17,34 @@ final class SettingsViewModel: ObservableObject {
     @Published var message: SettingsMessage?
     /// A fresh export to hand to the share sheet.
     @Published var exportURL: URL?
+    /// The photo side of the model (B8, C10, ADR-022): what this phone can do and the user's two settings.
+    @Published private(set) var photoModel: PhotoModelState?
 
     private let container: AppContainer
 
     init(container: AppContainer) {
         self.container = container
+    }
+
+    /// Reads the current photo settings (the core's state flow), when the screen appears and after a change.
+    func refreshPhotoModel() {
+        guard container.ready else { return }
+        photoModel = container.shared.modelSettings.state.value as? PhotoModelState
+    }
+
+    /// « Name objects from their photo » off = text model only: less memory, photos still attached.
+    func setNamePhotos(_ on: Bool) {
+        Task { [self] in
+            try? await container.shared.modelSettings.setForceTextOnly(value: !on)
+            refreshPhotoModel()
+        }
+    }
+
+    func setPhotoSearch(_ on: Bool) {
+        Task { [self] in
+            try? await container.shared.modelSettings.setPhotoSearch(value: on)
+            refreshPhotoModel()
+        }
     }
 
     func export() {

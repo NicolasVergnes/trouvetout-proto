@@ -5,43 +5,52 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 
-// Model files bundled with the apps (ADR-021): downloaded at build time from a pinned revision, verified
+// Model files bundled with the apps (ADR-021, ADR-022): downloaded at build time from a pinned revision, verified
 // against the SHA-256 published in manifest.json, never committed (CLAUDE.md rule 8).
 
-/** Downloads one model file unless a verified copy is already there; refuses a file whose checksum differs. */
-@DisableCachingByDefault(because = "a large download, verified by checksum; the build cache would only duplicate it")
-abstract class FetchModelTask : DefaultTask() {
+/** Downloads the model files unless verified copies are already there; refuses a file whose checksum differs. */
+@DisableCachingByDefault(because = "large downloads, verified by checksum; the build cache would only duplicate them")
+abstract class FetchModelsTask : DefaultTask() {
+    /** One entry per file: `url`, `sha256` and `file` (path inside [outputDirectory]) from manifest.json. */
     @get:Input
-    abstract val url: Property<String>
-
-    @get:Input
-    abstract val sha256: Property<String>
-
-    /** Path inside [outputDirectory], e.g. `models/embeddinggemma-2-text-270m.litertlm`. */
-    @get:Input
-    abstract val relativePath: Property<String>
+    abstract val models: ListProperty<Map<String, String>>
 
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
     @TaskAction
     fun fetch() {
+        models.get().forEach { fetchOne(it.getValue("url"), it.getValue("sha256"), it.getValue("file")) }
+    }
+
+    private fun fetchOne(
+        url: String,
+        sha256: String,
+        relativePath: String,
+    ) {
+        // The manifest is versioned and every file is checked by SHA-256; these checks only harden the build.
+        if (!url.startsWith("https://huggingface.co/")) throw GradleException("Unexpected model URL for $relativePath")
+        val root = outputDirectory.get().asFile.canonicalFile
         val target = outputDirectory.file(relativePath).get().asFile
-        if (target.isFile && digest(target) == sha256.get()) return
+        if (!target.canonicalFile.startsWith(
+                root,
+            )
+        ) {
+            throw GradleException("Model path outside the output: $relativePath")
+        }
+        if (target.isFile && digest(target) == sha256) return
         target.parentFile.mkdirs()
         val partial = File(target.parentFile, target.name + ".part")
         val connection =
-            URI(url.get()).toURL().openConnection().apply {
+            URI(url).toURL().openConnection().apply {
                 connectTimeout = CONNECT_TIMEOUT_MS
                 readTimeout = READ_TIMEOUT_MS
             }
         try {
             connection.getInputStream().use { input -> partial.outputStream().use { input.copyTo(it) } }
             val actual = digest(partial)
-            if (actual != sha256.get()) {
-                throw GradleException(
-                    "Checksum mismatch for ${relativePath.get()}: got $actual, expected ${sha256.get()}",
-                )
+            if (actual != sha256) {
+                throw GradleException("Checksum mismatch for $relativePath: got $actual, expected $sha256")
             }
             Files.move(partial.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
         } finally {
@@ -70,28 +79,24 @@ abstract class FetchModelTask : DefaultTask() {
 }
 
 @Suppress("UNCHECKED_CAST")
-val textModel =
-    (JsonSlurper().parse(file("manifest.json")) as Map<String, Any>)["models"]
-        .let { it as List<Map<String, Any>> }
-        .single { it["variant"] == "TEXT_ONLY" }
+val manifestModels =
+    (JsonSlurper().parse(file("manifest.json")) as Map<String, Any>)["models"] as List<Map<String, Any>>
 
-val fetchTextModel by tasks.registering(FetchModelTask::class) {
+val fetchModels by tasks.registering(FetchModelsTask::class) {
     group = "models"
-    description = "Downloads the text embedding model and verifies its SHA-256 (ADR-021)."
-    url.set(textModel["url"] as String)
-    sha256.set(textModel["sha256"] as String)
-    relativePath.set(textModel["file"] as String)
+    description = "Downloads the embedding models (text, text+vision) and verifies their SHA-256 (ADR-021, ADR-022)."
+    models.set(manifestModels.map { m -> listOf("url", "sha256", "file").associateWith { m.getValue(it) as String } })
     outputDirectory.set(layout.buildDirectory.dir("bundled"))
 }
 
-/** The verified model directory, consumed by the Android app (assets) and the evaluation tool. */
+/** The verified model directory, consumed by the Android app (assets) and the evaluation tools. */
 val bundledModels by configurations.creating {
     isCanBeConsumed = true
     isCanBeResolved = false
 }
 
 artifacts {
-    add(bundledModels.name, fetchTextModel.flatMap { it.outputDirectory }) {
-        builtBy(fetchTextModel)
+    add(bundledModels.name, fetchModels.flatMap { it.outputDirectory }) {
+        builtBy(fetchModels)
     }
 }

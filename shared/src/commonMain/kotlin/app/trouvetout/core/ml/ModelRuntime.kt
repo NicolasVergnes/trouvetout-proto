@@ -3,8 +3,10 @@ package app.trouvetout.core.ml
 import app.trouvetout.core.log.LogLevel
 import app.trouvetout.core.log.Logger
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.concurrent.Volatile
 
 /** Why the search answers with keywords only (the host says it to the user). */
@@ -26,15 +28,35 @@ public enum class KeywordOnlyReason {
 internal class ModelRuntime(
     private val source: TextModelSource?,
     private val logger: Logger,
+    /** Whether the text+vision file is wanted now (memory, settings); read at every use. */
+    private val imagesWanted: () -> Boolean = { false },
+    /** The text+vision file failed to load: photos are off until the next launch (the hosts say so). */
+    private val onImagesFailed: () -> Unit = {},
+    /** Around a load of the text+vision file: a mark that outlives a kill by the system. */
+    private val visionLoading: suspend (running: Boolean) -> Unit = {},
 ) {
     private val mutex = Mutex()
     private var embedder: TextEmbedder? = null
+    private var loadedWithImages = false
     private var failed = false
+
+    /** The text+vision file failed to load: photos stay off until the next launch, text keeps working. */
+    private var imagesFailed = false
 
     @Volatile
     private var closing = false
 
     val modelId: String? = source?.modelId
+
+    /** The bundled label catalog (B8), read from the host; null when it has none. */
+    fun labelCatalog(): ByteArray? = source?.labelCatalog()
+
+    /** Identifies the image encoder; null when this build has none. */
+    val imageModelId: String? = source?.imageModelId
+
+    /** The photo side can be used now: the file is there, the device may load it and the user wants it. */
+    val imagesActive: Boolean
+        get() = imageModelId != null && !imagesFailed && unavailableReason == null && imagesWanted()
 
     /** Null while the model can be used (loaded or not yet). */
     val unavailableReason: KeywordOnlyReason?
@@ -48,7 +70,7 @@ internal class ModelRuntime(
     /** Runs [block] with the model, loading it if needed; null when the model cannot be used. */
     suspend fun <T> withModel(block: suspend (TextEmbedder) -> T): T? = mutex.withLock {
         if (closing) return@withLock null
-        val model = embedder ?: load() ?: return@withLock null
+        val model = current() ?: return@withLock null
         try {
             block(model)
         } finally {
@@ -57,15 +79,42 @@ internal class ModelRuntime(
         }
     }
 
-    private suspend fun load(): TextEmbedder? {
+    /** Runs [block] with the image side of the model; null when photos are not active (or the model failed). */
+    suspend fun <T> withImageModel(block: suspend (ImageEmbedder) -> T): T? {
+        if (!imagesActive) return null
+        return withModel { model -> (model as? ImageEmbedder)?.let { block(it) } }
+    }
+
+    /** The loaded model if it matches the wanted variant; otherwise the right one is loaded (one engine at a time). */
+    private suspend fun current(): TextEmbedder? {
+        val withImages = imagesActive
+        embedder?.let { if (loadedWithImages == withImages) return it }
+        closeEmbedder()
+        return load(withImages)
+    }
+
+    private suspend fun load(withImages: Boolean): TextEmbedder? {
         if (unavailableReason != null) return null
-        val attempt = runCatching { checkNotNull(source).load() }
+        if (withImages) visionLoading(true)
+        val attempt =
+            try {
+                runCatching { checkNotNull(source).load(withImages) }
+            } finally {
+                if (withImages) withContext(NonCancellable) { visionLoading(false) }
+            }
         attempt.exceptionOrNull()?.let { failure ->
             if (failure is CancellationException) throw failure
+            logger.log(LogLevel.WARN, TAG, "model load failed (images=$withImages): ${failure::class.simpleName}")
+            // The bigger file failing (memory) must not take text search with it (rule 7).
+            if (withImages) {
+                imagesFailed = true
+                onImagesFailed()
+                return load(false)
+            }
             failed = true
-            logger.log(LogLevel.WARN, TAG, "model load failed: ${failure::class.simpleName}")
         }
         embedder = attempt.getOrNull()
+        loadedWithImages = withImages
         return embedder
     }
 

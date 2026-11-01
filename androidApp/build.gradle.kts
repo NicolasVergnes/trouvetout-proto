@@ -9,10 +9,14 @@ plugins {
 val bundleModel = providers.gradleProperty("trouvetout.bundleModel").map(String::toBoolean).getOrElse(true)
 
 @Suppress("UNCHECKED_CAST")
-val textModel =
+val manifestModels =
     (JsonSlurper().parse(rootProject.file("models/manifest.json")) as Map<String, Any>)["models"]
         .let { it as List<Map<String, Any>> }
-        .single { it["variant"] == "TEXT_ONLY" }
+val textModel = manifestModels.single { it["variant"] == "TEXT_ONLY" }
+val visionModel = manifestModels.single { it["variant"] == "OMNIMODAL" }
+
+/** Identity of a bundled file, as the core compares it: name and checksum prefix. */
+fun identity(model: Map<String, Any>): String = "${model["id"]}@${(model["sha256"] as String).take(12)}"
 
 android {
     namespace = "app.trouvetout.android"
@@ -27,14 +31,15 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // The bundled model (ADR-021): asset path (null without it), identity (name + checksum prefix), size.
+        // The bundled models (ADR-021, ADR-022): asset path (null without it), identity (name + checksum prefix),
+        // size; then the label catalog of photo naming (B8), computed by `:tools:genLabels`.
         buildConfigField("String", "TEXT_MODEL_ASSET", if (bundleModel) "\"${textModel["file"]}\"" else "null")
-        buildConfigField(
-            "String",
-            "TEXT_MODEL_ID",
-            "\"${textModel["id"]}@${(textModel["sha256"] as String).take(12)}\"",
-        )
+        buildConfigField("String", "TEXT_MODEL_ID", "\"${identity(textModel)}\"")
         buildConfigField("long", "TEXT_MODEL_BYTES", "${textModel["bytes"]}L")
+        buildConfigField("String", "VISION_MODEL_ASSET", if (bundleModel) "\"${visionModel["file"]}\"" else "null")
+        buildConfigField("String", "VISION_MODEL_ID", "\"${identity(visionModel)}\"")
+        buildConfigField("long", "VISION_MODEL_BYTES", "${visionModel["bytes"]}L")
+        buildConfigField("String", "LABELS_ASSET", if (bundleModel) "\"models/labels_fr_en.catalog\"" else "null")
     }
 
     // Stored as is: LiteRT-LM needs the plain file, copied once from the APK on first use.
@@ -89,16 +94,20 @@ kotlin {
     }
 }
 
-/** The verified model directory produced by `:models:fetchTextModel`. */
+/** The verified model directory produced by `:models:fetchModels`. */
 val bundledModels by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
 }
 
-/** Copies the verified model into a generated assets directory of every variant. */
+/** Copies the verified models and the label catalog into a generated assets directory of every variant. */
 abstract class CopyModelAssets : DefaultTask() {
     @get:InputFiles
     abstract val models: ConfigurableFileCollection
+
+    /** `models/labels_fr_en.catalog` (committed, small, derived data: no weights). */
+    @get:InputFile
+    abstract val labels: RegularFileProperty
 
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
@@ -113,12 +122,14 @@ abstract class CopyModelAssets : DefaultTask() {
                 file.copyTo(File(out, file.relativeTo(root).path), overwrite = true)
             }
         }
+        labels.get().asFile.copyTo(File(out, "models/labels_fr_en.catalog"), overwrite = true)
     }
 }
 
 val copyModelAssets =
     tasks.register<CopyModelAssets>("copyModelAssets") {
         models.from(bundledModels)
+        labels.set(rootProject.layout.projectDirectory.file("models/labels_fr_en.catalog"))
         outputDirectory.set(layout.buildDirectory.dir("generated/modelAssets"))
     }
 

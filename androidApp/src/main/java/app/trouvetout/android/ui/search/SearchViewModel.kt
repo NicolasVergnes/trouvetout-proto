@@ -1,8 +1,13 @@
 package app.trouvetout.android.ui.search
 
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.trouvetout.android.App
+import app.trouvetout.android.R
+import app.trouvetout.android.ui.common.PhotoAttachment
+import app.trouvetout.android.ui.common.PhotoBytes
+import app.trouvetout.android.ui.common.previewOf
 import app.trouvetout.core.domain.model.Container
 import app.trouvetout.core.domain.model.Place
 import app.trouvetout.core.search.ItemStateFilter
@@ -18,6 +23,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -44,6 +50,9 @@ data class SearchUiState(
     /** Null until the first search of the current query and filters has answered. */
     val result: SearchResult? = null,
     val suggestions: List<Suggestion> = emptyList(),
+    /** C10: the photo searched for instead of the text, previewed only (never stored). */
+    val photo: ImageBitmap? = null,
+    val photoProblem: Int? = null,
 ) {
     val hasFilters: Boolean get() = placeId != null ||
         containerId != null ||
@@ -85,7 +94,19 @@ class SearchViewModel(
             .flatMapLatest { it.browse.observeTags() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
 
+    /** C10 is offered on ≥ 6 GB phones with the photo model and the setting on (ADR-022). */
+    val photoSearch: StateFlow<Boolean> =
+        app.readyShared
+            .flatMapLatest { core -> core.modelSettings.state.map { it.photoSearchAvailable } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
+
     private var searchJob: Job? = null
+
+    /** The bytes of [SearchUiState.photo], kept in memory while the photo is the question. */
+    private var photoBytes: ByteArray? = null
+
+    /** Reading and previewing a photo: typing or clearing meanwhile wins. */
+    private var photoJob: Job? = null
 
     init {
         viewModelScope.launch { app.readyShared.first().search.prepare() }
@@ -93,8 +114,45 @@ class SearchViewModel(
     }
 
     fun onQueryChange(text: String) {
-        _state.update { it.copy(query = text) }
+        if (text.isNotEmpty()) {
+            photoJob?.cancel()
+            photoBytes = null
+        }
+        _state.update { it.copy(query = text, photo = if (text.isNotEmpty()) null else it.photo, photoProblem = null) }
         refresh(debounce = true)
+    }
+
+    /** C10: the photo becomes the question; typing or clearing it goes back to text. */
+    fun searchByPhoto(attachment: PhotoAttachment) {
+        photoJob?.cancel()
+        photoJob =
+            viewModelScope.launch {
+                val bytes =
+                    when (val read = attachment.read()) {
+                        is PhotoBytes.Ok -> read.bytes
+                        PhotoBytes.TooLarge -> return@launch _state.update {
+                            it.copy(photoProblem = R.string.photo_too_large)
+                        }
+                        PhotoBytes.Unreadable -> return@launch _state.update {
+                            it.copy(photoProblem = R.string.photo_unreadable)
+                        }
+                    }
+                val preview =
+                    previewOf(bytes)
+                        ?: return@launch _state.update { it.copy(photoProblem = R.string.photo_unsupported) }
+                photoBytes = bytes
+                _state.update {
+                    it.copy(query = "", photo = preview, photoProblem = null, suggestions = emptyList(), result = null)
+                }
+                refresh(debounce = false)
+            }
+    }
+
+    fun clearPhoto() {
+        photoJob?.cancel()
+        photoBytes = null
+        _state.update { it.copy(photo = null, result = null) }
+        refresh(debounce = false)
     }
 
     fun pickSuggestion(suggestion: Suggestion) {
@@ -146,8 +204,10 @@ class SearchViewModel(
                         state = current.state,
                         movedSince = current.since?.let { Clock.System.now() - it.days.days },
                     )
+                val photo = photoBytes
                 val suggestions = if (current.query.isBlank()) emptyList() else core.search.suggest(current.query)
-                val result = core.search.search(current.query, filters)
+                val result =
+                    photo?.let { core.search.searchByPhoto(it, filters) } ?: core.search.search(current.query, filters)
                 _state.update {
                     if (it.query == current.query) it.copy(result = result, suggestions = suggestions) else it
                 }

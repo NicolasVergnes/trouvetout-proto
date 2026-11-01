@@ -7,3 +7,7 @@
 *.jpg binary
 *.jar binary
 *.wav binary
+
+# Binary data (label catalog, model files): never normalised.
+*.catalog binary
+*.litertlm binary

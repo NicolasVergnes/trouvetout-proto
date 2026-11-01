@@ -30,7 +30,7 @@ public data class SearchFilters(
 }
 
 /** How the result was found, for the tests and the evaluation (never shown as a score). */
-public enum class MatchKind { KEYWORD, SEMANTIC, BOTH, FILTER }
+public enum class MatchKind { KEYWORD, SEMANTIC, BOTH, FILTER, PHOTO }
 
 public data class SearchHit(
     val view: ItemView,
@@ -86,6 +86,8 @@ public data class SearchResult(
     val hits: List<SearchHit>,
     /** The first hit as a one-line answer; null when there is no hit or when only filters were given. */
     val answer: AnswerLine?,
+    /** The question was a photo (C10); [query] is then empty. */
+    val byPhoto: Boolean = false,
 )
 
 /** A completion of what the user is typing (C12); never a sensitive item. */

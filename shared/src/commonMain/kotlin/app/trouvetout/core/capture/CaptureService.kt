@@ -88,7 +88,13 @@ public sealed interface CaptureOutcome {
         val events: List<Event>,
         val itemIds: List<String>,
         val location: LocationRef?,
-    ) : CaptureOutcome
+    ) : CaptureOutcome {
+        /**
+         * The object a photo taken with the sentence belongs to (B8): the only one it names; null when it names
+         * several (the host then keeps the photo out rather than guess).
+         */
+        val photoItemId: String? get() = itemIds.distinct().singleOrNull()
+    }
 
     /** A question: the host runs the search (lot 6). */
     public data class Search(

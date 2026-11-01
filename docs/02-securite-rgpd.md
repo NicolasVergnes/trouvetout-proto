@@ -42,6 +42,7 @@ Objectif : que la fiche « App Privacy » (Apple) et « Data safety » (Google) 
 - Le parseur traite du texte libre : pas d'injection possible côté SQL (requêtes paramétrées SQLDelight uniquement ; FTS5 : échapper les guillemets et opérateurs de la requête utilisateur).
 - Import ZIP (A8) : taille maximale par entrée, refus des chemins avec `..`, validation JSON stricte, limites de nombre d'événements, décompression en flux (zip bomb).
 - Photos importées : re-décodage et ré-encodage (pas de copie brute d'un fichier d'origine inconnue).
+- Photos et modèle (lot 7, ADR-022) : le modèle reçoit un JPEG ré-encodé par le codec de la plateforme (orientation appliquée, sans métadonnées EXIF/GPS) ; les vecteurs des photos sont un cache local recalculable (table `embedding`), jamais exporté, effacé par la suppression totale ; la photo d'une recherche par photo et la photo en attente d'une capture ne sont jamais conservées : en mémoire seulement, sauf le fichier temporaire de l'application Appareil photo d'Android (`cacheDir/camera`, privé, effacé dès sa lecture, purgé au démarrage et par la suppression totale) ; seule la photo attachée à un objet est stockée, comme toute photo ; les vecteurs d'une photo détachée ou purgée sont effacés au passage d'indexation suivant, même quand les photos sont désactivées.
 
 ### UI
 - iOS : `UIApplication.willResignActive` → vue de protection (flou) si H3 activé ; Android : `FLAG_SECURE` si H3 activé.

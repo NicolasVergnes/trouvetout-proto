@@ -12,6 +12,7 @@ import app.trouvetout.core.di.SharedFactory
 import app.trouvetout.core.log.LogcatLogger
 import app.trouvetout.core.log.NoopLogger
 import app.trouvetout.core.ml.AssetTextModelSource
+import app.trouvetout.core.ml.BundledModelAsset
 import app.trouvetout.core.platform.AndroidDeviceInfo
 import app.trouvetout.core.platform.AndroidImageCodec
 import kotlinx.coroutines.CoroutineScope
@@ -113,13 +114,7 @@ class App : Application() {
                 appVersion = BuildConfig.VERSION_NAME,
                 captureLang = if (Locale.getDefault().language == "fr") Lang.FR else Lang.EN,
             ).apply {
-                textModel =
-                    AssetTextModelSource(
-                        this@App,
-                        BuildConfig.TEXT_MODEL_ASSET,
-                        BuildConfig.TEXT_MODEL_ID,
-                        BuildConfig.TEXT_MODEL_BYTES,
-                    )
+                textModel = bundledModels(this@App)
             },
         )
     }
@@ -140,3 +135,18 @@ class UiPrefs(
         const val KEY_SHOW_HISTORY = "show_history"
     }
 }
+
+/** The models of this build (ADR-021, ADR-022): text file, text+vision file, label catalog; none without models. */
+fun bundledModels(context: android.content.Context): AssetTextModelSource = AssetTextModelSource(
+    context,
+    asset(BuildConfig.TEXT_MODEL_ASSET, BuildConfig.TEXT_MODEL_ID, BuildConfig.TEXT_MODEL_BYTES),
+    asset(BuildConfig.VISION_MODEL_ASSET, BuildConfig.VISION_MODEL_ID, BuildConfig.VISION_MODEL_BYTES),
+    BuildConfig.LABELS_ASSET,
+)
+
+/** The asset fields are null in a build without models (`-Ptrouvetout.bundleModel=false`). */
+private fun asset(
+    path: String?,
+    id: String,
+    bytes: Long,
+): BundledModelAsset? = path?.let { BundledModelAsset(it, id, bytes) }

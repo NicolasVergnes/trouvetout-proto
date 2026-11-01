@@ -10,10 +10,16 @@ import app.trouvetout.core.data.export.ImportResult
 import app.trouvetout.core.data.export.MAX_ARCHIVE_BYTES
 import app.trouvetout.core.di.SharedFactory
 import app.trouvetout.core.domain.ids.Ulid
+import app.trouvetout.core.ml.PhotoModelState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -57,6 +63,21 @@ class SettingsViewModel(
     val state: StateFlow<SettingsUiState> = _state
 
     private val shared: SharedFactory get() = app.shared
+
+    /** The photo side of the model (B8, C10, ADR-022): what this phone can do and the user's two settings. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val photoModel: StateFlow<PhotoModelState?> =
+        app.readyShared
+            .flatMapLatest { it.modelSettings.state }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+
+    fun setForceTextOnly(value: Boolean) {
+        viewModelScope.launch { app.readyShared.first().modelSettings.setForceTextOnly(value) }
+    }
+
+    fun setPhotoSearch(value: Boolean) {
+        viewModelScope.launch { app.readyShared.first().modelSettings.setPhotoSearch(value) }
+    }
 
     fun export() {
         run {
@@ -129,6 +150,7 @@ class SettingsViewModel(
 
     private companion object {
         const val COPY_BUFFER = 64 * 1024
+        const val STOP_TIMEOUT_MILLIS = 5_000L
 
         /** Copies at most [max] bytes; a larger document is refused before it fills the private storage. */
         fun copyBounded(

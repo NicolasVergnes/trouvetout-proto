@@ -1,6 +1,7 @@
 package app.trouvetout.android.ui.search
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,9 +41,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
@@ -66,7 +69,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
 import app.trouvetout.android.ui.capture.ItemRow
+import app.trouvetout.android.ui.common.AddPhotoButtons
 import app.trouvetout.android.ui.common.LocationPickerDialog
+import app.trouvetout.android.ui.common.PhotoAttachment
 import app.trouvetout.android.ui.common.Thumbnail
 import app.trouvetout.android.ui.theme.AppTheme
 import app.trouvetout.core.data.repository.ItemView
@@ -109,6 +114,7 @@ fun SearchRoute(
     val places by viewModel.places.collectAsStateWithLifecycle()
     val containers by viewModel.containers.collectAsStateWithLifecycle()
     val tags by viewModel.tags.collectAsStateWithLifecycle()
+    val photoSearch by viewModel.photoSearch.collectAsStateWithLifecycle()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     val callbacks =
         remember(viewModel, navigation) {
@@ -127,11 +133,13 @@ fun SearchRoute(
                 onOpenPlace = navigation.onOpenPlace,
                 onOpenContainer = navigation.onOpenContainer,
                 onBack = navigation.onBack,
+                onSearchByPhoto = viewModel::searchByPhoto,
+                onClearPhoto = viewModel::clearPhoto,
             )
         }
     SearchScreen(state, mode, callbacks, places, containers, tags, photoPath = {
         app.shared.photoStore.absolutePath(it)
-    })
+    }, photoSearch = photoSearch)
 }
 
 data class SearchCallbacks(
@@ -146,6 +154,8 @@ data class SearchCallbacks(
     val onOpenPlace: (String) -> Unit,
     val onOpenContainer: (String) -> Unit,
     val onBack: () -> Unit,
+    val onSearchByPhoto: (PhotoAttachment) -> Unit = {},
+    val onClearPhoto: () -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -158,6 +168,7 @@ fun SearchScreen(
     containers: List<Container> = emptyList(),
     tags: List<String> = emptyList(),
     photoPath: (String) -> String = { it },
+    photoSearch: Boolean = false,
 ) {
     Scaffold(
         topBar = {
@@ -179,6 +190,7 @@ fun SearchScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             QueryField(state.query, callbacks.onQueryChange)
+            PhotoQuery(state, photoSearch, callbacks)
             ModeBanner(mode)
             FilterRow(state, callbacks, places, containers, tags)
             val shownSuggestions = state.suggestions.filter { !it.text.equals(state.query.trim(), ignoreCase = true) }
@@ -222,6 +234,44 @@ private fun QueryField(
         // Results follow the typing; the Search key just closes the keyboard to show them.
         keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
     )
+}
+
+/** C10: the photo asked about, with a way back to text; or the buttons to ask with a photo. */
+@Composable
+private fun PhotoQuery(
+    state: SearchUiState,
+    available: Boolean,
+    callbacks: SearchCallbacks,
+) {
+    val photo = state.photo
+    if (photo != null) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                photo,
+                // The sentence beside it says what the photo is for: read once.
+                contentDescription = null,
+                modifier = Modifier.size(56.dp),
+                contentScale = ContentScale.Crop,
+            )
+            Text(
+                stringResource(R.string.search_photo_question),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = callbacks.onClearPhoto) {
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.search_photo_clear))
+            }
+        }
+    } else if (available) {
+        AddPhotoButtons(onPicked = callbacks.onSearchByPhoto)
+    }
+    state.photoProblem?.let {
+        Text(
+            stringResource(it),
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
+    }
 }
 
 /** Says when the search runs on keywords only (C1 fallback, rule 7) or is still computing its vectors. */
@@ -383,6 +433,7 @@ private fun Results(
     if (result.hits.isEmpty()) {
         val message =
             when {
+                result.byPhoto -> stringResource(R.string.search_photo_empty)
                 result.query.isBlank() && result.filters.isEmpty -> stringResource(R.string.search_start)
                 result.query.isBlank() -> stringResource(R.string.search_empty_filters)
                 else -> stringResource(R.string.search_empty, result.query.trim())

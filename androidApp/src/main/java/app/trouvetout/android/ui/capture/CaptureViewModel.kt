@@ -1,12 +1,16 @@
 package app.trouvetout.android.ui.capture
 
 import android.os.Build
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.trouvetout.android.App
 import app.trouvetout.android.capture.SpeechController
 import app.trouvetout.android.capture.SpeechError
 import app.trouvetout.android.capture.SpeechEvent
+import app.trouvetout.android.ui.common.PhotoAttachment
+import app.trouvetout.android.ui.common.PhotoBytes
+import app.trouvetout.android.ui.common.previewOf
 import app.trouvetout.core.capture.CaptureOutcome
 import app.trouvetout.core.capture.CaptureProblem
 import app.trouvetout.core.capture.CaptureProposal
@@ -22,15 +26,19 @@ import app.trouvetout.core.data.repository.ItemView
 import app.trouvetout.core.domain.model.Container
 import app.trouvetout.core.domain.model.Event
 import app.trouvetout.core.domain.model.EventSource
+import app.trouvetout.core.domain.model.PhotoOwnerType
 import app.trouvetout.core.domain.model.Place
 import app.trouvetout.core.domain.usecase.CommandResult
 import app.trouvetout.core.domain.usecase.LocationRef
+import app.trouvetout.core.ml.PhotoModelState
+import app.trouvetout.core.search.NameSuggestion
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -68,10 +76,29 @@ data class ConfirmationCard(
     /** How the sentence came in (A4), also the source of the inverse events of « Défaire ». */
     val source: EventSource,
     val token: Long,
+    /** The photo this capture attached: « Modifier » gives it back with the sentence. */
+    val photo: AttachedPhoto? = null,
+)
+
+/** A photo attached by a capture, kept in memory with its card. */
+class AttachedPhoto(
+    val bytes: ByteArray,
+    val shown: CapturePhoto,
 )
 
 /** Why the microphone is not listening; shown under the field, typing always works (B2, H9). */
 enum class VoiceNotice { NOT_ON_DEVICE, NO_RECOGNIZER, LANGUAGE_UNAVAILABLE, NO_MATCH, PERMISSION_DENIED, FAILED }
+
+/** Why a photo of the capture could not be used (B8, A10). */
+enum class PhotoNotice { TOO_LARGE, UNREADABLE, UNSUPPORTED, SEVERAL_ITEMS, NOT_SAVED }
+
+/** The photo taken with the sentence, not stored before the sentence is recorded (B8). */
+data class CapturePhoto(
+    val preview: ImageBitmap,
+    /** Up to three names proposed by the text+vision model, in the UI language; empty on a text-only phone. */
+    val names: List<NameSuggestion> = emptyList(),
+    val naming: Boolean = false,
+)
 
 /** B10 « je range » : the place or container every sentence without a place of its own goes into. */
 data class BatchTarget(
@@ -92,6 +119,8 @@ data class CaptureUiState(
     val askMicPermission: Boolean = false,
     val voiceNotice: VoiceNotice? = null,
     val batch: BatchTarget? = null,
+    val photo: CapturePhoto? = null,
+    val photoNotice: PhotoNotice? = null,
 )
 
 /**
@@ -99,6 +128,7 @@ data class CaptureUiState(
  * microphone, the questions and the card. Shared by the home screen and the quick capture of the widget and tile.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("TooManyFunctions") // one entry point per action of the screen (text, voice, batch, photo), no logic
 class CaptureViewModel(
     private val app: App,
 ) : ViewModel() {
@@ -122,7 +152,23 @@ class CaptureViewModel(
             .flatMapLatest { it.containerRepository.observeActive() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
 
+    /** What the photo side can do here (names need the text+vision model, ≥ 6 GB, ADR-022). */
+    val photoModel: StateFlow<PhotoModelState?> =
+        app.readyShared
+            .flatMapLatest { it.modelSettings.state }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+
     private val speech = SpeechController(app)
+
+    /** The bytes of [CaptureUiState.photo], attached to the object once the sentence is recorded. */
+    private var photoBytes: ByteArray? = null
+    private var namingJob: Job? = null
+
+    /** The proposed name last put in the field: a second tap replaces it instead of adding to it. */
+    private var usedName: String? = null
+
+    /** The photo the sentence being recorded attached, handed to its card. */
+    private var attached: AttachedPhoto? = null
     private var cardToken = 0L
     private var suggestionJob: Job? = null
     private var listenJob: Job? = null
@@ -134,7 +180,9 @@ class CaptureViewModel(
     private var heardText: String? = null
 
     fun onInputChange(text: String) {
-        _state.update { it.copy(input = text, problem = null, searchQuery = null, voiceNotice = null) }
+        _state.update {
+            it.copy(input = text, problem = null, searchQuery = null, voiceNotice = null, photoNotice = null)
+        }
         suggestionJob?.cancel()
         val prefix = text.substringAfterLast('@', missingDelimiterValue = "").trim()
         if (prefix.isEmpty()) {
@@ -193,6 +241,51 @@ class CaptureViewModel(
         // The words heard so far stay in the field, to send as is or to correct.
         _state.value.input.takeIf { _state.value.listening && it.isNotBlank() }?.let { heardText = it }
     }
+
+    /** A photo for the next sentence: previewed, named by the model when it can (B8), stored only once recorded. */
+    fun addPhoto(attachment: PhotoAttachment) {
+        // The current photo (and its naming) stays until the new one is known to be usable.
+        val previous = namingJob
+        namingJob =
+            viewModelScope.launch {
+                val bytes =
+                    when (val read = attachment.read()) {
+                        is PhotoBytes.Ok -> read.bytes
+                        PhotoBytes.TooLarge -> return@launch photoProblem(PhotoNotice.TOO_LARGE)
+                        PhotoBytes.Unreadable -> return@launch photoProblem(PhotoNotice.UNREADABLE)
+                    }
+                val preview = previewOf(bytes) ?: return@launch photoProblem(PhotoNotice.UNSUPPORTED)
+                previous?.cancel()
+                photoBytes = bytes
+                usedName = null
+                // From the core, not from the screen's flow: after the process died behind the camera, the flow
+                // has not emitted yet.
+                val shared = app.readyShared.first()
+                val naming = shared.modelSettings.state.value.imagesActive
+                _state.update { it.copy(photo = CapturePhoto(preview, naming = naming), photoNotice = null) }
+                if (naming) {
+                    val names = shared.search.suggestNames(bytes, uiLang())
+                    _state.update { s -> s.copy(photo = s.photo?.copy(names = names, naming = false)) }
+                }
+            }
+    }
+
+    fun removePhoto() {
+        namingJob?.cancel()
+        usedName = null
+        photoBytes = null
+        _state.update { it.copy(photo = null, photoNotice = null) }
+    }
+
+    /** A proposed name starts the sentence; the user completes the place and sends. */
+    fun useName(name: String) {
+        val input = _state.value.input.trim()
+        val rest = usedName?.takeIf { input.startsWith(it) }?.let { input.removePrefix(it).trim() } ?: input
+        usedName = name
+        onInputChange(if (rest.isEmpty() || rest == "@") "$name @ " else "$name $rest")
+    }
+
+    private fun photoProblem(notice: PhotoNotice) = _state.update { it.copy(photoNotice = notice) }
 
     fun startBatch(ref: LocationRef) {
         val label =
@@ -303,7 +396,11 @@ class CaptureViewModel(
     /** Tap on the card: bring the sentence back for correction (B6) and revert what it wrote. */
     fun editLast() {
         val card = _state.value.card ?: return
-        _state.update { it.copy(card = null, input = card.rawInput) }
+        // The photo was detached with the rest: it comes back with the sentence, to be attached again.
+        card.photo?.let { photoBytes = it.bytes }
+        _state.update {
+            it.copy(card = null, input = card.rawInput, photo = card.photo?.shown ?: it.photo, photoNotice = null)
+        }
         revert(card)
     }
 
@@ -337,20 +434,54 @@ class CaptureViewModel(
             return
         }
         when (val outcome = app.shared.capture.commit(proposal, placeChoice, answers, source)) {
-            is CaptureOutcome.Recorded -> recorded(proposal, outcome)
+            is CaptureOutcome.Recorded -> recorded(proposal, outcome, attachPhoto(outcome))
             is CaptureOutcome.Refused -> _state.update { it.copy(problem = outcome.problem) }
             is CaptureOutcome.Search -> _state.update { it.copy(searchQuery = outcome.query, input = "") }
         }
     }
 
+    /**
+     * The photo of the sentence goes to the object the core names (B8); its events join the card so that « Défaire »
+     * removes it too. Kept for the next sentence when the outcome names several objects.
+     */
+    private suspend fun attachPhoto(outcome: CaptureOutcome.Recorded): List<Event> {
+        attached = null
+        val bytes = photoBytes ?: return emptyList()
+        val shown = _state.value.photo
+        val itemId = outcome.photoItemId
+        if (itemId == null) {
+            photoProblem(PhotoNotice.SEVERAL_ITEMS)
+            return emptyList()
+        }
+        photoBytes = null
+        usedName = null
+        namingJob?.cancel()
+        _state.update { it.copy(photo = null, photoNotice = null) }
+        // The sentence is recorded: a photo that cannot be stored (thrown or refused; size and format were checked
+        // when it was added) must not hide its card nor its « Défaire ».
+        val done =
+            try {
+                app.shared.photoAttacher.attach(PhotoOwnerType.ITEM, itemId, bytes, EventSource.PHOTO)
+                    as? CommandResult.Done
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                null
+            }
+        if (done == null) photoProblem(PhotoNotice.NOT_SAVED)
+        attached = done?.let { shown?.let { AttachedPhoto(bytes, it.copy(naming = false)) } }
+        return done?.events.orEmpty()
+    }
+
     private fun recorded(
         proposal: CaptureProposal,
         outcome: CaptureOutcome.Recorded,
+        photoEvents: List<Event>,
     ) {
         val parse = proposal.parse
         // Nothing written (the object was already there): nothing to confirm or to undo.
         val card =
-            if (outcome.events.isEmpty()) {
+            if (outcome.events.isEmpty() && photoEvents.isEmpty()) {
                 null
             } else {
                 ConfirmationCard(
@@ -360,11 +491,13 @@ class CaptureViewModel(
                     placeText = parse.place ?: (proposal.place as? PlaceResolution.Resolved)?.match?.candidate?.name,
                     person = parse.person,
                     rawInput = parse.input,
-                    events = outcome.events,
+                    events = outcome.events + photoEvents,
                     source = source,
                     token = ++cardToken,
+                    photo = attached,
                 )
             }
+        attached = null
         _state.update { it.copy(input = "", suggestions = emptyList(), card = card) }
     }
 
