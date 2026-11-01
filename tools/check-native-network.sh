@@ -14,8 +14,8 @@ while IFS= read -r framework; do
   name=$(basename "$framework" .xcframework)
   slice=$(find "$framework" -maxdepth 1 -type d -name "ios-arm64" | head -1)
   if [ -z "$slice" ]; then
-    echo "VIOLATION: $name sans tranche ios-arm64"
-    status=1
+    # The macOS-only frameworks some packages carry are not linked into the iOS app.
+    echo "INFO: $name sans tranche ios-arm64 (pas dans l'app iOS)"
     continue
   fi
   # Every Mach-O file or static archive of the slice, not only the first one found.
@@ -30,6 +30,10 @@ while IFS= read -r framework; do
     if [ -n "$hits" ]; then
       echo "VIOLATION: $name ($(basename "$binary")) appelle des API réseau :"
       printf '  %s\n' $hits
+      # Which objects of a static archive reference them, to tell dead code from a used path.
+      for symbol in $hits; do
+        nm -A -u "$binary" 2>/dev/null | awk -v s="$symbol" '$NF == s {print "    " $1}' | sort -u | head -10
+      done
       status=1
     else
       echo "OK: $name ($(basename "$binary")) : aucun symbole réseau"
