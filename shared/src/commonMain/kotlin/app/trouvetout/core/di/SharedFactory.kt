@@ -110,12 +110,20 @@ public class SharedFactory(
             io = config.dispatchers.io,
         ).also { settings ->
             // Another model is loaded at the next use; the search computes what the new one needs.
-            settings.onModelChange = { if (searchService.isInitialized()) searchService.value.release() }
+            settings.onModelChange = { if (searchService.isInitialized()) searchService.value.modelChanged() }
         }
     }
 
     private val modelRuntime =
-        lazy { ModelRuntime(config.textModel, config.logger) { modelSettings.state.value.imagesActive } }
+        lazy {
+            ModelRuntime(
+                config.textModel,
+                config.logger,
+                imagesWanted = { modelSettings.state.value.imagesActive },
+                onImagesFailed = { modelSettings.imagesFailed() },
+                visionLoading = { modelSettings.visionLoading(it) },
+            )
+        }
     private val searchService =
         lazy {
             SearchService(

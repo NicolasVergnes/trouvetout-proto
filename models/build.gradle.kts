@@ -28,7 +28,16 @@ abstract class FetchModelsTask : DefaultTask() {
         sha256: String,
         relativePath: String,
     ) {
+        // The manifest is versioned and every file is checked by SHA-256; these checks only harden the build.
+        if (!url.startsWith("https://huggingface.co/")) throw GradleException("Unexpected model URL for $relativePath")
+        val root = outputDirectory.get().asFile.canonicalFile
         val target = outputDirectory.file(relativePath).get().asFile
+        if (!target.canonicalFile.startsWith(
+                root,
+            )
+        ) {
+            throw GradleException("Model path outside the output: $relativePath")
+        }
         if (target.isFile && digest(target) == sha256) return
         target.parentFile.mkdirs()
         val partial = File(target.parentFile, target.name + ".part")

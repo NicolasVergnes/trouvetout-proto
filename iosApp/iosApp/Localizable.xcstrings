@@ -529,6 +529,22 @@
         }
       }
     },
+    "capture_photo_no_names_failed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough free memory to look at photos now: type the name. The app tries again at its next start."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas assez de mémoire libre pour analyser les photos maintenant : tapez le nom. L’app réessaie à son prochain lancement."
+          }
+        }
+      }
+    },
     "capture_photo_no_names_found": {
       "localizations": {
         "en": {
@@ -577,6 +593,22 @@
         }
       }
     },
+    "capture_photo_not_saved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The object is recorded, but its photo could not be saved. Add it from the object's page."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’objet est enregistré, mais sa photo n’a pas pu être gardée. Ajoutez-la depuis la fiche de l’objet."
+          }
+        }
+      }
+    },
     "capture_photo_remove": {
       "localizations": {
         "en": {
@@ -598,13 +630,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This sentence names several objects, so the photo was not added. Say one object to add it."
+            "value": "This sentence does not name a single object, so the photo was not added. Name one object to add it."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cette phrase nomme plusieurs objets : la photo n’a pas été ajoutée. Dites un seul objet pour l’ajouter."
+            "value": "Cette phrase ne nomme pas un seul objet : la photo n’a pas été ajoutée. Nommez un objet pour l’ajouter."
           }
         }
       }
@@ -2545,6 +2577,22 @@
         }
       }
     },
+    "settings_photos_failed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The photo model could not be loaded (not enough free memory): photos are off until the app restarts."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le modèle photo n’a pas pu être chargé (mémoire libre insuffisante) : les photos sont coupées jusqu’au prochain lancement de l’app."
+          }
+        }
+      }
+    },
     "settings_photos_memory": {
       "localizations": {
         "en": {
@@ -2609,6 +2657,22 @@
         }
       }
     },
+    "settings_photos_search_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs “Name objects from their photo”."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nécessite « Nommer les objets d’après leur photo »."
+          }
+        }
+      }
+    },
     "settings_photos_section": {
       "localizations": {
         "en": {
@@ -2621,6 +2685,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Photos"
+          }
+        }
+      }
+    },
+    "settings_photos_stopped": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last time, the photo model did not fit in the phone’s free memory and the app closed: naming objects from their photo was turned off. Turn it on to try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La dernière fois, le modèle photo n’a pas tenu dans la mémoire libre du téléphone et l’app s’est fermée : le nommage d’après la photo a été désactivé. Réactivez-le pour réessayer."
           }
         }
       }

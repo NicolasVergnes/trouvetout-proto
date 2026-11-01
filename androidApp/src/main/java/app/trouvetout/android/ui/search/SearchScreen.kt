@@ -248,7 +248,8 @@ private fun PhotoQuery(
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(
                 photo,
-                contentDescription = stringResource(R.string.search_photo_question),
+                // The sentence beside it says what the photo is for: read once.
+                contentDescription = null,
                 modifier = Modifier.size(56.dp),
                 contentScale = ContentScale.Crop,
             )
@@ -264,7 +265,13 @@ private fun PhotoQuery(
     } else if (available) {
         AddPhotoButtons(onPicked = callbacks.onSearchByPhoto)
     }
-    state.photoProblem?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
+    state.photoProblem?.let {
+        Text(
+            stringResource(it),
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
+    }
 }
 
 /** Says when the search runs on keywords only (C1 fallback, rule 7) or is still computing its vectors. */

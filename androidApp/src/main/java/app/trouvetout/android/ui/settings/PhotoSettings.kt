@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -40,6 +41,20 @@ internal fun PhotoSection(settings: PhotoSettings) {
         )
         else -> {
             Text(stringResource(R.string.settings_photos_text), style = MaterialTheme.typography.bodyMedium)
+            if (state.stoppedWhileLoading) {
+                Text(
+                    stringResource(R.string.settings_photos_stopped),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            if (state.loadFailed) {
+                Text(
+                    stringResource(R.string.settings_photos_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
             SwitchRow(
                 label = stringResource(R.string.settings_photos_model),
                 hint = stringResource(R.string.settings_photos_model_hint),
@@ -48,7 +63,7 @@ internal fun PhotoSection(settings: PhotoSettings) {
             )
             SwitchRow(
                 label = stringResource(R.string.settings_photos_search),
-                hint = null,
+                hint = if (state.imagesActive) null else stringResource(R.string.settings_photos_search_hint),
                 checked = state.photoSearch && state.imagesActive,
                 enabled = state.imagesActive,
                 onChange = settings.onPhotoSearch,
@@ -70,6 +85,7 @@ private fun SwitchRow(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .heightIn(min = 48.dp)
                 .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onChange),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,

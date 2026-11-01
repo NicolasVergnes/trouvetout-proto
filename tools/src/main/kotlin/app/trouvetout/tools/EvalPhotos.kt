@@ -260,12 +260,20 @@ private fun ccPhotos(
     fun field(name: String) = o.getValue(name).jsonPrimitive.content
     val id = field("id")
     val sha = field("sha256")
+    val url = field("url")
+    check(id.matches(SAFE_ID)) { "bad photo id" }
+    check(url.startsWith(OPEN_IMAGES)) { "unexpected URL for $id" }
     val file = File(cache, "$id.jpg")
     if (!file.isFile || sha256Hex(file.readBytes()) != sha) {
         val partial = File(cache, "$id.part")
-        URI(field("url")).toURL().openStream().use { input -> partial.outputStream().use { input.copyTo(it) } }
-        check(sha256Hex(partial.readBytes()) == sha) { "checksum mismatch for $id" }
-        Files.move(partial.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        try {
+            URI(url).toURL().openStream().use { input -> partial.writeBytes(input.readNBytes(MAX_PHOTO_BYTES + 1)) }
+            check(partial.length() <= MAX_PHOTO_BYTES) { "photo $id too large" }
+            check(sha256Hex(partial.readBytes()) == sha) { "checksum mismatch for $id" }
+            Files.move(partial.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            partial.delete()
+        }
     }
     val accepted = setOf(field("expect")) + o.getValue("accept").jsonArray.map { it.jsonPrimitive.content }
     EvalPhoto(id, file.readBytes(), field("expect"), accepted)
@@ -287,6 +295,9 @@ private object EightGigabytes : DeviceInfo {
     override val osVersion: String = ""
 }
 
+private val SAFE_ID = Regex("[A-Za-z0-9_-]+")
+private const val OPEN_IMAGES = "https://open-images-dataset.s3.amazonaws.com/"
+private const val MAX_PHOTO_BYTES = 20 * 1024 * 1024
 private const val IMAGE_SIDE = 768
 private const val QUALITY = 85
 private const val IMAGE_BATCH = 4

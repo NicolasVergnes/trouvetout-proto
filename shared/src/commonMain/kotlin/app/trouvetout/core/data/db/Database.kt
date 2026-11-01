@@ -12,6 +12,9 @@ public object MetaKeys {
     public const val MODEL_VARIANT: String = "model_variant"
     public const val FORCE_TEXT_ONLY: String = "force_text_only"
     public const val PHOTO_SEARCH: String = "photo_search"
+
+    /** Set while the text+vision file loads: still there at the next launch, the system killed the app (memory). */
+    public const val VISION_LOADING: String = "vision_loading"
 }
 
 /** Opens (creating or migrating) the SQLite database; implemented per platform, the caller owns the driver. */

@@ -53,9 +53,23 @@ internal class SearchWorld(
 
     /** Photo files by name: the fake « image » is the words it shows. */
     val photoFiles = HashMap<String, ByteArray>()
-    val runtime = ModelRuntime(model, NoopLogger) { imagesWanted }
+
+    /** Reads of stored photo files by the search. */
+    var photoReads = 0
+    val runtime = ModelRuntime(model, NoopLogger, imagesWanted = { imagesWanted })
     val search =
-        SearchService(db, runtime, tuning, clock, unconfined, NoopLogger, PhotoFiles(PassthroughCodec, photoFiles::get))
+        SearchService(
+            db,
+            runtime,
+            tuning,
+            clock,
+            unconfined,
+            NoopLogger,
+            PhotoFiles(PassthroughCodec) {
+                photoReads++
+                photoFiles[it]
+            },
+        )
 
     /** Attaches a « photo » showing [words] to [itemId]. */
     suspend fun photo(
@@ -139,7 +153,10 @@ class FakeEmbedder(
         return texts.map { vector(it, dim) }
     }
 
-    /** A fake « image » is the words it shows, embedded like a text. */
+    /**
+     * A fake « image » is the words it shows, embedded like a text. Only the platform codec's output may reach the
+     * model (its native decoder never sees a file of unknown origin, ADR-022): anything else fails the test.
+     */
     override suspend fun embedImages(
         jpegs: List<ByteArray>,
         dim: Int,
@@ -149,7 +166,11 @@ class FakeEmbedder(
             error("native failure")
         }
         images += jpegs.size
-        return jpegs.map { vector(it.decodeToString(), dim) }
+        return jpegs.map {
+            val text = it.decodeToString()
+            check(text.startsWith(PassthroughCodec.MARK)) { "raw bytes reached the model" }
+            vector(text.removePrefix(PassthroughCodec.MARK), dim)
+        }
     }
 
     fun vector(
@@ -205,11 +226,20 @@ class FakeModelSource(
     }
 }
 
-/** Gives the « image » back as it is: the fake images are words, not pixels. */
+/**
+ * Gives the « image » back marked as re-encoded: the fake images are words, not pixels. « unreadable » is not an
+ * image.
+ */
 object PassthroughCodec : ImageCodec {
+    const val MARK = "jpeg:"
+
     override fun transcodeJpeg(
         source: ByteArray,
         maxSide: Int,
         quality: Int,
-    ): EncodedImage = EncodedImage(source, maxSide, maxSide)
+    ): EncodedImage? = if (source.decodeToString() == "unreadable") {
+        null
+    } else {
+        EncodedImage((MARK + source.decodeToString()).encodeToByteArray(), maxSide, maxSide)
+    }
 }

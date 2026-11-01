@@ -36,6 +36,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -299,13 +300,23 @@ internal fun CaptureField(
     modifier: Modifier = Modifier,
 ) {
     // A text set by the app (a proposed name, a transcript, a cleared field) puts the cursor at its end; what the user
-    // types keeps the cursor where it is.
+    // types keeps the cursor where it is, also while the screen state has not caught up with the last keystrokes.
     var typed by remember { mutableStateOf(TextFieldValue(state.input, TextRange(state.input.length))) }
-    val value = if (typed.text == state.input) typed else TextFieldValue(state.input, TextRange(state.input.length))
+    val sent = remember { ArrayDeque<String>() }
+    SideEffect { if (state.input == typed.text) sent.clear() }
+    val value =
+        when (state.input) {
+            typed.text, in sent -> typed
+            else -> TextFieldValue(state.input, TextRange(state.input.length))
+        }
     OutlinedTextField(
         value = value,
         onValueChange = {
             typed = it
+            if (it.text != state.input) {
+                sent.addLast(it.text)
+                if (sent.size > MAX_PENDING_EDITS) sent.removeFirst()
+            }
             callbacks.onInputChange(it.text)
         },
         modifier = modifier.fillMaxWidth().testTag(CAPTURE_FIELD_TAG),
@@ -547,6 +558,9 @@ internal fun problemText(problem: CaptureProblem): String = stringResource(
 )
 
 private const val CARD_MILLIS = 3_000L
+
+/** Keystrokes the screen state may still lag behind (fast typing); older ones are dropped. */
+private const val MAX_PENDING_EDITS = 8
 
 @Preview(showBackground = true)
 @PreviewLightDark

@@ -18,9 +18,16 @@ public data class PhotoModelState(
     val forceTextOnly: Boolean,
     /** The user wants the search by photo (C10). */
     val photoSearch: Boolean,
+    /** The text+vision file failed to load in this process (memory): photos are off until the next launch. */
+    val loadFailed: Boolean = false,
+    /**
+     * The system closed the app while the text+vision file was loading (not enough memory, no exception to catch):
+     * naming from photos was turned off; turning it on again tries once more.
+     */
+    val stoppedWhileLoading: Boolean = false,
 ) {
     /** Photos are embedded and names are suggested. */
-    val imagesActive: Boolean get() = deviceCapable && bundled && !forceTextOnly
+    val imagesActive: Boolean get() = deviceCapable && bundled && !forceTextOnly && !loadFailed
 
     /** The search screen offers « search by photo ». */
     val photoSearchAvailable: Boolean get() = imagesActive && photoSearch
@@ -40,7 +47,7 @@ public class ModelSettings internal constructor(
                 bundled = bundled,
                 forceTextOnly = flag(MetaKeys.FORCE_TEXT_ONLY, default = false),
                 photoSearch = flag(MetaKeys.PHOTO_SEARCH, default = true),
-            ),
+            ).let(::afterAKilledLoad),
         )
 
     public val state: StateFlow<PhotoModelState> = stateFlow.asStateFlow()
@@ -48,12 +55,40 @@ public class ModelSettings internal constructor(
     /** Called after a change of the loaded model (the search frees it and computes the missing vectors). */
     internal var onModelChange: suspend () -> Unit = {}
 
+    /**
+     * A load of the text+vision file that never ended (the system killed the app, which iOS and Android do without an
+     * exception when memory runs out) must not crash every launch: naming from photos is turned off, and said.
+     */
+    private fun afterAKilledLoad(state: PhotoModelState): PhotoModelState {
+        if (db.metaQueries.get(MetaKeys.VISION_LOADING).executeAsOneOrNull() == null) return state
+        db.transaction {
+            db.metaQueries.remove(MetaKeys.VISION_LOADING)
+            db.metaQueries.set(MetaKeys.FORCE_TEXT_ONLY, true.toString())
+        }
+        return state.copy(forceTextOnly = true, stoppedWhileLoading = true)
+    }
+
     /** « Text model only »: less memory, no photo naming nor photo search; the photo vectors are kept. */
     public suspend fun setForceTextOnly(value: Boolean) {
         if (value == stateFlow.value.forceTextOnly) return
         withContext(io) { db.metaQueries.set(MetaKeys.FORCE_TEXT_ONLY, value.toString()) }
-        stateFlow.value = stateFlow.value.copy(forceTextOnly = value)
+        stateFlow.value = stateFlow.value.copy(forceTextOnly = value, stoppedWhileLoading = false)
         onModelChange()
+    }
+
+    /** Marks the text+vision load as running, then as over (whatever the outcome). */
+    internal suspend fun visionLoading(running: Boolean) {
+        withContext(io) {
+            if (running) {
+                db.metaQueries.set(MetaKeys.VISION_LOADING, true.toString())
+            } else {
+                db.metaQueries.remove(MetaKeys.VISION_LOADING)
+            }
+        }
+    }
+
+    internal fun imagesFailed() {
+        stateFlow.value = stateFlow.value.copy(loadFailed = true)
     }
 
     public suspend fun setPhotoSearch(value: Boolean) {

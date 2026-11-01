@@ -272,6 +272,15 @@ public class SearchService internal constructor(
         modeState.value = idleMode()
     }
 
+    /**
+     * The user switched between the text and the text+vision model: the model is freed and the next search runs the
+     * indexing again, so that the photos added meanwhile get their vectors.
+     */
+    internal suspend fun modelChanged() {
+        release()
+        indexLock.withLock { indexedVersion = null }
+    }
+
     /** Before the store closes ([app.trouvetout.core.di.SharedFactory.wipeAllData]): no write may still be running. */
     internal suspend fun shutdown() {
         indexLock.withLock { indexing?.cancelAndJoin() }

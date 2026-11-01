@@ -50,7 +50,11 @@ internal fun CapturePhotoRow(
                 modifier = Modifier.size(PREVIEW_DP.dp),
                 contentScale = ContentScale.Crop,
             )
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            // The names replace « Looking at the photo… »: TalkBack says so.
+            Column(
+                modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 PhotoNames(photo, photoModel) { name ->
                     callbacks.onUseName(name)
                     onNameUsed()
@@ -101,9 +105,11 @@ private fun PhotoNames(
 
 /** Why no name is proposed: the phone, the user's setting, or the model found nothing close enough. */
 private fun noNamesText(model: PhotoModelState?): Int = when {
-    model == null || !model.bundled -> R.string.capture_photo_no_names_build
+    model == null -> R.string.capture_photo_no_names_found
+    !model.bundled -> R.string.capture_photo_no_names_build
     !model.deviceCapable -> R.string.capture_photo_no_names_memory
     model.forceTextOnly -> R.string.capture_photo_no_names_off
+    model.loadFailed -> R.string.capture_photo_no_names_failed
     else -> R.string.capture_photo_no_names_found
 }
 
@@ -112,6 +118,7 @@ private fun photoNoticeText(notice: PhotoNotice): Int = when (notice) {
     PhotoNotice.UNREADABLE -> R.string.photo_unreadable
     PhotoNotice.UNSUPPORTED -> R.string.photo_unsupported
     PhotoNotice.SEVERAL_ITEMS -> R.string.capture_photo_several
+    PhotoNotice.NOT_SAVED -> R.string.capture_photo_not_saved
 }
 
 const val PHOTO_NAMES_TAG = "capture_photo_names"

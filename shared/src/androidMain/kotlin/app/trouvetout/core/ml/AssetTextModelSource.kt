@@ -71,7 +71,14 @@ public class AssetTextModelSource(
                 )
             }
         val engine = EmbeddingEngine(config)
-        engine.initialize()
+        try {
+            engine.initialize()
+        } catch (
+            @Suppress("TooGenericExceptionCaught") e: Throwable,
+        ) {
+            engine.close()
+            throw e
+        }
         if (withImages) LiteRtImageEmbedder(engine) else LiteRtTextEmbedder(engine)
     }
 

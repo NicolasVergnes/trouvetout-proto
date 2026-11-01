@@ -86,6 +86,12 @@ struct SettingsView: View {
                     Text("settings_photos_memory").font(.footnote)
                 } else {
                     Text("settings_photos_text").font(.footnote)
+                    if model.stoppedWhileLoading {
+                        Text("settings_photos_stopped").font(.footnote).foregroundStyle(.red)
+                    }
+                    if model.loadFailed {
+                        Text("settings_photos_failed").font(.footnote).foregroundStyle(.red)
+                    }
                     Toggle(isOn: Binding(get: { !model.forceTextOnly }, set: { viewModel.setNamePhotos($0) })) {
                         VStack(alignment: .leading) {
                             Text("settings_photos_model")
@@ -93,12 +99,18 @@ struct SettingsView: View {
                         }
                     }
                     Toggle(
-                        "settings_photos_search",
                         isOn: Binding(
                             get: { model.photoSearch && model.imagesActive },
                             set: { viewModel.setPhotoSearch($0) }
                         )
-                    )
+                    ) {
+                        VStack(alignment: .leading) {
+                            Text("settings_photos_search")
+                            if !model.imagesActive {
+                                Text("settings_photos_search_hint").font(.footnote).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
                     .disabled(!model.imagesActive)
                 }
             } header: {

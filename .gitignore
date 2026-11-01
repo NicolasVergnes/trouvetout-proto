@@ -23,6 +23,15 @@ secrets/
 *.safetensors
 models/weights/
 
+# Photos — dépôt public : aucune photo réelle (jeu d'évaluation téléchargé au build, photos de l'utilisateur hors
+# dépôt). Les icônes et images d'interface qui arriveraient seront ajoutées avec `git add -f` après relecture.
+*.jpg
+*.jpeg
+*.heic
+*.heif
+*.png
+*.webp
+
 # Claude Code — réglages personnels et mémoire locale
 .claude/settings.local.json
 CLAUDE.local.md

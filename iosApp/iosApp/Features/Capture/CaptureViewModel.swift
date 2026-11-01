@@ -30,6 +30,10 @@ final class CaptureViewModel: ObservableObject {
     /// The bytes of `photo`, attached to the object once the sentence is recorded.
     var photoData: Data?
     var namingTask: Task<Void, Never>?
+    /// The proposed name last put in the field: a second tap replaces it instead of adding to it.
+    var usedName: String?
+    /// The photo the sentence being recorded attached, handed to its card.
+    var attachedPhoto: AttachedPhoto?
 
     let container: AppContainer
     private let speech: SpeechListening
@@ -84,6 +88,7 @@ final class CaptureViewModel: ObservableObject {
         problem = nil
         searchQuery = nil
         voiceNotice = nil
+        photoNotice = nil
         suggestionTask?.cancel()
         guard let at = text.lastIndex(of: "@") else {
             suggestions = []
@@ -172,6 +177,12 @@ final class CaptureViewModel: ObservableObject {
         guard let card else { return }
         self.card = nil
         input = card.rawInput
+        // The photo was detached with the rest: it comes back with the sentence, to be attached again.
+        if let attached = card.photo {
+            photoData = attached.data
+            photo = attached.shown
+            photoNotice = nil
+        }
         revert(card)
     }
 
@@ -220,7 +231,7 @@ final class CaptureViewModel: ObservableObject {
             source: source
         )
         if let recorded = outcome as? CaptureOutcomeRecorded {
-            let photoEvents = try await attachPhoto(to: recorded)
+            let photoEvents = await attachPhoto(to: recorded)
             recordedOutcome(proposal, recorded, photoEvents: photoEvents)
         } else if let refused = outcome as? CaptureOutcomeRefused {
             problem = refused.problem
@@ -254,8 +265,10 @@ final class CaptureViewModel: ObservableObject {
             rawInput: parse.input,
             events: recorded.events + photoEvents,
             source: source,
-            token: cardToken
+            token: cardToken,
+            photo: attachedPhoto
         )
+        attachedPhoto = nil
     }
 
     /// The UI language at the time of the call.

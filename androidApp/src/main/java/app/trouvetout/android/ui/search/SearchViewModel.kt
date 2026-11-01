@@ -105,41 +105,51 @@ class SearchViewModel(
     /** The bytes of [SearchUiState.photo], kept in memory while the photo is the question. */
     private var photoBytes: ByteArray? = null
 
+    /** Reading and previewing a photo: typing or clearing meanwhile wins. */
+    private var photoJob: Job? = null
+
     init {
         viewModelScope.launch { app.readyShared.first().search.prepare() }
         refresh(debounce = false)
     }
 
     fun onQueryChange(text: String) {
-        if (text.isNotEmpty()) photoBytes = null
+        if (text.isNotEmpty()) {
+            photoJob?.cancel()
+            photoBytes = null
+        }
         _state.update { it.copy(query = text, photo = if (text.isNotEmpty()) null else it.photo, photoProblem = null) }
         refresh(debounce = true)
     }
 
     /** C10: the photo becomes the question; typing or clearing it goes back to text. */
     fun searchByPhoto(attachment: PhotoAttachment) {
-        viewModelScope.launch {
-            val bytes =
-                when (val read = attachment.read()) {
-                    is PhotoBytes.Ok -> read.bytes
-                    PhotoBytes.TooLarge -> return@launch _state.update {
-                        it.copy(photoProblem = R.string.photo_too_large)
+        photoJob?.cancel()
+        photoJob =
+            viewModelScope.launch {
+                val bytes =
+                    when (val read = attachment.read()) {
+                        is PhotoBytes.Ok -> read.bytes
+                        PhotoBytes.TooLarge -> return@launch _state.update {
+                            it.copy(photoProblem = R.string.photo_too_large)
+                        }
+                        PhotoBytes.Unreadable -> return@launch _state.update {
+                            it.copy(photoProblem = R.string.photo_unreadable)
+                        }
                     }
-                    PhotoBytes.Unreadable -> return@launch _state.update {
-                        it.copy(photoProblem = R.string.photo_unreadable)
-                    }
+                val preview =
+                    previewOf(bytes)
+                        ?: return@launch _state.update { it.copy(photoProblem = R.string.photo_unsupported) }
+                photoBytes = bytes
+                _state.update {
+                    it.copy(query = "", photo = preview, photoProblem = null, suggestions = emptyList(), result = null)
                 }
-            val preview =
-                previewOf(bytes) ?: return@launch _state.update { it.copy(photoProblem = R.string.photo_unsupported) }
-            photoBytes = bytes
-            _state.update {
-                it.copy(query = "", photo = preview, photoProblem = null, suggestions = emptyList(), result = null)
+                refresh(debounce = false)
             }
-            refresh(debounce = false)
-        }
     }
 
     fun clearPhoto() {
+        photoJob?.cancel()
         photoBytes = null
         _state.update { it.copy(photo = null, result = null) }
         refresh(debounce = false)
@@ -197,13 +207,7 @@ class SearchViewModel(
                 val photo = photoBytes
                 val suggestions = if (current.query.isBlank()) emptyList() else core.search.suggest(current.query)
                 val result =
-                    if (photo !=
-                        null
-                    ) {
-                        core.search.searchByPhoto(photo, filters)
-                    } else {
-                        core.search.search(current.query, filters)
-                    }
+                    photo?.let { core.search.searchByPhoto(it, filters) } ?: core.search.search(current.query, filters)
                 _state.update {
                     if (it.query == current.query) it.copy(result = result, suggestions = suggestions) else it
                 }

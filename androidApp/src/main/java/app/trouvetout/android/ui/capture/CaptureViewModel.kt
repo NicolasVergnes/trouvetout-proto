@@ -30,7 +30,6 @@ import app.trouvetout.core.domain.model.PhotoOwnerType
 import app.trouvetout.core.domain.model.Place
 import app.trouvetout.core.domain.usecase.CommandResult
 import app.trouvetout.core.domain.usecase.LocationRef
-import app.trouvetout.core.domain.usecase.Rejection
 import app.trouvetout.core.ml.PhotoModelState
 import app.trouvetout.core.search.NameSuggestion
 import kotlinx.coroutines.CancellationException
@@ -77,13 +76,21 @@ data class ConfirmationCard(
     /** How the sentence came in (A4), also the source of the inverse events of « Défaire ». */
     val source: EventSource,
     val token: Long,
+    /** The photo this capture attached: « Modifier » gives it back with the sentence. */
+    val photo: AttachedPhoto? = null,
+)
+
+/** A photo attached by a capture, kept in memory with its card. */
+class AttachedPhoto(
+    val bytes: ByteArray,
+    val shown: CapturePhoto,
 )
 
 /** Why the microphone is not listening; shown under the field, typing always works (B2, H9). */
 enum class VoiceNotice { NOT_ON_DEVICE, NO_RECOGNIZER, LANGUAGE_UNAVAILABLE, NO_MATCH, PERMISSION_DENIED, FAILED }
 
 /** Why a photo of the capture could not be used (B8, A10). */
-enum class PhotoNotice { TOO_LARGE, UNREADABLE, UNSUPPORTED, SEVERAL_ITEMS }
+enum class PhotoNotice { TOO_LARGE, UNREADABLE, UNSUPPORTED, SEVERAL_ITEMS, NOT_SAVED }
 
 /** The photo taken with the sentence, not stored before the sentence is recorded (B8). */
 data class CapturePhoto(
@@ -156,6 +163,12 @@ class CaptureViewModel(
     /** The bytes of [CaptureUiState.photo], attached to the object once the sentence is recorded. */
     private var photoBytes: ByteArray? = null
     private var namingJob: Job? = null
+
+    /** The proposed name last put in the field: a second tap replaces it instead of adding to it. */
+    private var usedName: String? = null
+
+    /** The photo the sentence being recorded attached, handed to its card. */
+    private var attached: AttachedPhoto? = null
     private var cardToken = 0L
     private var suggestionJob: Job? = null
     private var listenJob: Job? = null
@@ -167,7 +180,9 @@ class CaptureViewModel(
     private var heardText: String? = null
 
     fun onInputChange(text: String) {
-        _state.update { it.copy(input = text, problem = null, searchQuery = null, voiceNotice = null) }
+        _state.update {
+            it.copy(input = text, problem = null, searchQuery = null, voiceNotice = null, photoNotice = null)
+        }
         suggestionJob?.cancel()
         val prefix = text.substringAfterLast('@', missingDelimiterValue = "").trim()
         if (prefix.isEmpty()) {
@@ -229,7 +244,8 @@ class CaptureViewModel(
 
     /** A photo for the next sentence: previewed, named by the model when it can (B8), stored only once recorded. */
     fun addPhoto(attachment: PhotoAttachment) {
-        namingJob?.cancel()
+        // The current photo (and its naming) stays until the new one is known to be usable.
+        val previous = namingJob
         namingJob =
             viewModelScope.launch {
                 val bytes =
@@ -239,11 +255,16 @@ class CaptureViewModel(
                         PhotoBytes.Unreadable -> return@launch photoProblem(PhotoNotice.UNREADABLE)
                     }
                 val preview = previewOf(bytes) ?: return@launch photoProblem(PhotoNotice.UNSUPPORTED)
+                previous?.cancel()
                 photoBytes = bytes
-                val naming = photoModel.value?.imagesActive == true
+                usedName = null
+                // From the core, not from the screen's flow: after the process died behind the camera, the flow
+                // has not emitted yet.
+                val shared = app.readyShared.first()
+                val naming = shared.modelSettings.state.value.imagesActive
                 _state.update { it.copy(photo = CapturePhoto(preview, naming = naming), photoNotice = null) }
                 if (naming) {
-                    val names = app.readyShared.first().search.suggestNames(bytes, uiLang())
+                    val names = shared.search.suggestNames(bytes, uiLang())
                     _state.update { s -> s.copy(photo = s.photo?.copy(names = names, naming = false)) }
                 }
             }
@@ -251,6 +272,7 @@ class CaptureViewModel(
 
     fun removePhoto() {
         namingJob?.cancel()
+        usedName = null
         photoBytes = null
         _state.update { it.copy(photo = null, photoNotice = null) }
     }
@@ -258,8 +280,9 @@ class CaptureViewModel(
     /** A proposed name starts the sentence; the user completes the place and sends. */
     fun useName(name: String) {
         val input = _state.value.input.trim()
-        val text = if (input.isEmpty()) "$name @ " else "$name $input"
-        onInputChange(text)
+        val rest = usedName?.takeIf { input.startsWith(it) }?.let { input.removePrefix(it).trim() } ?: input
+        usedName = name
+        onInputChange(if (rest.isEmpty() || rest == "@") "$name @ " else "$name $rest")
     }
 
     private fun photoProblem(notice: PhotoNotice) = _state.update { it.copy(photoNotice = notice) }
@@ -373,7 +396,11 @@ class CaptureViewModel(
     /** Tap on the card: bring the sentence back for correction (B6) and revert what it wrote. */
     fun editLast() {
         val card = _state.value.card ?: return
-        _state.update { it.copy(card = null, input = card.rawInput) }
+        // The photo was detached with the rest: it comes back with the sentence, to be attached again.
+        card.photo?.let { photoBytes = it.bytes }
+        _state.update {
+            it.copy(card = null, input = card.rawInput, photo = card.photo?.shown ?: it.photo, photoNotice = null)
+        }
         revert(card)
     }
 
@@ -418,30 +445,32 @@ class CaptureViewModel(
      * removes it too. Kept for the next sentence when the outcome names several objects.
      */
     private suspend fun attachPhoto(outcome: CaptureOutcome.Recorded): List<Event> {
+        attached = null
         val bytes = photoBytes ?: return emptyList()
+        val shown = _state.value.photo
         val itemId = outcome.photoItemId
         if (itemId == null) {
             photoProblem(PhotoNotice.SEVERAL_ITEMS)
             return emptyList()
         }
         photoBytes = null
-        _state.update { it.copy(photo = null) }
-        return when (
-            val result = app.shared.photoAttacher.attach(
-                PhotoOwnerType.ITEM,
-                itemId,
-                bytes,
-                EventSource.PHOTO,
-            )
-        ) {
-            is CommandResult.Done -> result.events
-            is CommandResult.Rejected -> {
-                photoProblem(
-                    if (result.reason == Rejection.IMAGE_TOO_LARGE) PhotoNotice.TOO_LARGE else PhotoNotice.UNSUPPORTED,
-                )
-                emptyList()
+        usedName = null
+        namingJob?.cancel()
+        _state.update { it.copy(photo = null, photoNotice = null) }
+        // The sentence is recorded: a photo that cannot be stored (thrown or refused; size and format were checked
+        // when it was added) must not hide its card nor its « Défaire ».
+        val done =
+            try {
+                app.shared.photoAttacher.attach(PhotoOwnerType.ITEM, itemId, bytes, EventSource.PHOTO)
+                    as? CommandResult.Done
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                null
             }
-        }
+        if (done == null) photoProblem(PhotoNotice.NOT_SAVED)
+        attached = done?.let { shown?.let { AttachedPhoto(bytes, it.copy(naming = false)) } }
+        return done?.events.orEmpty()
     }
 
     private fun recorded(
@@ -465,8 +494,10 @@ class CaptureViewModel(
                     events = outcome.events + photoEvents,
                     source = source,
                     token = ++cardToken,
+                    photo = attached,
                 )
             }
+        attached = null
         _state.update { it.copy(input = "", suggestions = emptyList(), card = card) }
     }
 

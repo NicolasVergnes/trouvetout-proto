@@ -41,6 +41,7 @@ final class SearchViewModel: ObservableObject {
     /// C10: the photo searched for instead of the text, previewed only (never stored).
     @Published private(set) var photo: UIImage?
     @Published private(set) var photoTooLarge = false
+    @Published private(set) var photoUnsupported = false
     /// Offered on ≥ 6 GB phones with the photo model and the setting on (ADR-022).
     @Published private(set) var photoSearch = false
     private var photoData: Data?
@@ -107,13 +108,21 @@ final class SearchViewModel: ObservableObject {
             photoTooLarge = true
             return
         }
-        guard let image = UIImage(data: data), image.size.width > 0 else { return }
         photoTooLarge = false
-        photo = image.preparingThumbnail(of: CGSize(width: 160, height: 160 * image.size.height / image.size.width))
-        photoData = data
-        query = ""
-        result = nil
-        refresh(debounce: false)
+        Task { [weak self] in
+            let preview = await PhotoPreview.make(from: data, maxSide: 160)
+            guard let self else { return }
+            guard let preview else {
+                photoUnsupported = true
+                return
+            }
+            photoUnsupported = false
+            photo = preview
+            photoData = data
+            query = ""
+            result = nil
+            refresh(debounce: false)
+        }
     }
 
     func clearPhoto() {

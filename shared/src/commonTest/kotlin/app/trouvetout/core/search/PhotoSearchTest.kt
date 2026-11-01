@@ -115,6 +115,63 @@ class PhotoSearchTest {
     }
 
     @Test
+    fun the_photo_of_a_question_is_never_stored_and_reaches_the_model_re_encoded_only() = runTest {
+        val model = model()
+        val world = SearchWorld(model, loose)
+        val house = world.place("Maison")
+        val tent = world.item("Tente", LocationRef.InPlace(house))
+        world.photo(tent, "toile verte camping")
+        world.search.prepareAndWait()
+        val events = world.db.eventQueries.count().executeAsOne()
+        val photos = world.db.photoQueries.selectAll().executeAsList().size
+        val files = world.photoFiles.size
+        val before = model.embedder.images
+
+        world.search.suggestNames("tente".encodeToByteArray(), Lang.FR)
+        world.search.searchByPhoto("camping".encodeToByteArray())
+        // The fake embedder refuses any image that did not go through the codec.
+        assertEquals(before + 2, model.embedder.images)
+        assertTrue(world.search.suggestNames("unreadable".encodeToByteArray(), Lang.FR).isEmpty())
+        assertEquals(before + 2, model.embedder.images, "an undecodable photo never reaches the model")
+
+        assertEquals(events, world.db.eventQueries.count().executeAsOne(), "no event")
+        assertEquals(photos, world.db.photoQueries.selectAll().executeAsList().size, "no photo row")
+        assertEquals(files, world.photoFiles.size, "no photo file")
+    }
+
+    @Test
+    fun an_unreadable_stored_photo_does_not_stop_the_others() = runTest {
+        val model = model()
+        val world = SearchWorld(model, loose)
+        val house = world.place("Maison")
+        val drill = world.item("Perceuse", LocationRef.InPlace(house))
+        val tent = world.item("Tente", LocationRef.InPlace(house))
+        world.photo(drill, "unreadable")
+        world.photo(tent, "toile verte camping")
+        world.search.prepareAndWait()
+        assertEquals(1, model.embedder.images, "the readable photo is embedded")
+        assertEquals(tent, world.search.searchByPhoto("toile camping".encodeToByteArray()).hits.first().view.item.id)
+        val reads = world.photoReads
+        world.items.update(drill, ItemPatch(description = "sans fil"), EventSource.TEXT)
+        world.search.prepareAndWait()
+        assertEquals(reads, world.photoReads, "the unreadable photo is not read again on every pass")
+    }
+
+    @Test
+    fun a_malformed_catalog_is_refused() {
+        val good = assertNotNull(model().labelCatalog())
+        assertNotNull(LabelCatalog.decode(good))
+        assertNull(LabelCatalog.decode(good.copyOf(good.size - 1)), "truncated")
+        assertNull(LabelCatalog.decode(good + byteArrayOf(0)), "trailing bytes")
+        val huge = LabelCatalogHeader("m", 4, "t", "s", Int.MAX_VALUE)
+        val json = kotlinx.serialization.json.Json.encodeToString(LabelCatalogHeader.serializer(), huge)
+        val bytes = "TTLC".encodeToByteArray() + byteArrayOf(1) + le32(json.length) + json.encodeToByteArray()
+        assertNull(LabelCatalog.decode(bytes), "a huge count allocates nothing")
+    }
+
+    private fun le32(value: Int) = ByteArray(4) { (value ushr (8 * it)).toByte() }
+
+    @Test
     fun text_only_devices_never_load_the_vision_file_and_keep_text_search() = runTest {
         val model = model()
         val world = SearchWorld(model, loose, imagesWanted = false)
@@ -159,5 +216,22 @@ class PhotoSearchTest {
         assertTrue(again.state.value.forceTextOnly, "kept in meta")
         val notBundled = ModelSettings(openTestDatabase(), 8 * gib, bundled = false, io = Dispatchers.Unconfined)
         assertTrue(!notBundled.state.value.imagesActive)
+    }
+
+    @Test
+    fun a_launch_killed_while_the_vision_file_loaded_turns_naming_off_once() = runTest {
+        val gib = 1024L * 1024 * 1024
+        val db = openTestDatabase()
+        val first = ModelSettings(db, 8 * gib, bundled = true, io = Dispatchers.Unconfined)
+        first.visionLoading(true) // ... and the system kills the app here.
+        val next = ModelSettings(db, 8 * gib, bundled = true, io = Dispatchers.Unconfined)
+        assertTrue(next.state.value.stoppedWhileLoading)
+        assertTrue(!next.state.value.imagesActive, "no crash loop")
+        next.setForceTextOnly(false)
+        assertTrue(next.state.value.imagesActive, "the user may try again")
+        assertTrue(!next.state.value.stoppedWhileLoading)
+        next.visionLoading(true)
+        next.visionLoading(false)
+        assertTrue(!ModelSettings(db, 8 * gib, bundled = true, io = Dispatchers.Unconfined).state.value.forceTextOnly)
     }
 }

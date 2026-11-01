@@ -84,6 +84,9 @@ struct SearchView: View {
         } else if viewModel.photoSearch {
             AddPhotoButtons(enabled: true) { viewModel.search(byPhoto: $0) }
         }
+        if viewModel.photoUnsupported {
+            Text("photo_unsupported").font(.callout).foregroundStyle(.red)
+        }
         if viewModel.photoTooLarge {
             Text("photo_too_large").font(.callout).foregroundStyle(.red)
         }

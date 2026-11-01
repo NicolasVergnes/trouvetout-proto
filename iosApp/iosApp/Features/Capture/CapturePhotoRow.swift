@@ -73,6 +73,9 @@ struct CapturePhotoRow: View {
 
     /// Why no name is proposed: the build, the phone, the user's setting, or nothing close enough.
     private func noNamesKey(_ model: PhotoModelState?) -> LocalizedStringKey {
+        if let model, model.bundled, model.deviceCapable, !model.forceTextOnly, model.loadFailed {
+            return "capture_photo_no_names_failed"
+        }
         guard let model, model.bundled else { return "capture_photo_no_names_build" }
         if !model.deviceCapable { return "capture_photo_no_names_memory" }
         if model.forceTextOnly { return "capture_photo_no_names_off" }
@@ -84,6 +87,7 @@ struct CapturePhotoRow: View {
         case .tooLarge: "photo_too_large"
         case .unsupported: "photo_unsupported"
         case .severalItems: "capture_photo_several"
+        case .notSaved: "capture_photo_not_saved"
         }
     }
 }

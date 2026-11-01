@@ -3,8 +3,10 @@ package app.trouvetout.core.ml
 import app.trouvetout.core.log.LogLevel
 import app.trouvetout.core.log.Logger
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.concurrent.Volatile
 
 /** Why the search answers with keywords only (the host says it to the user). */
@@ -28,6 +30,10 @@ internal class ModelRuntime(
     private val logger: Logger,
     /** Whether the text+vision file is wanted now (memory, settings); read at every use. */
     private val imagesWanted: () -> Boolean = { false },
+    /** The text+vision file failed to load: photos are off until the next launch (the hosts say so). */
+    private val onImagesFailed: () -> Unit = {},
+    /** Around a load of the text+vision file: a mark that outlives a kill by the system. */
+    private val visionLoading: suspend (running: Boolean) -> Unit = {},
 ) {
     private val mutex = Mutex()
     private var embedder: TextEmbedder? = null
@@ -89,13 +95,20 @@ internal class ModelRuntime(
 
     private suspend fun load(withImages: Boolean): TextEmbedder? {
         if (unavailableReason != null) return null
-        val attempt = runCatching { checkNotNull(source).load(withImages) }
+        if (withImages) visionLoading(true)
+        val attempt =
+            try {
+                runCatching { checkNotNull(source).load(withImages) }
+            } finally {
+                if (withImages) withContext(NonCancellable) { visionLoading(false) }
+            }
         attempt.exceptionOrNull()?.let { failure ->
             if (failure is CancellationException) throw failure
             logger.log(LogLevel.WARN, TAG, "model load failed (images=$withImages): ${failure::class.simpleName}")
             // The bigger file failing (memory) must not take text search with it (rule 7).
             if (withImages) {
                 imagesFailed = true
+                onImagesFailed()
                 return load(false)
             }
             failed = true

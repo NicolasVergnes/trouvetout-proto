@@ -64,14 +64,29 @@ public class LabelCatalog(
         private const val VERSION = 1
         private val json = Json { ignoreUnknownKeys = true }
 
-        /** Null when [bytes] is not a catalog of a known version (the hosts then offer no names). */
+        private const val MAX_HEADER_BYTES = 4096
+        private const val MAX_LABELS = 10_000
+        private const val MAX_DIM = 2048
+
+        /**
+         * Null when [bytes] is not a well-formed catalog of a known version (the hosts then offer no names). Sizes are
+         * bounded before anything is allocated, the file must end exactly after the vectors, and every value must be
+         * finite.
+         */
         public fun decode(bytes: ByteArray): LabelCatalog? = runCatching {
             val input = ByteReader(bytes)
             check(MAGIC.all { input.byte() == it.code } && input.byte() == VERSION) { "not a catalog" }
-            val headerJson = input.bytes(input.int()).decodeToString()
-            val header = json.decodeFromString(LabelCatalogHeader.serializer(), headerJson)
-            val labels = List(header.count) { Label(input.string(), input.string(), input.string()) }
+            val headerLength = input.int()
+            check(headerLength in 1..MAX_HEADER_BYTES) { "bad header" }
+            val header = json.decodeFromString(
+                LabelCatalogHeader.serializer(),
+                input.bytes(headerLength).decodeToString(),
+            )
+            check(header.count in 1..MAX_LABELS && header.dim in 1..MAX_DIM) { "bad sizes" }
+            val labels = ArrayList<Label>(header.count)
+            repeat(header.count) { labels += Label(input.string(), input.string(), input.string()) }
             val vectors = Float16.decode(input.bytes(header.count * header.dim * 2))
+            check(input.atEnd && vectors.all { it.isFinite() }) { "bad vectors" }
             LabelCatalog(header, labels, vectors)
         }.getOrNull()
     }
@@ -127,8 +142,10 @@ private class ByteReader(
         return value
     }
 
+    val atEnd: Boolean get() = position == data.size
+
     fun bytes(count: Int): ByteArray {
-        check(count >= 0 && position + count <= data.size) { "truncated catalog" }
+        check(count >= 0 && count <= data.size - position) { "truncated catalog" }
         return data.copyOfRange(position, position + count).also { position += count }
     }
 

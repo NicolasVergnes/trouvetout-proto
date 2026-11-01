@@ -54,6 +54,9 @@ internal class PhotoIndex(
     private var catalogLoaded = false
     private val labelIndex = SemanticIndex(tuning.dimension)
 
+    /** `photoId:sha256` of the photos that cannot be read or decoded: not retried in this process. */
+    private val unusable = HashSet<String>()
+
     private fun key(): String? = runtime.imageModelId?.let { "$it/${tuning.dimension}/$IMAGE_KEY_VERSION" }
 
     /**
@@ -65,35 +68,57 @@ internal class PhotoIndex(
         progress: (done: Int, total: Int) -> Unit,
     ): Boolean {
         val key = key() ?: return false
-        if (!runtime.imagesActive) return false
         val stored =
             withContext(dispatchers.io) {
                 db.embeddingQueries.hashes(OWNER_PHOTO, key).executeAsList().associate { it.owner_id to it.text_hash }
             }
+        // A photo detached or purged takes its vector with it, also while photos are off (text only, load failure).
+        val keep = photos.map { it.photoId }.toSet()
+        withContext(dispatchers.io) {
+            db.transaction { (stored.keys - keep).forEach { db.embeddingQueries.deleteOne(OWNER_PHOTO, it, key) } }
+        }
+        if (!runtime.imagesActive) return false
         loadStored(key, photos, stored)
-        val inMemory = lock.withLock { photos.map { it.photoId }.filterTo(HashSet()) { it in vectors } }
-        val missing = photos.filter { stored[it.photoId] != it.sha256 || it.photoId !in inMemory }
+        // Stored vectors answer at once, before the missing ones are computed.
+        val inMemory =
+            lock.withLock {
+                ownerOf = photos.associate { it.photoId to it.itemId }
+                photos.map { it.photoId }.filterTo(HashSet()) { it in vectors }
+            }
+        val missing =
+            photos.filter {
+                (stored[it.photoId] != it.sha256 || it.photoId !in inMemory) &&
+                    "${it.photoId}:${it.sha256}" !in unusable
+            }
         var done = 0
         if (missing.isNotEmpty()) progress(0, missing.size)
         for (batch in missing.chunked(BATCH)) {
-            val images = batch.map { prepare(readPhoto(it.fileName)) }
+            val images = batch.map { readPrepared(it) }
             val results = embedImages(images) ?: return false
             store(key, batch.zip(results))
             done += batch.size
             progress(done, missing.size)
         }
-        val keep = photos.map { it.photoId }.toSet()
-        withContext(dispatchers.io) {
-            db.transaction {
-                (stored.keys - keep).forEach { db.embeddingQueries.deleteOne(OWNER_PHOTO, it, key) }
-                db.embeddingQueries.deleteOtherModelsOf(OWNER_PHOTO, key)
-            }
-        }
-        lock.withLock {
-            vectors.retain(keep)
-            ownerOf = photos.associate { it.photoId to it.itemId }
-        }
+        withContext(dispatchers.io) { db.embeddingQueries.deleteOtherModelsOf(OWNER_PHOTO, key) }
+        lock.withLock { vectors.retain(keep) }
         return true
+    }
+
+    /** The model's input for a stored photo; null (remembered for this process) when it cannot be read or decoded. */
+    private suspend fun readPrepared(photo: ItemPhoto): ByteArray? {
+        val image =
+            try {
+                prepare(readPhoto(photo.fileName))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (
+                @Suppress("TooGenericExceptionCaught") e: Exception,
+            ) {
+                logger.log(LogLevel.WARN, TAG, "photo unreadable: ${e::class.simpleName}")
+                null
+            }
+        if (image == null) lock.withLock { unusable += "${photo.photoId}:${photo.sha256}" }
+        return image
     }
 
     /** The vector of a photo taken now (never stored); null when photos are not active or the image is unusable. */
@@ -132,10 +157,11 @@ internal class PhotoIndex(
     /** The bundled catalog, if it was computed with the running text model and size (else no names, logged). */
     private suspend fun labels(): LabelCatalog? = lock.withLock {
         if (!catalogLoaded) {
-            catalogLoaded = true
+            // Marked loaded only once read: a naming cancelled during the first read tries again next time.
             catalog =
-                withContext(dispatchers.io) { runtime.labelCatalog()?.let(LabelCatalog::decode) }
+                withContext(dispatchers.io) { readCatalog() }
                     ?.takeIf { it.header.modelId == runtime.modelId && it.header.dim == tuning.dimension }
+            catalogLoaded = true
             val loaded = catalog
             if (loaded == null) {
                 logger.log(LogLevel.WARN, TAG, "label catalog missing or for another model")
@@ -144,6 +170,15 @@ internal class PhotoIndex(
             }
         }
         catalog
+    }
+
+    private fun readCatalog(): LabelCatalog? = try {
+        runtime.labelCatalog()?.let(LabelCatalog::decode)
+    } catch (
+        @Suppress("TooGenericExceptionCaught") e: Exception,
+    ) {
+        logger.log(LogLevel.WARN, TAG, "label catalog unreadable: ${e::class.simpleName}")
+        null
     }
 
     /** Oriented, metadata-free, bounded JPEG for the model; null when the bytes are not an image. */
@@ -160,7 +195,11 @@ internal class PhotoIndex(
                 emptyList()
             } else {
                 try {
-                    runtime.withImageModel { it.embedImages(present, tuning.dimension) }
+                    runtime.withImageModel { model ->
+                        model.embedImages(present, tuning.dimension).also {
+                            check(it.size == present.size) { "vector count" }
+                        }
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (
