@@ -15,6 +15,11 @@ public object MetaKeys {
 
     /** Set while the text+vision file loads: still there at the next launch, the system killed the app (memory). */
     public const val VISION_LOADING: String = "vision_loading"
+
+    /** H3: the app lock, its delay, and the Android keyboard-learning switch (lot 8). */
+    public const val APP_LOCK: String = "app_lock"
+    public const val LOCK_DELAY: String = "lock_delay"
+    public const val NO_KEYBOARD_LEARNING: String = "no_keyboard_learning"
 }
 
 /** Opens (creating or migrating) the SQLite database; implemented per platform, the caller owns the driver. */

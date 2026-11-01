@@ -548,11 +548,16 @@ public class SearchService internal constructor(
         lentTo = view.location.lentTo,
         since = view.location.since,
         photoThumbName =
-            withContext(dispatchers.io) {
-                db.photoQueries.selectByOwner(
-                    PhotoOwnerType.ITEM.name,
-                    view.item.id,
-                ).executeAsList().firstOrNull()?.thumb_name
+            if (view.item.sensitive) {
+                null
+            } else {
+                withContext(dispatchers.io) {
+                    db.photoQueries.selectByOwner(
+                        PhotoOwnerType.ITEM.name,
+                        view.item.id,
+                    ).executeAsList().firstOrNull()?.thumb_name
+                }
             },
+        sensitive = view.item.sensitive,
     )
 }

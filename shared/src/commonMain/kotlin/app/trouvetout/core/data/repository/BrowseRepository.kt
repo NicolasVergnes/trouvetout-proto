@@ -27,17 +27,22 @@ public data class PlaceContent(
     val path: List<Place>,
     val children: List<Place>,
     val containers: List<Container>,
-    /** Items stored directly in the place (not in one of its containers), pinned first. */
+    /** Items stored directly in the place (not in one of its containers), pinned first; never a sensitive one. */
     val items: List<ItemView>,
     val photos: List<Photo>,
+    /** Sensitive items stored there (H4): the screen says how many, and shows them only on request. */
+    val hidden: List<ItemView> = emptyList(),
 )
 
 /** What a container screen shows: the container, where it is, and its items. */
 public data class ContainerContent(
     val container: Container,
     val path: List<Place>,
+    /** Never a sensitive item. */
     val items: List<ItemView>,
     val photos: List<Photo>,
+    /** Sensitive items in the container (H4), shown only on request. */
+    val hidden: List<ItemView> = emptyList(),
 )
 
 /** Read side of the navigation by place (C6, C7) and of the item sheet extras (A5, A11, D5). */
@@ -62,13 +67,19 @@ public class BrowseRepository internal constructor(
                 Triple(all, photos, resolver)
             }
         return combine(structure, contents) { (place, children, containers), (all, photos, resolver) ->
+            val (hidden, shown) =
+                all
+                    .filter { it.location.placeId == placeId && it.location.containerId == null }
+                    .pinnedFirst()
+                    .partition { it.item.sensitive }
             PlaceContent(
                 place = place,
                 path = placeId?.let(resolver::pathOf).orEmpty(),
                 children = children,
                 containers = containers,
-                items = all.filter { it.location.placeId == placeId && it.location.containerId == null }.pinnedFirst(),
+                items = shown,
                 photos = photos,
+                hidden = hidden,
             )
         }
     }
@@ -81,11 +92,14 @@ public class BrowseRepository internal constructor(
         resolvers(db, dispatchers),
     ) { row, allItems, photos, resolver ->
         row?.toContainer()?.let { container ->
+            val (hidden, shown) =
+                allItems.filter { it.location.containerId == containerId }.pinnedFirst().partition { it.item.sensitive }
             ContainerContent(
                 container = container,
                 path = resolver.pathOf(container.placeId),
-                items = allItems.filter { it.location.containerId == containerId }.pinnedFirst(),
+                items = shown,
                 photos = photos,
+                hidden = hidden,
             )
         }
     }.filterNotNull()

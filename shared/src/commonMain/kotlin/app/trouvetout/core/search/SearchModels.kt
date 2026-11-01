@@ -53,8 +53,10 @@ public data class AnswerLine(
     val lentTo: String?,
     /** When the item reached its current state. */
     val since: Instant,
-    /** Thumbnail file of the item's first photo, for `PhotoStore.absolutePath`. */
+    /** Thumbnail file of the item's first photo, for `PhotoStore.absolutePath`; never for a sensitive item (H4). */
     val photoThumbName: String? = null,
+    /** The item is sensitive (H4): no thumbnail, and hidden behind the lock when the app lock is on. */
+    val sensitive: Boolean = false,
 )
 
 public data class AnswerPlace(

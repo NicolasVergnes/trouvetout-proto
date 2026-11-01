@@ -49,4 +49,19 @@ class ItemRepositoryTest {
         assertNull(items.observeActive().first().find { it.item.id == "lights" })
         assertEquals(listOf("lights"), items.observeDeleted().first().map { it.item.id })
     }
+
+    @Test
+    fun the_home_list_never_shows_a_sensitive_item_H4() = runTest {
+        store.append(
+            listOf(
+                fx.event(EventPayload.ItemCreated("passport", "passeport", sensitive = true)),
+                fx.event(EventPayload.ItemCreated("keys", "clés")),
+            ),
+        )
+        assertEquals(listOf("keys"), items.observeListed().first().map { it.item.id })
+        assertEquals(setOf("passport", "keys"), items.observeActive().first().map { it.item.id }.toSet())
+
+        store.append(listOf(fx.event(EventPayload.ItemUpdated("keys", sensitive = true))))
+        assertEquals(emptyList(), items.observeListed().first())
+    }
 }
