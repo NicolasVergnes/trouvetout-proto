@@ -71,15 +71,16 @@ struct CapturePhotoRow: View {
         }
     }
 
-    /// Why no name is proposed: the build, the phone, the user's setting, or nothing close enough.
+    /// Why no name is proposed: the build, the phone, the user's setting, a failed load, or nothing close enough.
     private func noNamesKey(_ model: PhotoModelState?) -> LocalizedStringKey {
-        if let model, model.bundled, model.deviceCapable, !model.forceTextOnly, model.loadFailed {
-            return "capture_photo_no_names_failed"
+        guard let model else { return "capture_photo_no_names_found" }
+        return switch true {
+        case !model.bundled: "capture_photo_no_names_build"
+        case !model.deviceCapable: "capture_photo_no_names_memory"
+        case model.forceTextOnly: "capture_photo_no_names_off"
+        case model.loadFailed: "capture_photo_no_names_failed"
+        default: "capture_photo_no_names_found"
         }
-        guard let model, model.bundled else { return "capture_photo_no_names_build" }
-        if !model.deviceCapable { return "capture_photo_no_names_memory" }
-        if model.forceTextOnly { return "capture_photo_no_names_off" }
-        return "capture_photo_no_names_found"
     }
 
     private func noticeKey(_ notice: PhotoNotice) -> LocalizedStringKey {
