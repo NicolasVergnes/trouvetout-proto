@@ -164,13 +164,26 @@ struct CaptureView: View {
         )
     }
 
+    /// A multi-line field turns Return into a new line: here it sends the sentence, as before.
     private var typedText: Binding<String> {
-        Binding(get: { viewModel.input }, set: { viewModel.typed($0) })
+        Binding(
+            get: { viewModel.input },
+            set: { text in
+                if text.contains("\n") {
+                    viewModel.typed(text.replacingOccurrences(of: "\n", with: ""))
+                    viewModel.submit()
+                } else {
+                    viewModel.typed(text)
+                }
+            }
+        )
     }
 
     private var field: some View {
         HStack {
-            TextField("capture_hint", text: typedText)
+            // Grows on several lines instead of clipping its hint or a long sentence (large text sizes, I6).
+            TextField("capture_hint", text: typedText, axis: .vertical)
+                .lineLimit(1 ... 4)
                 .textFieldStyle(.roundedBorder)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
