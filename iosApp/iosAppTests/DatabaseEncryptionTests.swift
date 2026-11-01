@@ -1,7 +1,7 @@
 import Foundation
+@testable import iosApp
 import Shared
 import XCTest
-@testable import iosApp
 
 /// A Keychain item kept in memory, for the tests that only need an encrypted database.
 final class MemoryKeychainItem: NSObject, KeychainItem {
@@ -60,7 +60,8 @@ final class DatabaseEncryptionTests: XCTestCase {
         driver.close()
 
         XCTAssertFalse(DatabaseFixtures.shared.isPlain(path: path), "no plain SQLite header any more")
-        XCTAssertEqual(DatabaseFixtures.shared.probeCount(path: path, keyLiteral: try literal()), 1000)
+        let key = try literal()
+        XCTAssertEqual(DatabaseFixtures.shared.probeCount(path: path, keyLiteral: key), 1000)
         XCTAssertEqual(DatabaseFixtures.shared.probeCount(path: path, keyLiteral: nil), -1, "unreadable without key")
         XCTAssertFalse(FileManager.default.fileExists(atPath: path + ".enc"))
         XCTAssertNotNil(item.read(), "the key is in the Keychain")
