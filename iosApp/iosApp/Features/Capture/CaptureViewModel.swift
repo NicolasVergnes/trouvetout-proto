@@ -18,7 +18,8 @@ final class CaptureViewModel: ObservableObject {
     /// The explanation shown before the system prompts (H9).
     @Published private(set) var askMicPermission = false
     @Published private(set) var voiceNotice: VoiceNotice?
-    @Published private(set) var batch: BatchTarget?
+    /// Set by the batch extension (`CaptureViewModel+Batch.swift`).
+    @Published var batch: BatchTarget?
     /// Destinations of the « je range » picker.
     @Published private(set) var places: [Place_] = []
     @Published private(set) var containers: [Container_] = []
@@ -345,23 +346,6 @@ extension CaptureViewModel {
             heardText = input
         }
         listening = false
-    }
-
-    func startBatch(_ ref: LocationRef) {
-        let label: String? =
-            if let place = ref as? LocationRefInPlace {
-                places.first { $0.id == place.placeId }?.name
-            } else if let box = ref as? LocationRefInContainer {
-                containers.first { $0.id == box.containerId }?.label
-            } else {
-                nil
-            }
-        guard let label else { return }
-        batch = BatchTarget(ref: ref, label: label)
-    }
-
-    func stopBatch() {
-        batch = nil
     }
 
     private func startListening() {
