@@ -3,6 +3,9 @@ import Shared
 import XCTest
 
 final class SharedBridgeTests: XCTestCase {
+    /// One key store per test: the factories of a test reopen the same encrypted database.
+    private let keys = MemoryKeychainItem.keys()
+
     func testCoreExposesNeutralIdentity() {
         XCTAssertEqual(AppInfo.shared.NAME, "TrouveTout")
         XCTAssertEqual(AppInfo.shared.URL_SCHEME, "trouvetout-proto")
@@ -31,7 +34,6 @@ final class SharedBridgeTests: XCTestCase {
     }
 
     private func factory(in directory: URL, storageReady: Bool = true) -> SharedFactory {
-        let keys = MemoryKeychainItem.keys()
         let config = SharedConfig(
             dataDirectory: directory.path,
             deviceInfo: IosDeviceInfo(),
