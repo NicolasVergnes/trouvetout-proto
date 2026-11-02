@@ -32,7 +32,7 @@ class ReminderScheduler(
         for (reminder in upcoming) {
             alarms?.setWindow(AlarmManager.RTC_WAKEUP, reminder.fireAtMillis, WINDOW_MILLIS, alarm(reminder.id))
         }
-        for (gone in scheduledIds() - wanted) alarms?.cancel(alarm(gone))
+        for (gone in scheduledIds() - wanted) cancelAlarm(gone)
         for ((reminderId, named) in ReminderNotifications.shown(context)) {
             if (schedule.withdraws(reminderId, named)) ReminderNotifications.cancel(context, reminderId)
         }
@@ -68,9 +68,16 @@ class ReminderScheduler(
     /** H6: alarms, notifications and the identifiers file go with the data. */
     @Synchronized
     fun clear() {
-        for (id in scheduledIds()) alarms?.cancel(alarm(id))
+        for (id in scheduledIds()) cancelAlarm(id)
         ReminderNotifications.cancelAll(context)
         prefs.edit { clear() }
+    }
+
+    /** The alarm and its PendingIntent both go: nothing of a removed reminder stays with the system. */
+    private fun cancelAlarm(reminderId: String) {
+        val pending = alarm(reminderId)
+        alarms?.cancel(pending)
+        pending.cancel()
     }
 
     private fun scheduledIds(): Set<String> = prefs.getStringSet(KEY_IDS, emptySet()).orEmpty().toSet()

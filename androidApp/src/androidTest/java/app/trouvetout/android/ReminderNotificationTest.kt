@@ -53,7 +53,8 @@ class ReminderNotificationTest {
         millis: Long,
     ): String {
         val at = Instant.fromEpochMilliseconds(System.currentTimeMillis() + millis)
-        val done = shared().attachmentCommands.setReminder(itemId, at, source = EventSource.TEXT) as CommandResult.Done
+        val result = shared().attachmentCommands.setReminder(itemId, at, source = EventSource.TEXT)
+        val done = result as CommandResult.Done
         return (done.events.single().payload as EventPayload.ReminderSet).reminderId
     }
 
@@ -66,9 +67,8 @@ class ReminderNotificationTest {
 
     /** What the alarm would do, without waiting for its window. */
     private suspend fun ring(reminderId: String): String? {
-        app.sendBroadcast(
-            Intent(app, ReminderReceiver::class.java).setData(Uri.fromParts(ReminderScheduler.SCHEME, reminderId, null)),
-        )
+        val uri = Uri.fromParts(ReminderScheduler.SCHEME, reminderId, null)
+        app.sendBroadcast(Intent(app, ReminderReceiver::class.java).setData(uri))
         repeat(POLLS) {
             notifications.activeNotifications.firstOrNull { it.tag == reminderId }?.let {
                 return it.notification.extras.getCharSequence(NotificationCompat.EXTRA_TITLE)?.toString()

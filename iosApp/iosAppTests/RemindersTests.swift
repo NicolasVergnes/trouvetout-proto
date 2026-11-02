@@ -11,11 +11,25 @@ private final class FakeCenter: NotificationCenterClient {
     var removedDelivered: [String] = []
     var cleared = false
 
-    func pendingIdentifiers() async -> [String] { Array(requests.keys) }
-    func delivered() async -> [(identifier: String, named: Bool)] { shown }
-    func add(_ request: UNNotificationRequest) async throws { requests[request.identifier] = request }
-    func removePending(_ identifiers: [String]) { identifiers.forEach { requests[$0] = nil } }
-    func removeDelivered(_ identifiers: [String]) { removedDelivered += identifiers }
+    func pendingIdentifiers() async -> [String] {
+        Array(requests.keys)
+    }
+
+    func delivered() async -> [(identifier: String, named: Bool)] {
+        shown
+    }
+
+    func add(_ request: UNNotificationRequest) async throws {
+        requests[request.identifier] = request
+    }
+
+    func removePending(_ identifiers: [String]) {
+        identifiers.forEach { requests[$0] = nil }
+    }
+
+    func removeDelivered(_ identifiers: [String]) {
+        removedDelivered += identifiers
+    }
 
     func removeAll() {
         requests = [:]
@@ -23,8 +37,13 @@ private final class FakeCenter: NotificationCenterClient {
         cleared = true
     }
 
-    func status() async -> UNAuthorizationStatus { .notDetermined }
-    func requestAuthorization() async -> Bool { true }
+    func status() async -> UNAuthorizationStatus {
+        .notDetermined
+    }
+
+    func requestAuthorization() async -> Bool {
+        true
+    }
 }
 
 @MainActor
@@ -60,10 +79,8 @@ final class RemindersTests: XCTestCase {
 
     private func item(_ name: String, sensitive: Bool = false) async throws -> String {
         let draft = ItemDraft(name: name, description: nil, tags: [], quantity: nil, unit: nil, sensitive: sensitive)
-        let done = try XCTUnwrap(
-            try await shared.itemCommands.create(draft: draft, location: nil, source: .text, rawInput: nil)
-                as? CommandResultDone
-        )
+        let result = try await shared.itemCommands.create(draft: draft, location: nil, source: .text, rawInput: nil)
+        let done = try XCTUnwrap(result as? CommandResultDone)
         return try XCTUnwrap((done.events.first?.payload as? EventPayloadItemCreated)?.itemId)
     }
 
@@ -87,7 +104,8 @@ final class RemindersTests: XCTestCase {
         let second = try await remind(papers, in: 7200)
         let center = FakeCenter()
         let scheduler = ReminderScheduler(center: center)
-        await scheduler.reconcile(try await shared.reminders.schedule())
+        let schedule = try await shared.reminders.schedule()
+        await scheduler.reconcile(schedule)
 
         let named = try XCTUnwrap(center.requests[ReminderScheduler.prefix + first])
         XCTAssertTrue(named.content.body.contains("passeport"))
@@ -106,7 +124,8 @@ final class RemindersTests: XCTestCase {
         let drillReminder = try await remind(drill, in: 3600)
         let center = FakeCenter()
         let scheduler = ReminderScheduler(center: center)
-        await scheduler.reconcile(try await shared.reminders.schedule())
+        let schedule = try await shared.reminders.schedule()
+        await scheduler.reconcile(schedule)
         XCTAssertEqual(center.requests.count, 2)
 
         _ = try await shared.itemCommands.delete(itemId: tent, source: .text)
@@ -124,7 +143,8 @@ final class RemindersTests: XCTestCase {
         )
         _ = try await shared.itemCommands.update(itemId: drill, patch: patch, source: .text)
         center.shown = [(ReminderScheduler.prefix + drillReminder, true)]
-        await scheduler.reconcile(try await shared.reminders.schedule())
+        let changed = try await shared.reminders.schedule()
+        await scheduler.reconcile(changed)
         XCTAssertNil(center.requests[ReminderScheduler.prefix + tentReminder], "the bin: no notification")
         XCTAssertEqual(center.removedDelivered, [ReminderScheduler.prefix + drillReminder])
         XCTAssertEqual(
@@ -143,7 +163,8 @@ final class RemindersTests: XCTestCase {
         }
         let past = try await remind(tent, in: -60)
         let center = FakeCenter()
-        await ReminderScheduler(center: center).reconcile(try await shared.reminders.schedule())
+        let schedule = try await shared.reminders.schedule()
+        await ReminderScheduler(center: center).reconcile(schedule)
         XCTAssertEqual(center.requests.count, 50)
         XCTAssertNil(center.requests[ReminderScheduler.prefix + past])
     }
