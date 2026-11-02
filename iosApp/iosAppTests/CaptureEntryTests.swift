@@ -53,15 +53,21 @@ final class CaptureEntryTests: XCTestCase {
             .appendingPathComponent("tt-entry-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
+        let keys = MemoryKeychainItem.keys()
         let factory = SharedFactory(config: SharedConfig(
             dataDirectory: directory.path,
             deviceInfo: IosDeviceInfo(),
-            driverFactory: IosDriverFactory(directory: directory.appendingPathComponent("db").path, fileName: "t.db"),
+            driverFactory: IosDriverFactory(
+                directory: directory.appendingPathComponent("db").path,
+                keys: keys,
+                fileName: "t.db"
+            ),
             imageCodec: UIImageCodec(),
             logger: NoopLogger.shared,
             storageReady: true,
             appVersion: "test",
-            captureLang: .fr
+            captureLang: .fr,
+            databaseKeys: keys
         ))
         defer { factory.close() }
         _ = try await factory.warmUp()

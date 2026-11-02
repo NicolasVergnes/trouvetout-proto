@@ -187,3 +187,7 @@ d'un contact ou d'un identifiant système :
 - le `deviceId` (§2).
 
 Le droit d'accès et la portabilité sont satisfaits par l'export lui-même ; l'effacement par la suppression totale (H6).
+
+## Réglages de l'appareil (lot 8)
+
+Les réglages de l'appareil — verrouillage et délai (H3), « le clavier n'apprend pas », variante de modèle — sont dans la table `meta` : ils ne sont ni exportés ni restaurés par un import, et la suppression totale les efface. La base elle-même est chiffrée sur le téléphone (SQLCipher, ADR-023) ; l'export, lui, est un ZIP en clair, lisible sans l'app, que l'utilisateur partage où il veut.

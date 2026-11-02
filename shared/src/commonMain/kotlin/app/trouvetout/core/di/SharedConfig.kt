@@ -2,6 +2,7 @@ package app.trouvetout.core.di
 
 import app.trouvetout.core.AppInfo
 import app.trouvetout.core.capture.Lang
+import app.trouvetout.core.data.db.DatabaseKeyStore
 import app.trouvetout.core.data.db.DriverFactory
 import app.trouvetout.core.log.Logger
 import app.trouvetout.core.log.NoopLogger
@@ -35,6 +36,8 @@ public class SharedConfig(
     public val appVersion: String = AppInfo.CORE_VERSION,
     /** Language assumed for capture when a sentence gives no clue (the host passes its UI language). */
     public val captureLang: Lang = Lang.FR,
+    /** The database key (H2) the driver factory uses; the total wipe deletes it. Null in tests (plain database). */
+    public val databaseKeys: DatabaseKeyStore? = null,
 ) {
     /** Overridable for tests; the host apps keep the system defaults. */
     public var clock: Clock = Clock.System

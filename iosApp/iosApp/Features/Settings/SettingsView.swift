@@ -6,6 +6,7 @@ struct SettingsView: View {
     @StateObject private var viewModel: SettingsViewModel
     @State private var confirmWipe = false
     @State private var importing = false
+    @AppStorage(UiPrefs.simpleModeKey) private var simpleMode = false
 
     init(container: AppContainer) {
         _viewModel = StateObject(wrappedValue: SettingsViewModel(container: container))
@@ -46,9 +47,23 @@ struct SettingsView: View {
                 Text("settings_search_licences")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                Text("settings_licences_sqlcipher")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             } header: {
                 Text("settings_search_section")
             }
+            Section {
+                Toggle(isOn: $simpleMode) {
+                    VStack(alignment: .leading) {
+                        Text("settings_simple_mode")
+                        Text("settings_simple_mode_hint").font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("settings_display_section")
+            }
+            privacySection
             photoSection
             if viewModel.busy {
                 ProgressView("settings_busy")
@@ -56,7 +71,10 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("settings_title")
-        .onAppear { viewModel.refreshPhotoModel() }
+        .onAppear {
+            viewModel.refreshPhotoModel()
+            viewModel.refreshPrivacy()
+        }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.zip, .data]) { result in
             if case let .success(url) = result {
                 viewModel.importArchive(from: url)
@@ -73,6 +91,45 @@ struct SettingsView: View {
         } message: {
             Text(messageText)
         }
+    }
+
+    /// « Vie privée » (H3): lock the app and after how long. The keyboard switch of Android has no iOS equivalent.
+    @ViewBuilder
+    private var privacySection: some View {
+        if let privacy = viewModel.privacy {
+            Section {
+                Toggle(
+                    isOn: Binding(get: { privacy.lockEnabled }, set: { viewModel.setLockEnabled($0) })
+                ) {
+                    VStack(alignment: .leading) {
+                        Text("settings_lock")
+                        Text(lockHint)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .disabled(!DeviceOwner.available && !privacy.lockEnabled)
+                if privacy.lockEnabled {
+                    Picker(
+                        "settings_lock_delay",
+                        selection: Binding(get: { privacy.lockDelay }, set: { viewModel.setLockDelay($0) })
+                    ) {
+                        Text("settings_lock_delay_now").tag(LockDelay.immediate)
+                        Text("settings_lock_delay_minute").tag(LockDelay.oneMinute)
+                        Text("settings_lock_delay_five").tag(LockDelay.fiveMinutes)
+                    }
+                }
+                Text("settings_keyboard_ios")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("settings_privacy_section")
+            }
+        }
+    }
+
+    private var lockHint: LocalizedStringKey {
+        DeviceOwner.available ? "settings_lock_hint" : "settings_lock_unavailable"
     }
 
     /// « Photos » (B8, C10): the switches on a phone that can run the photo model, otherwise why not.

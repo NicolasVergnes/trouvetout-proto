@@ -9,7 +9,7 @@ struct SearchRoute: Hashable {
 /// C1–C4, C11, C12: the field with completions, the filters, the one-line answer, then the other results.
 struct SearchView: View {
     @StateObject private var viewModel: SearchViewModel
-    private let container: AppContainer
+    @ObservedObject private var container: AppContainer
     @State private var pickingLocation = false
 
     init(container: AppContainer, query: String) {
@@ -161,6 +161,8 @@ struct SearchView: View {
                 }
             }
             .controlSize(.large)
+            // The default tint on a bordered fill fails the contrast check (I6): primary text instead.
+            .tint(.primary)
         }
         .listRowSeparator(.hidden)
     }
@@ -206,16 +208,29 @@ struct SearchView: View {
                     .listRowSeparator(.hidden)
             } else {
                 if let answer = result.answer {
-                    AnswerRow(answer: answer, photoPath: photoPath) { viewModel.opened(answer.itemId) }
+                    if masked(answer.sensitive) {
+                        MaskedRow { Task { _ = await container.revealSensitive() } }
+                    } else {
+                        AnswerRow(answer: answer, photoPath: photoPath) { viewModel.opened(answer.itemId) }
+                    }
                 }
                 ForEach(rest(result), id: \.view.item.id) { hit in
-                    NavigationLink(value: ItemRoute(id: hit.view.item.id)) {
-                        ItemSummary(view: hit.view)
+                    if masked(hit.view.item.sensitive) {
+                        MaskedRow { Task { _ = await container.revealSensitive() } }
+                    } else {
+                        NavigationLink(value: ItemRoute(id: hit.view.item.id)) {
+                            ItemSummary(view: hit.view)
+                        }
+                        .simultaneousGesture(TapGesture().onEnded { viewModel.opened(hit.view.item.id) })
                     }
-                    .simultaneousGesture(TapGesture().onEnded { viewModel.opened(hit.view.item.id) })
                 }
             }
         }
+    }
+
+    /// H4: with the app lock on, a sensitive item is found but shown only after the owner's authentication.
+    private func masked(_ sensitive: Bool) -> Bool {
+        sensitive && container.lockEnabled && !container.sensitiveRevealed
     }
 
     private func rest(_ result: SearchResult) -> [SearchHit] {

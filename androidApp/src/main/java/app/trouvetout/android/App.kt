@@ -6,9 +6,11 @@ import androidx.core.content.edit
 import app.trouvetout.android.ui.common.clearCameraCaptures
 import app.trouvetout.android.ui.settings.ExportSharing
 import app.trouvetout.core.capture.Lang
+import app.trouvetout.core.data.db.AndroidDatabaseKeys
 import app.trouvetout.core.data.db.AndroidDriverFactory
 import app.trouvetout.core.di.SharedConfig
 import app.trouvetout.core.di.SharedFactory
+import app.trouvetout.core.di.StoreFailure
 import app.trouvetout.core.log.LogcatLogger
 import app.trouvetout.core.log.NoopLogger
 import app.trouvetout.core.ml.AssetTextModelSource
@@ -17,10 +19,13 @@ import app.trouvetout.core.platform.AndroidDeviceInfo
 import app.trouvetout.core.platform.AndroidImageCodec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Locale
@@ -38,6 +43,35 @@ class App : Application() {
      */
     val readyShared: Flow<SharedFactory> get() = readyState.filterNotNull()
 
+    /** The core whose store opened, if any (lifecycle callbacks that cannot wait). */
+    val current: SharedFactory? get() = readyState.value
+
+    /** Why the store could not open (lot 8: a lost key is said, with the way out). */
+    val storeFailure = MutableStateFlow<StoreFailure?>(null)
+
+    /** H3: whether the content must stay covered, for the core that is open. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val locked: Flow<Boolean> get() = readyShared.flatMapLatest { it.appLock.locked }
+
+    /** The privacy switch « keep the keyboard from learning what I type » (lot 8). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val noKeyboardLearning: Flow<Boolean>
+        get() = readyShared.flatMapLatest { shared -> shared.privacySettings.state }.map { it.noKeyboardLearning }
+
+    /** H4: sensitive items are shown (after a request, and the owner's authentication with the lock on). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val sensitiveRevealed: Flow<Boolean> get() = readyShared.flatMapLatest { it.appLock.sensitiveRevealed }
+
+    /** H3: whether the app lock is on (screens of this app hidden from screenshots and the recent apps). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val lockEnabled: Flow<Boolean>
+        get() = readyShared.flatMapLatest { shared -> shared.privacySettings.state }.map { it.lockEnabled }
+
+    /** The next trip to the background is a system screen the user comes back from (camera app, share sheet). */
+    fun expectReturn() {
+        current?.appLock?.expectReturn()
+    }
+
     /** Display preferences only (A5 history toggle); never business data (rule 3, H2 scope). */
     val uiPrefs: UiPrefs by lazy { UiPrefs(getSharedPreferences("ui", MODE_PRIVATE)) }
 
@@ -46,6 +80,12 @@ class App : Application() {
      * Intent extra, so no other app can send one and nothing is replayed after the process dies.
      */
     val searchRequest = MutableStateFlow<String?>(null)
+
+    /**
+     * A sentence the quick capture could not finish while the app was locked (it asked a question): shown in the
+     * home field once the app is unlocked. Process memory only, like [searchRequest].
+     */
+    val captureDraft = MutableStateFlow<String?>(null)
 
     /** Process-wide scope for work that must not die with an Activity (warm-up, releasing the model). */
     val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -66,6 +106,7 @@ class App : Application() {
     fun recreateShared(): SharedFactory {
         shared.close()
         readyState.value = null
+        storeFailure.value = null
         return createShared().also { fresh ->
             shared = fresh
             appScope.launch { warmUp(fresh) }
@@ -77,6 +118,20 @@ class App : Application() {
         if (factory.warmUp()) {
             readyState.value = factory
             factory.housekeeping()
+        } else if (factory === shared) {
+            storeFailure.value = factory.storeFailure
+        }
+    }
+
+    /** H6 from anywhere (settings, unreadable store): core files and key, then the app's caches and preferences. */
+    suspend fun wipeAll() {
+        // Whatever happens, the spent core is replaced; a failure still reaches the caller, which says so.
+        try {
+            shared.wipeAllData()
+        } finally {
+            kotlinx.coroutines.withContext(Dispatchers.IO) { cacheDir.deleteRecursively() }
+            uiPrefs.clear()
+            recreateShared()
         }
     }
 
@@ -100,6 +155,8 @@ class App : Application() {
         // Excluded from Auto Backup: the only backup channel is the app's own encrypted one (A9).
         val dataDirectory = noBackupFilesDir
         val databaseDirectory = File(dataDirectory, SharedFactory.DATABASE_DIRECTORY)
+        // H2: the database key, wrapped by the Keystore, next to the database and as far from backups.
+        val keys = AndroidDatabaseKeys(this, File(dataDirectory, AndroidDatabaseKeys.DIRECTORY))
         return SharedFactory(
             SharedConfig(
                 dataDirectory = dataDirectory.absolutePath,
@@ -107,12 +164,14 @@ class App : Application() {
                 driverFactory = AndroidDriverFactory(
                     this,
                     File(databaseDirectory, SharedFactory.DATABASE_FILE).absolutePath,
+                    keys,
                 ),
                 imageCodec = AndroidImageCodec(),
                 logger = if (BuildConfig.DEBUG) LogcatLogger else NoopLogger,
                 storageReady = databaseDirectory.isDirectory || databaseDirectory.mkdirs(),
                 appVersion = BuildConfig.VERSION_NAME,
                 captureLang = if (Locale.getDefault().language == "fr") Lang.FR else Lang.EN,
+                databaseKeys = keys,
             ).apply {
                 textModel = bundledModels(this@App)
             },
@@ -128,11 +187,25 @@ class UiPrefs(
         get() = prefs.getBoolean(KEY_SHOW_HISTORY, false)
         set(value) = prefs.edit { putBoolean(KEY_SHOW_HISTORY, value) }
 
+    private val simpleModeState = MutableStateFlow(prefs.getBoolean(KEY_SIMPLE_MODE, false))
+
+    /** I7: the simplified home (two large buttons). */
+    val simpleMode: kotlinx.coroutines.flow.StateFlow<Boolean> get() = simpleModeState
+
+    fun setSimpleMode(value: Boolean) {
+        prefs.edit { putBoolean(KEY_SIMPLE_MODE, value) }
+        simpleModeState.value = value
+    }
+
     /** H6: display preferences go with the data. */
-    fun clear() = prefs.edit { clear() }
+    fun clear() {
+        prefs.edit { clear() }
+        simpleModeState.value = false
+    }
 
     private companion object {
         const val KEY_SHOW_HISTORY = "show_history"
+        const val KEY_SIMPLE_MODE = "simple_mode"
     }
 }
 

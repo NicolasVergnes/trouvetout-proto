@@ -30,6 +30,11 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // SQLCipher ships four ABIs; LiteRT-LM two. A 32-bit ARM phone installs and searches by keywords
+        // (ADR-021, ADR-023); 32-bit x86 has no phone to serve.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
 
         // The bundled models (ADR-021, ADR-022): asset path (null without it), identity (name + checksum prefix),
         // size; then the label catalog of photo naming (B8), computed by `:tools:genLabels`.
@@ -161,6 +166,9 @@ dependencies {
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.compose.ui.test.junit4.accessibility)
+    // A plain database as lots 1 to 7 wrote it, for the migration test of the encryption (H2).
+    androidTestImplementation(libs.sqldelight.android.driver)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext.junit)

@@ -13,6 +13,12 @@ struct TrouveToutApp: App {
             ContentView()
                 .environmentObject(container)
                 .environmentObject(router)
+                // H3: with the app lock on, the app switcher snapshot and an inactive app show a plain cover.
+                .overlay {
+                    if container.lockEnabled, scenePhase != .active {
+                        PrivacyCover()
+                    }
+                }
                 // Widgets open trouvetout-proto://capture?mode=… (B5); any other URL is ignored. Another app
                 // can open it too, so nothing heard after a URL is recorded without the user's tap (ADR-020).
                 .onOpenURL { url in
@@ -23,8 +29,14 @@ struct TrouveToutApp: App {
         }
         // N6: the model only stays loaded in the foreground; the search computes no vector in the background.
         .onChange(of: scenePhase) { phase in
-            if phase == .background {
+            switch phase {
+            case .background:
                 container.releaseModel()
+                container.appLeft()
+            case .active:
+                container.appCameBack()
+            default:
+                break
             }
         }
     }
@@ -40,6 +52,15 @@ final class AppContainer: ObservableObject {
     @Published private(set) var storageFailure: Error?
     /// True once the current core opened its store; screens observe flows only then.
     @Published private(set) var ready = false
+    /// H3: the content is covered until the owner unlocks; nil until the store opened.
+    @Published private(set) var locked: Bool?
+    /// H3: the app lock is on.
+    @Published private(set) var lockEnabled = false
+    /// H4: sensitive items are shown (after a request, and the owner's authentication with the lock), until the
+    /// app leaves.
+    @Published private(set) var sensitiveRevealed = false
+
+    private let lockFlows = FlowSubscriptions()
 
     private var memoryWarning: NSObjectProtocol?
 
@@ -67,6 +88,10 @@ final class AppContainer: ObservableObject {
     /// After a total wipe (H6) the spent factory is replaced by a fresh one over an empty directory.
     func recreateShared() {
         ready = false
+        locked = nil
+        lockEnabled = false
+        sensitiveRevealed = false
+        lockFlows.cancelAll()
         shared.close()
         let prepared = AppDirectories.prepareDataDirectory()
         storageFailure = prepared.failure
@@ -75,15 +100,22 @@ final class AppContainer: ObservableObject {
     }
 
     private static func makeShared(_ prepared: AppDirectories.Prepared) -> SharedFactory {
+        // H2: the database key lives in the Keychain (this device only, after the first unlock).
+        let keys = IosDatabaseKeys(item: KeychainDatabaseKey())
         let config = SharedConfig(
             dataDirectory: prepared.url.path,
             deviceInfo: IosDeviceInfo(),
-            driverFactory: IosDriverFactory(directory: prepared.databaseDirectory.path, fileName: "trouvetout.db"),
+            driverFactory: IosDriverFactory(
+                directory: prepared.databaseDirectory.path,
+                keys: keys,
+                fileName: "trouvetout.db"
+            ),
             imageCodec: UIImageCodec(),
             logger: NoopLogger.shared,
             storageReady: prepared.failure == nil,
             appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0",
-            captureLang: Locale.current.language.languageCode?.identifier == "fr" ? .fr : .en
+            captureLang: Locale.current.language.languageCode?.identifier == "fr" ? .fr : .en,
+            databaseKeys: keys
         )
         // The bundled embedding model (ADR-021); without it the search runs on keywords only.
         config.textModel = LiteRtTextModel()
@@ -99,20 +131,109 @@ final class AppContainer: ObservableObject {
                 await markReady(factory)
                 _ = try? await factory.housekeeping()
             } else {
-                await recordStoreUnavailable()
+                await recordStoreUnavailable(keyLost: factory.storeFailure == .keyLost)
             }
         }
     }
 
     private func markReady(_ factory: SharedFactory) {
         if factory === shared {
+            // The lock state is known before any screen observes the store: nothing shows while it is unknown.
+            locked = (factory.appLock.locked.value as? KotlinBoolean)?.boolValue ?? true
+            lockEnabled = (factory.privacySettings.state.value as? PrivacyState)?.lockEnabled ?? true
+            sensitiveRevealed = false
             ready = true
+            lockFlows.cancelAll()
+            lockFlows.watch(factory.appLock.locked, scope: factory.uiScope) { [weak self] (value: KotlinBoolean) in
+                self?.locked = value.boolValue
+            }
+            let revealed = factory.appLock.sensitiveRevealed
+            lockFlows.watch(revealed, scope: factory.uiScope) { [weak self] (value: KotlinBoolean) in
+                self?.sensitiveRevealed = value.boolValue
+            }
+            let privacy = factory.privacySettings.state
+            lockFlows.watch(privacy, scope: factory.uiScope) { [weak self] (state: PrivacyState) in
+                self?.lockEnabled = state.lockEnabled
+            }
         }
     }
 
-    private func recordStoreUnavailable() {
+    // MARK: - H3 lock, H4 sensitive items, H6 after a lost key
+
+    func appLeft() {
+        guard ready else { return }
+        shared.appLock.backgrounded()
+        // H3: a sheet or an alert is presented above the root and so above the lock cover: closed before the app
+        // switcher snapshot, and never left open behind a lock.
+        if lockEnabled {
+            for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
+                for window in scene.windows {
+                    window.rootViewController?.dismiss(animated: false)
+                }
+            }
+        }
+    }
+
+    func appCameBack() {
+        guard ready else { return }
+        shared.appLock.foregrounded()
+    }
+
+    /// The system prompt; a phone whose passcode was removed has nothing to ask and opens.
+    func unlock() {
+        guard ready else { return }
+        let lock = shared.appLock
+        guard DeviceOwner.available else {
+            lock.unlocked()
+            return
+        }
+        Task {
+            if await DeviceOwner.authenticate(reason: NSLocalizedString("lock_prompt_reason", comment: "")) {
+                lock.unlocked()
+            }
+        }
+    }
+
+    /// Shows the sensitive items (H4): asks the owner first when the app lock is on.
+    func revealSensitive() async -> Bool {
+        guard ready else { return false }
+        let lock = shared.appLock
+        if lock.revealNeedsAuthentication {
+            guard await DeviceOwner.authenticate(reason: NSLocalizedString("reveal_prompt_reason", comment: "")) else {
+                return false
+            }
+        }
+        lock.revealed()
+        return true
+    }
+
+    /// H6 when the store cannot open (lost key): the core's files and key, then the preferences.
+    func wipeAfterFailure() {
+        let spent = shared
+        Task {
+            _ = try? await spent.wipeAllData()
+            UiPrefs.clear()
+            AppDirectories.clearCaches()
+            recreateShared()
+        }
+    }
+
+    private func recordStoreUnavailable(keyLost: Bool) {
         if storageFailure == nil {
-            storageFailure = AppDirectories.Failure.storeUnavailable
+            storageFailure = keyLost ? AppDirectories.Failure.keyLost : AppDirectories.Failure.storeUnavailable
+        }
+    }
+}
+
+/// H3: what the app switcher snapshot shows while the app lock is on.
+private struct PrivacyCover: View {
+    var body: some View {
+        ZStack {
+            Color(uiColor: .systemBackground).ignoresSafeArea()
+            Image(systemName: "lock.fill")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
         }
     }
 }

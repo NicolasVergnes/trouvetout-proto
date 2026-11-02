@@ -3,11 +3,19 @@ import Foundation
 /// Private directories of the app. Everything the core writes is excluded from iCloud/iTunes backups:
 /// the only backup channel is the app's own encrypted one (A9).
 enum AppDirectories {
+    /// H6: the caches the app writes outside the core's directory (the compiled kernels of LiteRT-LM).
+    static func clearCaches() {
+        guard let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else { return }
+        try? FileManager.default.removeItem(at: caches.appendingPathComponent("litertlm", isDirectory: true))
+    }
+
     enum Failure: Error {
         case noApplicationSupportDirectory
         case backupExclusionNotApplied
         /// The directory is fine but the core could not open its store (full disk, corrupt file).
         case storeUnavailable
+        /// The database is encrypted and its Keychain key is gone: only a total wipe opens the app again.
+        case keyLost
     }
 
     /// The data directory and, when the backup exclusion could not be created or verified, the reason.

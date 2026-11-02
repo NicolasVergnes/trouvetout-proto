@@ -138,7 +138,7 @@ class CaptureViewModel(
     /** Follows the cores whose store opened: after a total wipe the host swaps the core and the list restarts. */
     val items: StateFlow<List<ItemView>> =
         app.readyShared
-            .flatMapLatest { it.itemRepository.observeActive() }
+            .flatMapLatest { it.itemRepository.observeListed() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
 
     /** Destinations of the « je range » picker. */

@@ -69,6 +69,7 @@ private fun micGranted(context: Context) =
     ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
 private fun openAppSettings(context: Context) {
+    (context.applicationContext as app.trouvetout.android.App).expectReturn()
     context.startActivity(
         android.content.Intent(
             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,

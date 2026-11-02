@@ -3,6 +3,9 @@ import Shared
 import XCTest
 
 final class SharedBridgeTests: XCTestCase {
+    /// One key store per test: the factories of a test reopen the same encrypted database.
+    private let keys = MemoryKeychainItem.keys()
+
     func testCoreExposesNeutralIdentity() {
         XCTAssertEqual(AppInfo.shared.NAME, "TrouveTout")
         XCTAssertEqual(AppInfo.shared.URL_SCHEME, "trouvetout-proto")
@@ -36,13 +39,15 @@ final class SharedBridgeTests: XCTestCase {
             deviceInfo: IosDeviceInfo(),
             driverFactory: IosDriverFactory(
                 directory: directory.appendingPathComponent("db").path,
+                keys: keys,
                 fileName: "test.db"
             ),
             imageCodec: UIImageCodec(),
             logger: NoopLogger.shared,
             storageReady: storageReady,
             appVersion: "test",
-            captureLang: .fr
+            captureLang: .fr,
+            databaseKeys: keys
         )
         return SharedFactory(config: config)
     }

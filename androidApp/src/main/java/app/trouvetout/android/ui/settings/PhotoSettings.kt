@@ -74,7 +74,7 @@ internal fun PhotoSection(settings: PhotoSettings) {
 
 /** A whole-row switch: one target for TalkBack, at least 48 dp high. */
 @Composable
-private fun SwitchRow(
+internal fun SwitchRow(
     label: String,
     hint: String?,
     checked: Boolean,

@@ -17,6 +17,12 @@ packages:
   LiteRTLM:
     url: https://github.com/google-ai-edge/LiteRT-LM
     revision: bda624851d74be34d4e1f7fac1fc4155939539c7
+  # Encryption at rest (H2, ADR-023): SQLCipher replaces the system SQLite for the whole app (the native SQLDelight
+  # driver of the core calls the sqlite3 API it exports). Prebuilt xcframework pinned by checksum in the package
+  # manifest; pinned here by the commit of the 4.19.0 tag (same 4.19 core as sqlcipher-android 4.19.1).
+  SQLCipher:
+    url: https://github.com/sqlcipher/SQLCipher.swift
+    revision: 39f212458aeb88e33bdac2200a793a3f0d55d32b
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -50,13 +56,17 @@ targets:
       - target: CaptureWidget
       - package: LiteRTLM
         product: LiteRTLM
+      - package: SQLCipher
+        product: SQLCipher
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.trouvetout.proto
         INFOPLIST_FILE: iosApp/Info.plist
         GENERATE_INFOPLIST_FILE: "NO"
-        # Static Kotlin framework: the app links the system SQLite that the native SQLDelight driver calls.
-        OTHER_LDFLAGS: "$(inherited) -framework Shared -lsqlite3"
+        # Static Kotlin framework: its native SQLDelight driver calls the sqlite3 API of SQLCipher (package above),
+        # never the system SQLite (`-lsqlite3` would silently give an unencrypted database; the core checks
+        # `PRAGMA cipher_version` at every open).
+        OTHER_LDFLAGS: "$(inherited) -framework Shared"
         TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: "NO"
     preBuildScripts:
@@ -89,15 +99,30 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.trouvetout.proto.tests
         GENERATE_INFOPLIST_FILE: "YES"
+  # I6 (lot 8): the Xcode accessibility audit on the main screens, through the real app.
+  iosAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: iosAppUITests
+    dependencies:
+      - target: iosApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.trouvetout.proto.uitests
+        GENERATE_INFOPLIST_FILE: "YES"
+        TEST_TARGET_NAME: iosApp
 schemes:
   iosApp:
     build:
       targets:
         iosApp: all
         iosAppTests: [test]
+        iosAppUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
         - iosAppTests
+        - iosAppUITests

@@ -7,8 +7,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.trouvetout.android.App
 import app.trouvetout.android.MainActivity
 import app.trouvetout.android.ui.capture.QuickCaptureRoute
+import app.trouvetout.android.ui.lock.NoKeyboardLearning
 import app.trouvetout.android.ui.theme.AppTheme
 
 /**
@@ -21,15 +26,52 @@ class CaptureActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Listening starts once per gesture, not again after a rotation.
         val voice = savedInstanceState == null && intent.getStringExtra(EXTRA_MODE) == MODE_VOICE
+        val app = application as App
+        if (app.current?.privacySettings?.state?.value?.lockEnabled == true) {
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        }
         setContent {
+            // H3: with the app lock on, the panel is kept out of screenshots too (it shows the card it wrote).
+            val lockEnabled by app.lockEnabled.collectAsStateWithLifecycle(initialValue = false)
+            val noLearning by app.noKeyboardLearning.collectAsStateWithLifecycle(initialValue = false)
+            LaunchedEffect(lockEnabled) {
+                if (lockEnabled) {
+                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                } else {
+                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                }
+            }
             AppTheme {
-                QuickCaptureRoute(startWithVoice = voice, onClose = ::finish, onSearch = ::openSearch)
+                NoKeyboardLearning(noLearning) {
+                    QuickCaptureRoute(
+                        startWithVoice = voice,
+                        onClose = ::finish,
+                        onSearch = ::openSearch,
+                        onOpenApp = ::openApp,
+                    )
+                }
             }
         }
     }
 
+    /** The quick capture is the app too (H3): its returns count, so the lock delay holds for the widget and tile. */
+    override fun onStart() {
+        super.onStart()
+        (application as App).current?.appLock?.foregrounded()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) (application as App).current?.appLock?.backgrounded()
+    }
+
     private fun openSearch(query: String) {
         MainActivity.openSearch(this, query)
+        finish()
+    }
+
+    private fun openApp(sentence: String) {
+        MainActivity.openCapture(this, sentence)
         finish()
     }
 

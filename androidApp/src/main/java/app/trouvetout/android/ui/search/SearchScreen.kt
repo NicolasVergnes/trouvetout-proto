@@ -73,6 +73,8 @@ import app.trouvetout.android.ui.common.AddPhotoButtons
 import app.trouvetout.android.ui.common.LocationPickerDialog
 import app.trouvetout.android.ui.common.PhotoAttachment
 import app.trouvetout.android.ui.common.Thumbnail
+import app.trouvetout.android.ui.lock.HiddenRow
+import app.trouvetout.android.ui.lock.LocalSensitive
 import app.trouvetout.android.ui.theme.AppTheme
 import app.trouvetout.core.data.repository.ItemView
 import app.trouvetout.core.data.repository.LocationPath
@@ -445,14 +447,27 @@ private fun Results(
         )
         return
     }
+    val sensitive = LocalSensitive.current
+    val masked = stringResource(R.string.search_sensitive_masked)
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         val answer = result.answer
         val rest = if (answer != null) result.hits.drop(1) else result.hits
         if (answer != null) {
-            item(key = "answer") { AnswerCard(answer, callbacks, photoPath) }
+            item(key = "answer") {
+                // H4: with the app lock on, a sensitive item is found but shown only after the owner's authentication.
+                if (sensitive.masks(answer.sensitive)) {
+                    HiddenRow(masked, sensitive.onReveal)
+                } else {
+                    AnswerCard(answer, callbacks, photoPath)
+                }
+            }
         }
         items(rest, key = { it.view.item.id }) { hit ->
-            ItemRow(hit.view, onOpen = { callbacks.onOpenItem(hit.view.item.id) })
+            if (sensitive.masks(hit.view.item.sensitive)) {
+                HiddenRow(masked, sensitive.onReveal)
+            } else {
+                ItemRow(hit.view, onOpen = { callbacks.onOpenItem(hit.view.item.id) })
+            }
             HorizontalDivider()
         }
     }

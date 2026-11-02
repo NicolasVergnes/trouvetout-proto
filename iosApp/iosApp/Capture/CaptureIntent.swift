@@ -17,6 +17,8 @@ struct CaptureIntent: AppIntent {
     static var title: LocalizedStringResource = "intent_capture_title"
     static var description = IntentDescription("intent_capture_description")
     static var openAppWhenRun = true
+    /// The capture opens the app: from the lock screen the phone is unlocked first (lot 8, explicit).
+    static var authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
     @Parameter(title: "intent_mode", default: .voice)
     var mode: CaptureModeOption

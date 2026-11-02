@@ -43,6 +43,7 @@ jobs:
         run: |
           tools/check-deps.sh
           tools/check-network.sh
+          tools/check-logs.sh
           tools/test-hooks.sh
       - name: Upload debug APK
         if: success()
@@ -194,7 +195,12 @@ jobs:
             -scheme iosApp \
             -destination "id=$IOS_SIMULATOR_DEVICE" \
             -resultBundlePath build/ios-tests.xcresult \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+            -derivedDataPath build/DerivedData \
+            CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER=""
+        # Ad hoc signing (« Sign to Run Locally », no certificate): an unsigned simulator app has no Keychain
+        # (errSecMissingEntitlement), and the database key lives there since lot 8 (ADR-023).
+      - name: Native libraries make no network call (LiteRT-LM, SQLCipher)
+        run: tools/check-native-network.sh build/DerivedData
       - name: Upload iOS results
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

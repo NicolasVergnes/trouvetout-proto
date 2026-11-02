@@ -127,6 +127,21 @@ class SearchServiceTest {
     }
 
     @Test
+    fun a_sensitive_item_is_found_but_its_answer_carries_no_thumbnail_H4() = runTest {
+        val world = SearchWorld()
+        val ids = world.household()
+        world.photo(ids.getValue("passport"), "passeport")
+        world.photo(ids.getValue("cable"), "cable")
+        val answer = assertNotNull(world.search.search("passeport").answer)
+        assertEquals(ids["passport"], answer.itemId, "the search still finds it")
+        assertTrue(answer.sensitive)
+        assertNull(answer.photoThumbName, "no thumbnail of a sensitive item")
+        val other = assertNotNull(world.search.search("cable").answer)
+        assertTrue(!other.sensitive)
+        assertNotNull(other.photoThumbName)
+    }
+
+    @Test
     fun suggestions_complete_names_tags_and_places_but_never_a_sensitive_item_C12() = runTest {
         val world = SearchWorld()
         world.household()

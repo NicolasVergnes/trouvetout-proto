@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -124,6 +125,13 @@ fun ItemRoute(
             AddPhotoButtons(onPicked = viewModel::attachPhoto, enabled = !state.busy)
             EditForm(current, suggestions, state.busy, viewModel)
             SwitchRow(stringResource(R.string.item_pinned), current.item.pinned, !state.busy, viewModel::setPinned)
+            SwitchRow(
+                stringResource(R.string.item_sensitive),
+                current.item.sensitive,
+                !state.busy,
+                viewModel::setSensitive,
+                hint = stringResource(R.string.item_sensitive_hint),
+            )
             SwitchRow(
                 stringResource(R.string.item_archived),
                 current.item.archived,
@@ -298,23 +306,28 @@ private fun EditForm(
     ) { Text(stringResource(R.string.action_save)) }
 }
 
-/** Label + switch as one TalkBack element. */
+/** Label + switch as one TalkBack element, at least 48 dp high. */
 @Composable
 private fun SwitchRow(
     label: String,
     checked: Boolean,
     enabled: Boolean,
     onChange: (Boolean) -> Unit,
+    hint: String? = null,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .heightIn(min = 48.dp)
                 .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onChange),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(label, modifier = Modifier.weight(1f))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label)
+            hint?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        }
         Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }

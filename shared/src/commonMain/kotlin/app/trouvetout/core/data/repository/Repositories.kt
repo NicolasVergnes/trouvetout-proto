@@ -37,7 +37,11 @@ public class ItemRepository internal constructor(
     private val db: TrouveToutDb,
     private val dispatchers: CoroutineDispatchers,
 ) {
+    /** Every active item, sensitive ones included (search, navigation): the screens decide what they show. */
     public fun observeActive(): Flow<List<ItemView>> = views(items(db.itemQueries.selectActive()))
+
+    /** The items a list may show at a glance (the home screen): never a sensitive one (H4). */
+    public fun observeListed(): Flow<List<ItemView>> = views(items(db.itemQueries.selectListed()))
 
     /** Items in the bin (A13), most recently deleted first. */
     public fun observeDeleted(): Flow<List<ItemView>> {

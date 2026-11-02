@@ -118,6 +118,12 @@ public class CaptureService internal constructor(
     private val containers: ContainerCommands,
     private val dispatcher: CoroutineDispatcher,
     private val defaultLang: Lang = Lang.FR,
+    /**
+     * H3, H4: the app is locked, so only the widget or the tile can be typing: sensitive items are left out of the
+     * matches (and so of every question) and no list of places is shown. The unlocked app keeps acting on them
+     * (« je prends le passeport » moves the existing one, never creates a twin).
+     */
+    private val locked: () -> Boolean = { false },
 ) {
     /** [lang] is the UI language, used only when a sentence gives no clue about its own. */
     public suspend fun propose(
@@ -152,7 +158,9 @@ public class CaptureService internal constructor(
     public suspend fun suggestPlaces(
         prefix: String,
         limit: Int = PlaceResolver.MAX_SUGGESTIONS,
-    ): List<LocationCandidate> = withContext(dispatcher) { PlaceResolver(locations()).suggest(prefix, limit) }
+    ): List<LocationCandidate> = withContext(dispatcher) {
+        if (locked()) emptyList() else PlaceResolver(locations()).suggest(prefix, limit)
+    }
 
     /**
      * B10 « je range » : the sentence goes into [location] unless it names a place itself; a bare list of
@@ -401,7 +409,13 @@ public class CaptureService internal constructor(
 
     private fun snapshot(): Snapshot = Snapshot(
         locations = locations(),
-        itemNames = db.itemQueries.selectActive().executeAsList().map { it.toItem() }.map { it.id to it.name },
+        itemNames =
+            db.itemQueries
+                .selectActive()
+                .executeAsList()
+                .map { it.toItem() }
+                .filter { !it.sensitive || !locked() }
+                .map { it.id to it.name },
     )
 
     private fun locations(): List<LocationCandidate> {

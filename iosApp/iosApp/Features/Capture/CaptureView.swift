@@ -5,8 +5,10 @@ import SwiftUI
 struct CaptureView: View {
     @StateObject private var viewModel: CaptureViewModel
     @EnvironmentObject private var router: CaptureRouter
+    @EnvironmentObject private var appContainer: AppContainer
     @Environment(\.scenePhase) private var scenePhase
     @FocusState private var fieldFocused: Bool
+    @AppStorage(UiPrefs.simpleModeKey) private var simpleMode = false
     @State private var pickingBatch = false
     /// Requests are replayed to every new subscriber: each serial is handled once.
     @State private var handledSerial = 0
@@ -22,14 +24,19 @@ struct CaptureView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Group {
+                if simpleMode {
+                    SimpleModeButtons(onStore: simpleStore, onFind: { onSearch("") })
+                }
                 field
                 VoiceStatusView(
                     listening: viewModel.listening,
                     notice: viewModel.voiceNotice,
-                    onOpenSettings: openAppSettings
+                    onOpenSettings: CaptureTexts.openAppSettings
                 )
-                batchRow
-                CapturePhotoRow(viewModel: viewModel) { fieldFocused = true }
+                if !simpleMode {
+                    batchRow
+                    CapturePhotoRow(viewModel: viewModel) { fieldFocused = true }
+                }
                 if !viewModel.suggestions.isEmpty {
                     suggestionRow
                 }
@@ -43,14 +50,18 @@ struct CaptureView: View {
                         }
                 }
                 if let problem = viewModel.problem {
-                    Text(problemKey(problem))
+                    Text(CaptureTexts.problemKey(problem))
                         .font(.callout)
                         .foregroundStyle(.red)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
             }
             .padding(.horizontal, 16)
-            itemList
+            if !simpleMode {
+                itemList
+            } else {
+                Spacer()
+            }
         }
         .sheet(isPresented: pendingPresented) {
             if let pending = viewModel.pending {
@@ -71,6 +82,7 @@ struct CaptureView: View {
             }
         }
         .onReceive(router.$request) { handle($0) }
+        .onChange(of: appContainer.locked) { _ in handle(router.request) }
         // A change, not the current value: a new subscription must not replay an old question.
         .onChange(of: viewModel.searchQuery) { query in
             guard let query else { return }
@@ -80,10 +92,20 @@ struct CaptureView: View {
         .onDisappear { viewModel.stopListening() }
     }
 
+    /// I7 « Ranger »: listens when the phone recognises speech on the device, otherwise opens the keyboard.
+    private func simpleStore() {
+        viewModel.micTapped()
+        if !viewModel.listening, viewModel.voiceNotice != nil {
+            fieldFocused = true
+        }
+    }
+
     /// A capture asked by a widget, a URL or the App Intent, once the app is really in front (the audio session
     /// cannot start in the background); the questions and pickers in the way are closed first.
     private func handle(_ request: CaptureRouter.Request?) {
         guard let request, request.serial > handledSerial, scenePhase == .active else { return }
+        // H3: under the lock the request waits (the keyboard would show above the cover, the microphone behind it).
+        guard !(appContainer.ready && appContainer.locked != false) else { return }
         handledSerial = request.serial
         // Cleared outside the publisher's willSet, so that a recreated screen never replays it.
         Task { @MainActor in router.consume() }
@@ -142,19 +164,26 @@ struct CaptureView: View {
         )
     }
 
-    private func openAppSettings() {
-        if let url = URL(string: UIApplication.openSettingsURLString) {
-            UIApplication.shared.open(url)
-        }
-    }
-
+    /// A multi-line field turns Return into a new line: here it sends the sentence, as before.
     private var typedText: Binding<String> {
-        Binding(get: { viewModel.input }, set: { viewModel.typed($0) })
+        Binding(
+            get: { viewModel.input },
+            set: { text in
+                if text.contains("\n") {
+                    viewModel.typed(text.replacingOccurrences(of: "\n", with: ""))
+                    viewModel.submit()
+                } else {
+                    viewModel.typed(text)
+                }
+            }
+        )
     }
 
     private var field: some View {
         HStack {
-            TextField("capture_hint", text: typedText)
+            // Grows on several lines instead of clipping its hint or a long sentence (large text sizes, I6).
+            TextField("capture_hint", text: typedText, axis: .vertical)
+                .lineLimit(1 ... 4)
                 .textFieldStyle(.roundedBorder)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
@@ -212,7 +241,7 @@ struct CaptureView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(view.item.name)
                             .font(.headline)
-                        Text(whereText(view))
+                        Text(CaptureTexts.whereText(view))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -232,30 +261,6 @@ struct CaptureView: View {
                 }
             }
         )
-    }
-
-    private func whereText(_ view: ItemView) -> String {
-        switch view.location.status {
-        case .taken: NSLocalizedString("state_taken", comment: "")
-        case .lent: String(format: NSLocalizedString("state_lent", comment: ""), view.location.lentTo ?? "")
-        default:
-            if view.path.isUnknown {
-                NSLocalizedString("state_unknown_place", comment: "")
-            } else {
-                view.path.labels.joined(separator: " › ")
-            }
-        }
-    }
-
-    private func problemKey(_ problem: CaptureProblem) -> LocalizedStringKey {
-        switch problem {
-        case .nothingUnderstood: "capture_problem_nothing"
-        case .placeUndecided: "capture_problem_place"
-        case .itemNotFound: "capture_problem_item"
-        case .personMissing: "capture_problem_person"
-        case .inputTooLong: "capture_problem_too_long"
-        default: "capture_problem_rejected"
-        }
     }
 }
 

@@ -1,14 +1,17 @@
+import AVFoundation
 import PhotosUI
 import Shared
 import SwiftUI
 
-/// Two buttons: pick from the library (system picker, no permission) or take a photo (camera, asked at first use).
+/// Two buttons: pick from the library (system picker, no permission) or take a photo (camera, asked at first use
+/// after an explanation, H9; refused: the way to the Settings). Every photo button of the app is this one.
 struct AddPhotoButtons: View {
     let enabled: Bool
     let onPicked: (Data) -> Void
 
     @State private var selection: PhotosPickerItem?
     @State private var cameraShown = false
+    @State private var cameraAlert: CameraAlert?
 
     var body: some View {
         HStack {
@@ -26,7 +29,7 @@ struct AddPhotoButtons: View {
                 }
             }
             if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                Button("photo_take") { cameraShown = true }
+                Button("photo_take") { takePhoto() }
                     .disabled(!enabled)
             }
         }
@@ -41,7 +44,61 @@ struct AddPhotoButtons: View {
             }
             .ignoresSafeArea()
         }
+        .alert(cameraAlertTitle, isPresented: cameraAlertShown, presenting: cameraAlert) { alert in
+            switch alert {
+            case .rationale:
+                Button("action_continue") { askCamera() }
+            case .denied:
+                Button("action_phone_settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+            }
+            Button("action_cancel", role: .cancel) {}
+        } message: { alert in
+            Text(LocalizedStringKey(alert == .rationale ? "camera_rationale_text" : "camera_denied_text"))
+        }
     }
+
+    private var cameraAlertShown: Binding<Bool> {
+        Binding(
+            get: { cameraAlert != nil },
+            set: { shown in
+                if !shown {
+                    cameraAlert = nil
+                }
+            }
+        )
+    }
+
+    private var cameraAlertTitle: LocalizedStringKey {
+        cameraAlert == .denied ? "camera_denied_title" : "camera_rationale_title"
+    }
+
+    private func takePhoto() {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized: cameraShown = true
+        case .notDetermined: cameraAlert = .rationale
+        default: cameraAlert = .denied
+        }
+    }
+
+    private func askCamera() {
+        Task { @MainActor in
+            if await AVCaptureDevice.requestAccess(for: .video) {
+                cameraShown = true
+            } else {
+                cameraAlert = .denied
+            }
+        }
+    }
+}
+
+/// The two camera messages (H9): the explanation before the system prompt, the way to the Settings after a refusal.
+enum CameraAlert {
+    case rationale
+    case denied
 }
 
 /// The system camera UI; the JPEG goes straight to the core, nothing is written to the photo library.

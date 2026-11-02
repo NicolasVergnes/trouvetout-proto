@@ -11,6 +11,7 @@ import app.trouvetout.core.domain.usecase.CommandContext
 import app.trouvetout.core.domain.usecase.CommandResult
 import app.trouvetout.core.domain.usecase.ContainerCommands
 import app.trouvetout.core.domain.usecase.ItemCommands
+import app.trouvetout.core.domain.usecase.ItemPatch
 import app.trouvetout.core.domain.usecase.LocationRef
 import app.trouvetout.core.domain.usecase.PlaceCommands
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +57,29 @@ class CaptureServiceTest {
     private fun places() = db.placeQueries.selectActive().executeAsList()
 
     private fun location(itemId: String) = db.locationStateQueries.selectByItem(itemId).executeAsOne()
+
+    @Test
+    fun while_sensitive_items_are_hidden_no_question_names_them_and_no_place_is_listed_H3_H4() = runTest {
+        say("passeport @ bureau")
+        val passport = items().single().id
+        clock.tick()
+        assertIs<CommandResult.Done>(ItemCommands(ctx).update(passport, ItemPatch(sensitive = true), EventSource.TEXT))
+        assertTrue(service.propose("je prends le passeport").targets.single().matches.isNotEmpty())
+        assertTrue(service.suggestPlaces("bur").isNotEmpty())
+
+        val hidden =
+            CaptureService(
+                db,
+                ItemCommands(ctx),
+                PlaceCommands(ctx),
+                ContainerCommands(ctx),
+                Dispatchers.Unconfined,
+                locked = { true },
+            )
+        assertTrue(hidden.propose("je prends le passeport").targets.single().matches.isEmpty(), "never named")
+        assertTrue(hidden.propose("passeport @ bureau").targets.single().matches.isEmpty())
+        assertTrue(hidden.suggestPlaces("bur").isEmpty(), "the widget of a locked phone lists no place")
+    }
 
     @Test
     fun should_create_the_place_and_the_item_from_one_sentence_U1() = runTest {

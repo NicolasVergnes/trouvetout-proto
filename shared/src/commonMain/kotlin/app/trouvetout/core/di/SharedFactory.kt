@@ -5,6 +5,7 @@ import app.trouvetout.core.AppInfo
 import app.trouvetout.core.capture.CaptureService
 import app.trouvetout.core.data.DeviceIdentity
 import app.trouvetout.core.data.EventStore
+import app.trouvetout.core.data.db.DatabaseKeyLostException
 import app.trouvetout.core.data.db.TrouveToutDb
 import app.trouvetout.core.data.db.openDatabase
 import app.trouvetout.core.data.export.ExportIdentity
@@ -30,6 +31,8 @@ import app.trouvetout.core.ml.ModelRuntime
 import app.trouvetout.core.ml.ModelSettings
 import app.trouvetout.core.platform.FileStore
 import app.trouvetout.core.platform.createFileStore
+import app.trouvetout.core.privacy.AppLock
+import app.trouvetout.core.privacy.PrivacySettings
 import app.trouvetout.core.search.PhotoFiles
 import app.trouvetout.core.search.SearchService
 import kotlinx.coroutines.CancellationException
@@ -89,6 +92,7 @@ public class SharedFactory(
             containerCommands,
             config.dispatchers.io,
             config.captureLang,
+            locked = { appLock.locked.value },
         )
     }
 
@@ -113,6 +117,12 @@ public class SharedFactory(
             settings.onModelChange = { if (searchService.isInitialized()) searchService.value.modelChanged() }
         }
     }
+
+    /** The privacy settings of this device (H3, keyboard learning). */
+    public val privacySettings: PrivacySettings by lazy { PrivacySettings(database, config.dispatchers.io) }
+
+    /** When to ask for the device owner (H3) and whether sensitive items may be shown (H4); one per process. */
+    public val appLock: AppLock by lazy { AppLock(privacySettings, config.clock) }
 
     private val modelRuntime =
         lazy {
@@ -170,17 +180,25 @@ public class SharedFactory(
     /**
      * Opens the database and settles the device identity off the main thread, so the first capture does not
      * pay the schema creation. Returns false (and logs the failure class, never a path) when the store cannot
-     * be opened: storage not ready, disk full, corrupt file. Safe to call several times.
+     * be opened: storage not ready, disk full, corrupt file, lost key ([storeFailure] says which the user must
+     * hear about). Safe to call several times.
      */
     public suspend fun warmUp(): Boolean = withContext(config.dispatchers.io) {
         if (wiped) return@withContext false
-        val attempt = runCatching { deviceId }
+        // The privacy state is read here, off the main thread, before any screen or lifecycle callback needs it.
+        val attempt = runCatching { deviceId.also { appLock } }
         attempt.exceptionOrNull()?.let { failure ->
             if (failure is CancellationException) throw failure
             config.logger.log(LogLevel.ERROR, TAG, "storage unavailable: ${failure::class.simpleName}")
+            storeFailure = if (failure is DatabaseKeyLostException) StoreFailure.KEY_LOST else StoreFailure.UNAVAILABLE
         }
+        if (attempt.isSuccess) storeFailure = null
         attempt.isSuccess
     }
+
+    /** Why the last [warmUp] failed; null after a success. */
+    public var storeFailure: StoreFailure? = null
+        private set
 
     /**
      * Routine maintenance the host runs once per launch after a successful [warmUp], never on a critical path:
@@ -203,14 +221,19 @@ public class SharedFactory(
 
     /**
      * H6 (data part): closes the database and deletes every file the core wrote — database (with its WAL and
-     * shm), photos, exports, imports. The host completes the wipe (keys, preferences, scheduled notifications),
-     * then builds a fresh [SharedFactory]: this one refuses to reopen. Returns the directories removed.
+     * shm), photos, exports, imports — and the database key. The host completes the wipe (preferences, caches,
+     * scheduled notifications), then builds a fresh [SharedFactory]: this one refuses to reopen. Returns the
+     * directories removed. Works also when the store could not be opened (key lost, storage unavailable).
      */
     public suspend fun wipeAllData(): List<String> = withContext(config.dispatchers.io) {
         if (searchService.isInitialized()) searchService.value.shutdown()
         close()
         wiped = true
-        DATA_DIRECTORIES.filter { files.deleteDirectory(it) }
+        try {
+            DATA_DIRECTORIES.filter { files.deleteDirectory(it) }
+        } finally {
+            config.databaseKeys?.delete()
+        }
     }
 
     /**
@@ -238,4 +261,13 @@ public class SharedFactory(
         public const val DATABASE_FILE: String = "trouvetout.db"
         public const val IMPORT_DIRECTORY: String = "imports"
     }
+}
+
+/** Why the store could not be opened, as the hosts explain it. */
+public enum class StoreFailure {
+    /** The database is encrypted and its key is gone (Keystore or Keychain reset): only a total wipe helps. */
+    KEY_LOST,
+
+    /** Storage not ready, disk full, unreadable file. */
+    UNAVAILABLE,
 }

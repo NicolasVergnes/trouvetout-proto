@@ -177,6 +177,86 @@
         }
       }
     },
+    "browse_hidden_count": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sensitive objects hidden: %lld. Tap to show them."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objets sensibles masqués : %lld. Touchez pour les afficher."
+          }
+        }
+      }
+    },
+    "camera_denied_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app may not use the camera. You can allow it in the iPhone Settings, or pick a photo from your library instead."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’app n’a pas accès à l’appareil photo. Vous pouvez l’autoriser dans les Réglages de l’iPhone, ou choisir une photo de votre photothèque."
+          }
+        }
+      }
+    },
+    "camera_denied_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera not allowed"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appareil photo non autorisé"
+          }
+        }
+      }
+    },
+    "camera_rationale_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To photograph an object or a place, or to find an object from a photo. The photo stays in the app, on this iPhone: never in your library, never online. iOS will now ask for your permission."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour photographier un objet ou un lieu, ou retrouver un objet à partir d’une photo. La photo reste dans l’app, sur cet iPhone : ni dans votre photothèque, ni sur internet. iOS va maintenant vous demander l’autorisation."
+          }
+        }
+      }
+    },
+    "camera_rationale_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the camera"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utiliser l’appareil photo"
+          }
+        }
+      }
+    },
     "capture_card_edit": {
       "localizations": {
         "en": {
@@ -1425,6 +1505,38 @@
         }
       }
     },
+    "item_sensitive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sensitive object"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objet sensible"
+          }
+        }
+      }
+    },
+    "item_sensitive_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kept out of the home list, the suggestions and the thumbnails, and behind the lock when it is on. The search still finds it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Absent de la liste d’accueil, des suggestions et des miniatures, et derrière le verrouillage quand il est actif. La recherche le trouve toujours."
+          }
+        }
+      }
+    },
     "item_show_history": {
       "localizations": {
         "en": {
@@ -1517,6 +1629,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "Unité"
+          }
+        }
+      }
+    },
+    "lock_prompt_reason": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock TrouveTout"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déverrouiller TrouveTout"
+          }
+        }
+      }
+    },
+    "lock_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock with Face ID, Touch ID or the iPhone passcode."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déverrouillez avec Face ID, Touch ID ou le code de l’iPhone."
+          }
+        }
+      }
+    },
+    "lock_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TrouveTout is locked"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TrouveTout est verrouillé"
+          }
+        }
+      }
+    },
+    "lock_unlock": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déverrouiller"
           }
         }
       }
@@ -1841,6 +2017,22 @@
         }
       }
     },
+    "reveal_prompt_reason": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the sensitive objects"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher les objets sensibles"
+          }
+        }
+      }
+    },
     "search_answer_archived": {
       "localizations": {
         "en": {
@@ -2022,13 +2214,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What are you looking for?"
+            "value": "Object or place"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Que cherchez-vous ?"
+            "value": "Objet ou lieu"
           }
         }
       }
@@ -2141,6 +2333,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Objets qui ressemblent à cette photo"
+          }
+        }
+      }
+    },
+    "search_sensitive_masked": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sensitive object: tap to show it"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objet sensible : touchez pour l’afficher"
           }
         }
       }
@@ -2317,6 +2525,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vos données"
+          }
+        }
+      }
+    },
+    "settings_display_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Affichage"
           }
         }
       }
@@ -2561,6 +2785,150 @@
         }
       }
     },
+    "settings_keyboard_ios": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The iPhone keyboard may learn the words you type, as in every app; iOS offers no way to stop it for one app. Dictation in the app itself stays on the iPhone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le clavier de l’iPhone peut apprendre les mots tapés, comme dans toutes les apps ; iOS ne permet pas de l’empêcher pour une seule app. La dictée de l’app elle-même reste sur l’iPhone."
+          }
+        }
+      }
+    },
+    "settings_licences_sqlcipher": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SQLCipher by Zetetic LLC (BSD-style licence) encrypts the database on this iPhone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SQLCipher de Zetetic LLC (licence de type BSD) chiffre la base sur cet iPhone."
+          }
+        }
+      }
+    },
+    "settings_lock": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lock the app"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verrouiller l’app"
+          }
+        }
+      }
+    },
+    "settings_lock_delay": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lock again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverrouiller"
+          }
+        }
+      }
+    },
+    "settings_lock_delay_five": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After 5 minutes away"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Après 5 minutes d’absence"
+          }
+        }
+      }
+    },
+    "settings_lock_delay_minute": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After 1 minute away"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Après 1 minute d’absence"
+          }
+        }
+      }
+    },
+    "settings_lock_delay_now": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As soon as I leave the app"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dès que je quitte l’app"
+          }
+        }
+      }
+    },
+    "settings_lock_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asks for Face ID, Touch ID or the passcode when the app opens and before showing sensitive objects; hides the app in the app switcher."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande Face ID, Touch ID ou le code à l’ouverture et avant d’afficher les objets sensibles ; masque l’app dans le sélecteur d’apps."
+          }
+        }
+      }
+    },
+    "settings_lock_unavailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set a passcode on the iPhone first (Settings > Face ID & Passcode)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Définissez d’abord un code sur l’iPhone (Réglages > Face ID et code)."
+          }
+        }
+      }
+    },
     "settings_photos_absent": {
       "localizations": {
         "en": {
@@ -2721,6 +3089,22 @@
         }
       }
     },
+    "settings_privacy_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vie privée"
+          }
+        }
+      }
+    },
     "settings_search_licences": {
       "localizations": {
         "en": {
@@ -2765,6 +3149,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "La recherche tourne sur ce téléphone : mots-clés, synonymes et sens des mots, avec un modèle inclus dans l’app. Rien n’est envoyé nulle part."
+          }
+        }
+      }
+    },
+    "settings_simple_mode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simplified mode"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode simplifié"
+          }
+        }
+      }
+    },
+    "settings_simple_mode_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The home screen shows two large buttons only: put something away, find it. The settings stay at the top."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’accueil ne montre que deux grands boutons : ranger, retrouver. Les réglages restent en haut."
           }
         }
       }
@@ -2897,6 +3313,38 @@
         }
       }
     },
+    "simple_find": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retrouver"
+          }
+        }
+      }
+    },
+    "simple_store": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Put away"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranger"
+          }
+        }
+      }
+    },
     "state_lent": {
       "localizations": {
         "en": {
@@ -2973,6 +3421,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stockage indisponible"
+          }
+        }
+      }
+    },
+    "store_key_lost_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The key that protects them on this iPhone was erased. Nobody can open them any more, the app neither. Erase the data to start again, then import an export if you have one."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La clé qui les protège sur cet iPhone a été effacée. Plus personne ne peut les ouvrir, pas même l’app. Effacez les données pour repartir, puis importez un export si vous en avez un."
+          }
+        }
+      }
+    },
+    "store_key_lost_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your objects cannot be read"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos objets ne peuvent pas être lus"
           }
         }
       }

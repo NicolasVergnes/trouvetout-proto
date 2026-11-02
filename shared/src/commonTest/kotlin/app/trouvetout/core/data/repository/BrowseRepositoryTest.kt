@@ -153,6 +153,28 @@ class BrowseRepositoryTest {
     }
 
     @Test
+    fun sensitive_items_are_set_apart_in_places_and_containers_H4() = runTest {
+        val office = place("Bureau", kind = PlaceKind.ROOT)
+        val box = containers.create("Boîte 2", office, 2, EventSource.TEXT).id()
+        item("agrafeuse", LocationRef.InPlace(office))
+        val passport =
+            items.create(ItemDraft("passeport", sensitive = true), LocationRef.InPlace(office), EventSource.TEXT).id()
+        items.create(ItemDraft("bague", sensitive = true), LocationRef.InContainer(box), EventSource.TEXT)
+        item("élastiques", LocationRef.InContainer(box))
+
+        val inOffice = browse.observePlace(office).first()
+        assertEquals(listOf("agrafeuse"), inOffice.items.map { it.item.name })
+        assertEquals(listOf(passport), inOffice.hidden.map { it.item.id })
+        val inBox = browse.observeContainer(box).first()
+        assertEquals(listOf("élastiques"), inBox.items.map { it.item.name })
+        assertEquals(listOf("bague"), inBox.hidden.map { it.item.name })
+
+        assertIs<CommandResult.Done>(items.update(passport, ItemPatch(sensitive = false), EventSource.TEXT))
+        assertEquals(listOf("agrafeuse", "passeport"), browse.observePlace(office).first().items.map { it.item.name })
+        assertTrue(browse.observePlace(office).first().hidden.isEmpty())
+    }
+
+    @Test
     fun should_expose_photos_tags_and_history_for_the_item_sheet() = runTest {
         val cave = place("Cave", kind = PlaceKind.ROOT)
         val skis = item("skis", LocationRef.InPlace(cave), tags = listOf("hiver", "sport"))

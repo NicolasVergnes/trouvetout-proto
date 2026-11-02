@@ -38,6 +38,10 @@ selectActive:
 SELECT id, name, description, tags, quantity, unit, sensitive, pinned, archived, created_at, deleted_at
 FROM item WHERE deleted_at IS NULL ORDER BY name;
 
+selectListed:
+SELECT id, name, description, tags, quantity, unit, sensitive, pinned, archived, created_at, deleted_at
+FROM item WHERE deleted_at IS NULL AND sensitive = 0 ORDER BY name;
+
 selectDeleted:
 SELECT id, name, description, tags, quantity, unit, sensitive, pinned, archived, created_at, deleted_at
 FROM item WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC;

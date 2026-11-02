@@ -25,8 +25,6 @@
 		<string>en</string>
 		<string>fr</string>
 	</array>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>CFBundleURLTypes</key>
@@ -40,6 +38,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>To unlock the app and show sensitive objects, when you turn on the app lock. Face ID data never leaves the iPhone and the app never sees it.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>To turn the sentence you say into text, on this phone. The audio never leaves the device and is not kept.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
