@@ -38,25 +38,18 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
 import app.trouvetout.android.notif.ReminderNotifications
 import app.trouvetout.android.notif.rememberNotificationAsk
-import app.trouvetout.core.domain.model.Reminder
 import app.trouvetout.core.domain.model.ReminderKind
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
-
-/** What the reminders section of the item sheet can do (E2, E6). */
-data class RemindersActions(
-    val onAdd: (Long) -> Unit,
-    val onRemove: (String) -> Unit,
-    val onChecking: (Boolean) -> Unit,
-    val onChecked: () -> Unit,
-)
 
 /**
  * E2 / E6 on the item sheet: dated reminders (date then time, moments to come only), the « check every six months »
@@ -66,12 +59,17 @@ data class RemindersActions(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemindersSection(
-    reminders: List<Reminder>,
+    itemId: String,
     enabled: Boolean,
-    actions: RemindersActions,
     now: Long = System.currentTimeMillis(),
 ) {
     val context = LocalContext.current
+    val app = context.applicationContext as App
+    val viewModel: ItemRemindersViewModel =
+        viewModel(key = "reminders/$itemId") { ItemRemindersViewModel(app, itemId) }
+    val reminders by viewModel.reminders.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val usable = enabled && !state.busy
     var notificationsOn by remember { mutableStateOf(ReminderNotifications.enabled(context)) }
     LifecycleResumeEffect(Unit) {
         notificationsOn = ReminderNotifications.enabled(context)
@@ -88,6 +86,9 @@ fun RemindersSection(
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.semantics { heading() },
         )
+        if (state.failed) {
+            Text(stringResource(R.string.capture_problem_rejected), color = MaterialTheme.colorScheme.error)
+        }
         for (reminder in dated) {
             val millis = reminder.fireAt.toEpochMilliseconds()
             Row(
@@ -99,14 +100,14 @@ fun RemindersSection(
                     if (millis <= now) stringResource(R.string.reminder_past, text) else text,
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(onClick = { actions.onRemove(reminder.id) }, enabled = enabled) {
+                TextButton(onClick = { viewModel.remove(reminder.id) }, enabled = usable) {
                     Text(stringResource(R.string.reminder_remove))
                 }
             }
         }
-        OutlinedButton(onClick = { picking = true }, enabled = enabled) { Text(stringResource(R.string.reminder_add)) }
-        CheckRow(check != null, enabled) { on ->
-            actions.onChecking(on)
+        OutlinedButton(onClick = { picking = true }, enabled = usable) { Text(stringResource(R.string.reminder_add)) }
+        CheckRow(check != null, usable) { on ->
+            viewModel.setChecking(on)
             if (on) afterAdding()
         }
         if (check != null) {
@@ -120,7 +121,7 @@ fun RemindersSection(
                 },
                 style = MaterialTheme.typography.bodySmall,
             )
-            OutlinedButton(onClick = actions.onChecked, enabled = enabled) {
+            OutlinedButton(onClick = viewModel::confirmChecked, enabled = usable) {
                 Text(stringResource(R.string.reminder_checked))
             }
         }
@@ -143,7 +144,7 @@ fun RemindersSection(
         MomentPicker(
             onPick = { millis ->
                 picking = false
-                actions.onAdd(millis)
+                viewModel.add(millis)
                 afterAdding()
             },
             onDismiss = { picking = false },
@@ -198,7 +199,8 @@ private fun MomentPicker(
                     override fun isSelectableYear(year: Int): Boolean = year >= today.year
                 },
         )
-    val time = rememberTimePickerState(initialHour = 9, initialMinute = 0, is24Hour = DateFormat.is24HourFormat(context))
+    val is24Hour = DateFormat.is24HourFormat(context)
+    val time = rememberTimePickerState(initialHour = DEFAULT_HOUR, initialMinute = 0, is24Hour = is24Hour)
     var day by rememberSaveable { mutableStateOf<Long?>(null) }
     var past by rememberSaveable { mutableStateOf(false) }
     val chosenDay = day
@@ -251,3 +253,6 @@ private fun moment(
             (if (withTime) DateUtils.FORMAT_SHOW_TIME else 0)
     return DateUtils.formatDateTime(context, millis, flags)
 }
+
+/** A reminder without a chosen time rings at 9:00, as in a sentence (ADR-024). */
+private const val DEFAULT_HOUR = 9

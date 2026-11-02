@@ -44,13 +44,14 @@ object InventoryPrinter {
         add(PrintEntry(inventory.title, PrintEntry.Style.TITLE))
         if (inventory.path.isNotEmpty()) add(PrintEntry(inventory.path.joinToString(" › "), PrintEntry.Style.NOTE))
         val today = System.currentTimeMillis()
-        val printedOn = DateUtils.formatDateTime(context, today, DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR)
+        val dateFlags = DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR
+        val printedOn = DateUtils.formatDateTime(context, today, dateFlags)
         add(PrintEntry(context.getString(R.string.print_printed_on, printedOn), PrintEntry.Style.NOTE))
         if (inventory.lines.isEmpty()) add(PrintEntry(context.getString(R.string.print_empty), PrintEntry.Style.BODY))
         for (line in inventory.lines) add(PrintEntry(text(context, line), styleOf(line.kind), line.depth))
         if (inventory.hiddenCount > 0) {
-            val hidden =
-                context.resources.getQuantityString(R.plurals.print_hidden, inventory.hiddenCount, inventory.hiddenCount)
+            val count = inventory.hiddenCount
+            val hidden = context.resources.getQuantityString(R.plurals.print_hidden, count, count)
             add(PrintEntry(hidden, PrintEntry.Style.NOTE))
         }
     }
@@ -154,7 +155,7 @@ class InventoryPrintAdapter(
     }
 
     private fun write(
-        document: PdfDocument,
+        document: PrintedPdfDocument,
         ranges: Array<out PageRange>,
         cancellationSignal: CancellationSignal?,
     ) {
@@ -162,17 +163,50 @@ class InventoryPrintAdapter(
             if (cancellationSignal?.isCanceled == true) return
             if (ranges.none { it == PageRange.ALL_PAGES || index in it.start..it.end }) continue
             val page = document.startPage(index)
-            for (item in placed) {
-                page.canvas.save()
-                page.canvas.translate(item.x, item.y)
-                item.layout.draw(page.canvas)
-                page.canvas.restore()
-            }
+            draw(page.canvas, placed)
             document.finishPage(page)
         }
     }
 
     companion object {
+        /** A4 in points, with half-inch margins: the size of [writePdf]. */
+        private const val A4_WIDTH = 595
+        private const val A4_HEIGHT = 842
+        private const val MARGIN = 36
+
+        /** The same pages written as an A4 PDF, without the print service; returns the number of pages. */
+        fun writePdf(
+            entries: List<PrintEntry>,
+            out: java.io.OutputStream,
+        ): Int {
+            val margin = MARGIN.toFloat()
+            val pages = paginate(entries, margin, margin, A4_WIDTH - 2 * MARGIN, A4_HEIGHT - 2 * MARGIN)
+            val document = PdfDocument()
+            try {
+                for ((index, placed) in pages.withIndex()) {
+                    val page = document.startPage(PdfDocument.PageInfo.Builder(A4_WIDTH, A4_HEIGHT, index + 1).create())
+                    draw(page.canvas, placed)
+                    document.finishPage(page)
+                }
+                document.writeTo(out)
+            } finally {
+                document.close()
+            }
+            return pages.size
+        }
+
+        private fun draw(
+            canvas: android.graphics.Canvas,
+            placed: List<Placed>,
+        ) {
+            for (item in placed) {
+                canvas.save()
+                canvas.translate(item.x, item.y)
+                item.layout.draw(canvas)
+                canvas.restore()
+            }
+        }
+
         private const val INDENT = 18f
         private const val GAP = 4f
 

@@ -51,7 +51,11 @@ final class SystemNotificationCenter: NotificationCenterClient {
     }
 
     func requestAuthorization() async -> Bool {
-        (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
+        do {
+            return try await center.requestAuthorization(options: [.alert, .sound])
+        } catch {
+            return false
+        }
     }
 }
 

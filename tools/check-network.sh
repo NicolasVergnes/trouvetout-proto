@@ -43,6 +43,13 @@ if grep -rqE "Repository|SharedFactory|readyShared" "$ROOT/androidApp/src/main/j
   echo "VIOLATION : le widget ou la tuile Android lit des données"; status=1
 fi
 
+echo "== Notifications sans lieu (H4, lot 9) =="
+# Le texte d'une notification vient de ScheduledReminder (nom ou rien) : le code des notifications ne lit aucun lieu.
+if grep -rnE "LocationPath|LocationResolver|\.labels|placeId|containerId|browse\." \
+  "$ROOT/androidApp/src/main/java/app/trouvetout/android/notif" "$ROOT/iosApp/iosApp/Notifications" 2>/dev/null; then
+  echo "VIOLATION : le code des notifications lit un lieu"; status=1
+fi
+
 echo "== Manifeste / plist =="
 if grep -rq 'android.permission.INTERNET' "$ROOT/androidApp" --include=AndroidManifest.xml 2>/dev/null && [ ! -f "$ROOT/docs/adr-permissions.ok" ]; then
   echo "VIOLATION : permission INTERNET sans ADR"; status=1

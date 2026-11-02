@@ -44,10 +44,19 @@ done
 
 echo "== Travail en arrière-plan (N6) =="
 # Aucun travail en arrière-plan en v1 : ni WorkManager, ni JobScheduler, ni service au premier plan, ni BGTask.
-# Les rappels du lot 9 passeront par AlarmManager inexact, permis.
+# Les rappels (lot 9, ADR-024) passent par AlarmManager.setWindow, sans alarme exacte ni permission.
 BACKGROUND='androidx\.work|WorkManager|JobScheduler|JobService|foregroundServiceType|FOREGROUND_SERVICE|startForegroundService|BGTaskScheduler|UIBackgroundModes'
 if grep -rEn "$BACKGROUND" "$ROOT/androidApp/src/main" "$ROOT/shared/src" "$ROOT/iosApp/iosApp" "$ROOT/iosApp/CaptureWidget" "$ROOT/iosApp/project.yml" "$ROOT/gradle/libs.versions.toml" 2>/dev/null; then
   echo "VIOLATION: travail en arrière-plan (N6)"; status=1
+fi
+EXACT='setExact|setAlarmClock|SCHEDULE_EXACT_ALARM|USE_EXACT_ALARM|canScheduleExactAlarms'
+if grep -rEn "$EXACT" "$ROOT/androidApp/src/main" 2>/dev/null; then
+  echo "VIOLATION: alarme exacte (ADR-024 : setWindow inexact seulement)"; status=1
+fi
+# Récepteurs exportés : le widget (mise à jour du lanceur) et le redémarrage seulement ; celui des rappels est privé.
+EXPORTED_RECEIVERS=$(tr '\n' ' ' < "$ROOT/androidApp/src/main/AndroidManifest.xml" | grep -oE '<receiver[^>]*>' | grep 'exported="true"' | grep -oE 'android:name="[^"]*"' | sort | tr '\n' ' ')
+if [ "$EXPORTED_RECEIVERS" != 'android:name=".notif.BootReceiver" android:name=".widget.CaptureWidgetProvider" ' ]; then
+  echo "VIOLATION: récepteurs exportés inattendus : $EXPORTED_RECEIVERS"; status=1
 fi
 
 echo "== Manifeste fusionné et APK de la release (si construits) =="
