@@ -36,6 +36,12 @@ def RL(input, items, person):
 def Q(input, query):
     return input, {"intent": "Query", "query": query}
 
+def RM(input, items, date=None):
+    """Remind (E2, lot 9): `date` is the expected Paris local time, said on Monday 2 Nov 2026 at 10:00."""
+    e = {"intent": "Remind", "items": items if isinstance(items, list) else [items]}
+    if date is not None: e["date"] = date
+    return input, e
+
 FR = [
     # --- Store: plain prepositions, articles, elisions
     S("passeport dans le tiroir du haut de la commode", "passeport", "tiroir du haut de la commode"),
@@ -288,16 +294,74 @@ EN = [
     Q("where is the drill?", "drill"),
 ]
 
+# Lot 9: appended after the older lines so their ids stay stable.
+FR_REMIND = [
+    RM("rappelle-moi où est le passeport la veille du 12 mars", "passeport", "2027-03-11T09:00"),
+    RM("rappelle-moi le passeport demain", "passeport", "2026-11-03T09:00"),
+    RM("rappelle-moi où sont les décos de Noël le 1er décembre", "décos de Noël", "2026-12-01T09:00"),
+    RM("rappelle moi de vérifier la tente dans 6 mois", "tente", "2027-05-02T09:00"),
+    RM("rappelle-moi le chargeur du kindle ce soir", "chargeur du kindle", "2026-11-02T19:00"),
+    RM("rappelle-moi de prendre la perceuse samedi", "perceuse", "2026-11-07T09:00"),
+    RM("rappelle-moi la clé du garage lundi prochain à 8h", "clé du garage", "2026-11-09T08:00"),
+    RM("fais-moi penser au carnet de santé dans 3 jours", "carnet de santé", "2026-11-05T09:00"),
+    RM("rappelle-moi où est le livret de famille le 15 janvier à 18h30", "livret de famille", "2027-01-15T18:30"),
+    RM("rappelle-moi les billets d'avion la veille du 20 décembre", "billets d'avion", "2026-12-19T09:00"),
+    RM("rappelle-moi le passeport et la carte d'identité le 5 février", ["passeport", "carte d'identité"], "2027-02-05T09:00"),
+    RM("rappelle-moi la valise rouge dans une semaine", "valise rouge", "2026-11-09T09:00"),
+    RM("rappelez-moi où est la tente le 14 juillet", "tente", "2027-07-14T09:00"),
+    RM("rappelle-moi la raquette de tennis demain à 17h", "raquette de tennis", "2026-11-03T17:00"),
+    RM("mets un rappel pour le passeport le 12/03", "passeport", "2027-03-12T09:00"),
+    RM("rappelle-moi les pneus neige dans deux semaines", "pneus neige", "2026-11-16T09:00"),
+    RM("rappelle-moi où j'ai rangé les guirlandes le 30 novembre", "guirlandes", "2026-11-30T09:00"),
+    RM("rappelle-moi le parapluie après-demain matin", "parapluie", "2026-11-04T09:00"),
+    RM("rappelle-moi l'agrafeuse à 15h", "agrafeuse", "2026-11-02T15:00"),
+    RM("rappelle-moi les lunettes de soleil le mois prochain", "lunettes de soleil", "2026-12-02T09:00"),
+    RM("rappelle-moi de sortir le sapin le 1er décembre 2026 à 10h", "sapin", "2026-12-01T10:00"),
+    RM("rappelle-moi la caisse à outils dans 1 an", "caisse à outils", "2027-11-02T09:00"),
+    RM("rappelle-moi le casque de vélo mercredi soir", "casque de vélo", "2026-11-04T19:00"),
+    RM("programme un rappel pour la tondeuse le 1er avril", "tondeuse", "2027-04-01T09:00"),
+    RM("rappelle-moi le passeport", "passeport"),
+    RM("rappelle-moi les piles AA à midi", "piles AA", "2026-11-02T12:00"),
+    RM("rappelle-moi le sac de couchage dimanche à 9h", "sac de couchage", "2026-11-08T09:00"),
+    RM("rappelle-moi du carnet de vaccination la semaine prochaine", "carnet de vaccination", "2026-11-09T09:00"),
+    RM("rappelle-moi de chercher le chargeur du téléphone vers 20h", "chargeur du téléphone", "2026-11-02T20:00"),
+    RM("rappelle-moi le contrat d'assurance le 31 décembre à 23h", "contrat d'assurance", "2026-12-31T23:00"),
+    RM("rappelle-moi le passeport à 8h", "passeport", "2026-11-03T08:00"),
+    RM("rappelle-moi où est la perceuse le 3 novembre à 8 h du soir", "perceuse", "2026-11-03T20:00"),
+    # A bare « rappel » without a date is an object, not a reminder.
+    S("rappel de vaccin dans le tiroir", "rappel de vaccin", "tiroir"),
+]
+
+EN_REMIND = [
+    RM("remind me where the passport is on March 11", "passport", "2027-03-11T09:00"),
+    RM("remind me to check the tent in 6 months", "tent", "2027-05-02T09:00"),
+    RM("remind me about the christmas lights on December 1st", "christmas lights", "2026-12-01T09:00"),
+    RM("remind me where the car keys are tomorrow at 8am", "car keys", "2026-11-03T08:00"),
+    RM("remind me to grab the umbrella tonight", "umbrella", "2026-11-02T19:00"),
+    RM("remind me about the drill next Monday", "drill", "2026-11-09T09:00"),
+    RM("remind me where the passport is the day before March 12", "passport", "2027-03-11T09:00"),
+    RM("remind me to take the tent on Friday at 6pm", "tent", "2026-11-06T18:00"),
+    RM("set a reminder for the spare bulbs in two weeks", "spare bulbs", "2026-11-16T09:00"),
+    RM("remind me where I put my glasses in 3 days", "glasses", "2026-11-05T09:00"),
+    RM("remind me of the passport and the visa on January 5", ["passport", "visa"], "2027-01-05T09:00"),
+    RM("remind me to find the yoga mat at noon", "yoga mat", "2026-11-02T12:00"),
+    RM("remind me about the winter tires next month", "winter tires", "2026-12-02T09:00"),
+    RM("please remind me where the camping stove is on Sunday morning", "camping stove", "2026-11-08T09:00"),
+    RM("remind me where the passport is", "passport"),
+    RM("remind me about the insurance papers on the 31st of December at 11pm", "insurance papers", "2026-12-31T23:00"),
+    RM("reminder: passport tomorrow", "passport", "2026-11-03T09:00"),
+]
+
 def write():
     out = io.open(os.path.join(HERE, "parser.jsonl"), "w", encoding="utf-8", newline="\n")
     n = 0
-    for lang, rows in (("fr", FR), ("en", EN)):
+    for lang, rows in (("fr", FR), ("en", EN), ("fr", FR_REMIND), ("en", EN_REMIND)):
         for input, expect in rows:
             n += 1
             line = {"id": "p%04d" % n, "lang": lang, "origin": "synthetic", "input": input, "expect": expect}
             out.write(json.dumps(line, ensure_ascii=False) + "\n")
     out.close()
-    print("fr", len(FR), "en", len(EN), "total", n)
+    print("fr", len(FR) + len(FR_REMIND), "en", len(EN) + len(EN_REMIND), "total", n)
 
 if __name__ == "__main__":
     write()

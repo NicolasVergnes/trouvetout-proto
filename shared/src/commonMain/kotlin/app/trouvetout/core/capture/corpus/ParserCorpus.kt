@@ -1,10 +1,15 @@
 package app.trouvetout.core.capture.corpus
 
+import app.trouvetout.core.capture.DateResolver
 import app.trouvetout.core.capture.Intent
 import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.capture.ParseResult
 import app.trouvetout.core.capture.Parser
 import kotlinx.serialization.Serializable
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
 
 /** One line of `corpus/parser.jsonl` (format in `docs/06-corpus-recherche.md` §1). */
@@ -17,6 +22,8 @@ public data class CorpusLine(
     val expect: Expectation,
     /** Known failure kept in the corpus with its reason; counted, never asserted. */
     val xfail: String? = null,
+    /** Local time the sentence is said at, Paris (« 2026-11-02T10:00 », the default): reminder dates are relative. */
+    val now: String? = null,
 )
 
 @Serializable
@@ -28,6 +35,8 @@ public data class Expectation(
     val query: String? = null,
     val quantity: Double? = null,
     val unit: String? = null,
+    /** REMIND: the expected local moment in Paris, « 2026-11-03T09:00 ». */
+    val date: String? = null,
 )
 
 /** Outcome of one line: intent right? split (objects, place, person, query, quantity) right? */
@@ -68,6 +77,10 @@ public object ParserCorpus {
     public const val INTENT_THRESHOLD: Double = 0.95
     public const val SPLIT_THRESHOLD: Double = 0.90
 
+    /** The moment reminder dates are read at, unless a line says otherwise: Monday 2 November 2026, 10:00. */
+    public const val DEFAULT_NOW: String = "2026-11-02T10:00"
+    private val zone = TimeZone.of("Europe/Paris")
+
     private val json = Json { ignoreUnknownKeys = true }
 
     public fun parseLines(jsonl: String): List<CorpusLine> = jsonl.lineSequence().filter {
@@ -82,7 +95,8 @@ public object ParserCorpus {
             lines.map { line ->
                 val lang = if (line.lang.equals("en", ignoreCase = true)) Lang.EN else Lang.FR
                 val actual = parser.parse(line.input, lang)
-                LineResult(line, actual, intentMatches(line.expect, actual), splitMatches(line.expect, actual))
+                val split = splitMatches(line.expect, actual, line.now ?: DEFAULT_NOW)
+                LineResult(line, actual, intentMatches(line.expect, actual), split)
             }
         val scores =
             results.groupBy { it.line.lang }.mapValues { (lang, list) ->
@@ -106,6 +120,7 @@ public object ParserCorpus {
     private fun splitMatches(
         expect: Expectation,
         actual: ParseResult,
+        now: String,
     ): Boolean {
         if (actual.intent == Intent.QUERY || expect.query != null) {
             return expect.query.sameText(actual.query)
@@ -113,12 +128,24 @@ public object ParserCorpus {
         val names = actual.items.map { it.name }
         val quantityOk = expect.quantity == null || actual.items.firstOrNull()?.quantity == expect.quantity
         val unitOk = expect.unit == null || actual.items.firstOrNull()?.unit == expect.unit
-        return names.size == expect.items.size &&
+        val dateOk = expect.date.sameText(resolvedDate(actual, now))
+        return dateOk &&
+            names.size == expect.items.size &&
             names.zip(expect.items).all { (a, e) -> e.sameText(a) } &&
             expect.place.sameText(actual.place) &&
             expect.person.sameText(actual.person) &&
             quantityOk &&
             unitOk
+    }
+
+    /** The reminder moment as a Paris local time, or null when the sentence has none. */
+    private fun resolvedDate(
+        actual: ParseResult,
+        now: String,
+    ): String? {
+        val spec = actual.date ?: return null
+        val at = LocalDateTime.parse(now).toInstant(zone)
+        return DateResolver.resolve(spec, at, zone).toLocalDateTime(zone).toString()
     }
 
     private fun String?.sameText(other: String?): Boolean = (this == null && other == null) ||
@@ -132,6 +159,7 @@ public object ParserCorpus {
         "lend" -> Intent.LEND
         "returnfromlend", "return_from_lend" -> Intent.RETURN_FROM_LEND
         "query" -> Intent.QUERY
+        "remind" -> Intent.REMIND
         else -> Intent.UNKNOWN
     }
 }

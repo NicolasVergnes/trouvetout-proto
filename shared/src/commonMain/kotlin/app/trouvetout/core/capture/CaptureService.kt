@@ -7,6 +7,8 @@ import app.trouvetout.core.data.db.toPlace
 import app.trouvetout.core.domain.model.Event
 import app.trouvetout.core.domain.model.EventSource
 import app.trouvetout.core.domain.model.PlaceKind
+import app.trouvetout.core.domain.model.ReminderKind
+import app.trouvetout.core.domain.usecase.AttachmentCommands
 import app.trouvetout.core.domain.usecase.CommandResult
 import app.trouvetout.core.domain.usecase.ContainerCommands
 import app.trouvetout.core.domain.usecase.ItemCommands
@@ -15,6 +17,9 @@ import app.trouvetout.core.domain.usecase.LocationRef
 import app.trouvetout.core.domain.usecase.PlaceCommands
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.TimeZone
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /** One object of the sentence and the existing items it may designate (A14 duplicates, movement targets). */
 public data class ItemTarget(
@@ -35,8 +40,13 @@ public data class CaptureProposal(
     /** Null when the sentence names no place. */
     val place: PlaceResolution?,
     val targets: List<ItemTarget>,
-    /** Set when the sentence cannot be captured at all (too long); [CaptureService.commit] refuses it. */
+    /**
+     * Set when the sentence cannot be captured as it is (too long; a reminder without a date or with a past one);
+     * [CaptureService.commit] refuses it.
+     */
     val problem: CaptureProblem? = null,
+    /** REMIND (E2): when the reminder fires, resolved in the phone's time zone. */
+    val fireAt: Instant? = null,
 ) {
     public val movesExistingItems: Boolean get() = parse.intent in MOVEMENTS
     public val needsPlaceDecision: Boolean get() = place != null && place !is PlaceResolution.Resolved
@@ -47,7 +57,8 @@ public data class CaptureProposal(
         targets.indices.firstOrNull { it !in answered && targets[it].needsDecision(movesExistingItems) }
 
     private companion object {
-        val MOVEMENTS = setOf(Intent.TAKE, Intent.RETURN, Intent.MOVE_TO, Intent.LEND, Intent.RETURN_FROM_LEND)
+        val MOVEMENTS =
+            setOf(Intent.TAKE, Intent.RETURN, Intent.MOVE_TO, Intent.LEND, Intent.RETURN_FROM_LEND, Intent.REMIND)
     }
 }
 
@@ -75,6 +86,12 @@ public enum class CaptureProblem {
     PERSON_MISSING,
     COMMAND_REJECTED,
     INPUT_TOO_LONG,
+
+    /** « rappelle-moi le passeport »: a reminder needs a day or a time. */
+    DATE_MISSING,
+
+    /** The reminder's moment has already passed. */
+    DATE_PAST,
 }
 
 /** The user's answer for one target of a proposal: act on [existingId], or null to create a new object. */
@@ -124,6 +141,13 @@ public class CaptureService internal constructor(
      * (« je prends le passeport » moves the existing one, never creates a twin).
      */
     private val locked: () -> Boolean = { false },
+    /** Writes the reminders of REMIND sentences (E2); null in tests that do not need them. */
+    private val attachments: AttachmentCommands? = null,
+    private val clock: Clock = Clock.System,
+    /** Read at each sentence: the phone may have changed time zone since the app started. */
+    private val timeZone: () -> TimeZone = { TimeZone.currentSystemDefault() },
+    /** « 12/03 » is day first unless the host's locale writes the month first (en-US). */
+    private val dayFirst: Boolean = true,
 ) {
     /** [lang] is the UI language, used only when a sentence gives no clue about its own. */
     public suspend fun propose(
@@ -138,12 +162,14 @@ public class CaptureService internal constructor(
         }
         val snapshot = snapshot()
         // The host's language only breaks ties: a French sentence typed under an English UI still parses as French.
-        val parse = Parser(snapshot.itemNames.map { it.second }, language).parse(text, lang = null)
+        val parse = Parser(snapshot.itemNames.map { it.second }, language, dayFirst).parse(text, lang = null)
         if (parse.items.size > MAX_MENTIONS) return@withContext tooLong(text, language)
         val place = parse.place?.let { PlaceResolver(snapshot.locations, parse.lang).resolve(it) }
         val detector = DuplicateDetector(snapshot.itemNames)
         val targets = parse.items.map { mention -> ItemTarget(mention, detector.find(mention.name)) }
-        CaptureProposal(parse, place, targets)
+        if (parse.intent != Intent.REMIND) return@withContext CaptureProposal(parse, place, targets)
+        val fireAt = parse.date?.let { DateResolver.resolve(it, clock.now(), timeZone()) }
+        CaptureProposal(parse, place, targets, reminderProblem(fireAt), fireAt)
     }
 
     private fun tooLong(
@@ -214,7 +240,7 @@ public class CaptureService internal constructor(
             }
         val upFront = refusalBeforeWriting(proposal, placeChoice, existingFor)
         if (upFront != null) return@withContext CaptureOutcome.Refused(upFront)
-        val writer = Writer(parse, source)
+        val writer = Writer(parse, source, proposal.fireAt)
         val location =
             writer.location(proposal, placeChoice)
                 ?: return@withContext CaptureOutcome.Refused(CaptureProblem.PLACE_UNDECIDED)
@@ -236,8 +262,16 @@ public class CaptureService internal constructor(
             proposal.movesExistingItems && existingFor.any { it == null } -> CaptureProblem.ITEM_NOT_FOUND
             proposal.needsPlaceDecision && placeChoice == null -> CaptureProblem.PLACE_UNDECIDED
             parse.intent == Intent.MOVE_TO && proposal.place == null -> CaptureProblem.PLACE_UNDECIDED
+            // Checked again here: the card may have stayed open past the moment.
+            parse.intent == Intent.REMIND -> reminderProblem(proposal.fireAt)
             else -> null
         }
+    }
+
+    private fun reminderProblem(fireAt: Instant?): CaptureProblem? = when {
+        fireAt == null -> CaptureProblem.DATE_MISSING
+        fireAt <= clock.now() -> CaptureProblem.DATE_PAST
+        else -> null
     }
 
     private class Located(
@@ -248,6 +282,7 @@ public class CaptureService internal constructor(
     private inner class Writer(
         private val parse: ParseResult,
         private val source: EventSource,
+        private val fireAt: Instant?,
     ) {
         val events = ArrayList<Event>()
         val itemIds = ArrayList<String>()
@@ -366,6 +401,11 @@ public class CaptureService internal constructor(
             }
             Intent.LEND -> existing?.let { items.lend(it, parse.person.orEmpty(), source, parse.input) }
             Intent.RETURN_FROM_LEND -> existing?.let { items.putBack(it, source, parse.input) }
+            Intent.REMIND -> if (existing != null && fireAt != null) {
+                attachments?.setReminder(existing, fireAt, ReminderKind.DATE, source, parse.input)
+            } else {
+                null
+            }
             Intent.QUERY, Intent.UNKNOWN -> null
         }
 

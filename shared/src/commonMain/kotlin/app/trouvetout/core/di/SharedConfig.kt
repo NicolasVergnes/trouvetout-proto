@@ -11,6 +11,7 @@ import app.trouvetout.core.platform.CoroutineDispatchers
 import app.trouvetout.core.platform.DeviceInfo
 import app.trouvetout.core.platform.ImageCodec
 import app.trouvetout.core.search.SearchTuning
+import kotlinx.datetime.TimeZone
 import kotlin.random.Random
 import kotlin.time.Clock
 
@@ -49,4 +50,12 @@ public class SharedConfig(
 
     /** Ranking knobs; the hosts keep the defaults, the evaluation tool varies them. */
     public var searchTuning: SearchTuning = SearchTuning()
+
+    /** IANA time zone of reminder dates (E2); null follows the phone's, read again at each use. Tests pin it. */
+    public var timeZoneId: String? = null
+
+    /** « 12/03 » is the 12th of March; an en-US host sets false (month first). */
+    public var dayFirstDates: Boolean = true
+
+    internal fun timeZone(): TimeZone = timeZoneId?.let { TimeZone.of(it) } ?: TimeZone.currentSystemDefault()
 }

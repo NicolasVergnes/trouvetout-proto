@@ -7,6 +7,7 @@ import app.trouvetout.core.domain.ids.MonotonicUlidGenerator
 import app.trouvetout.core.domain.model.EventPayload
 import app.trouvetout.core.domain.model.EventSource
 import app.trouvetout.core.domain.model.PlaceKind
+import app.trouvetout.core.domain.usecase.AttachmentCommands
 import app.trouvetout.core.domain.usecase.CommandContext
 import app.trouvetout.core.domain.usecase.CommandResult
 import app.trouvetout.core.domain.usecase.ContainerCommands
@@ -16,6 +17,7 @@ import app.trouvetout.core.domain.usecase.LocationRef
 import app.trouvetout.core.domain.usecase.PlaceCommands
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.TimeZone
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,6 +25,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class CaptureServiceTest {
     private val db = openTestDatabase()
@@ -358,5 +361,81 @@ class CaptureServiceTest {
                 PlaceCommands(ctx).create(name, kind = PlaceKind.ROOT, source = EventSource.TEXT),
             )
         return (created.events.single().payload as EventPayload.PlaceCreated).placeId
+    }
+
+    // ---- E2: reminders from a sentence (the clock starts on Tuesday 14 Nov 2023, 23:13 in Paris)
+
+    private fun reminding(locked: Boolean = false) = CaptureService(
+        db,
+        ItemCommands(ctx),
+        PlaceCommands(ctx),
+        ContainerCommands(ctx),
+        Dispatchers.Unconfined,
+        locked = { locked },
+        attachments = AttachmentCommands(ctx),
+        clock = clock,
+        timeZone = { TimeZone.of("Europe/Paris") },
+    )
+
+    @Test
+    fun a_reminder_sentence_sets_a_reminder_on_the_existing_item_U7() = runTest {
+        say("passeport @ bureau")
+        val passport = items().single().id
+        val remind = reminding()
+        clock.tick()
+        val proposal = remind.propose("rappelle-moi où est le passeport demain à 10h")
+        assertEquals(Intent.REMIND, proposal.parse.intent)
+        assertNull(proposal.problem)
+        assertNull(proposal.place, "a reminder names no place")
+        assertEquals(Instant.parse("2023-11-15T09:00:00Z"), proposal.fireAt)
+        val outcome = assertIs<CaptureOutcome.Recorded>(remind.commit(proposal))
+        val set = outcome.events.single().payload as EventPayload.ReminderSet
+        assertEquals(passport, set.itemId)
+        assertEquals(Instant.parse("2023-11-15T09:00:00Z").toEpochMilliseconds(), set.fireAtEpochMillis)
+        assertEquals(passport, db.reminderQueries.selectByItem(passport).executeAsOne().item_id)
+        assertEquals(1, items().size, "no twin created")
+    }
+
+    @Test
+    fun a_reminder_needs_a_known_item_and_a_future_date() = runTest {
+        say("passeport @ bureau")
+        val remind = reminding()
+        clock.tick()
+        assertEquals(
+            CaptureOutcome.Refused(CaptureProblem.ITEM_NOT_FOUND),
+            remind.commit(remind.propose("rappelle-moi la tente demain")),
+        )
+        assertEquals(CaptureProblem.DATE_MISSING, remind.propose("rappelle-moi le passeport").problem)
+        assertEquals(CaptureProblem.DATE_PAST, remind.propose("rappelle-moi le passeport le 3 mars 2020").problem)
+        assertEquals(
+            CaptureOutcome.Refused(CaptureProblem.DATE_MISSING),
+            remind.commit(remind.propose("rappelle-moi le passeport")),
+        )
+        // The card stayed open past the moment: refused at commit.
+        val soon = remind.propose("rappelle-moi le passeport à 23h30")
+        assertNull(soon.problem)
+        clock.millis += 3_600_000
+        assertEquals(CaptureOutcome.Refused(CaptureProblem.DATE_PAST), remind.commit(soon))
+        assertTrue(db.reminderQueries.selectPending().executeAsList().isEmpty(), "nothing written")
+    }
+
+    @Test
+    fun a_locked_app_never_sets_a_reminder_on_a_sensitive_item_H4() = runTest {
+        say("passeport @ bureau")
+        val passport = items().single().id
+        clock.tick()
+        assertIs<CommandResult.Done>(ItemCommands(ctx).update(passport, ItemPatch(sensitive = true), EventSource.TEXT))
+        val locked = reminding(locked = true)
+        assertEquals(
+            CaptureOutcome.Refused(CaptureProblem.ITEM_NOT_FOUND),
+            locked.commit(locked.propose("rappelle-moi le passeport demain")),
+        )
+    }
+
+    @Test
+    fun a_bare_rappel_without_a_date_stays_a_store() = runTest {
+        val proposal = reminding().propose("rappel de vaccin dans le tiroir")
+        assertEquals(Intent.STORE, proposal.parse.intent)
+        assertNull(proposal.problem)
     }
 }

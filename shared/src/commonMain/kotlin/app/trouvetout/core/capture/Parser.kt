@@ -1,7 +1,7 @@
 package app.trouvetout.core.capture
 
 /** What the sentence asks for (architecture §4.2). */
-public enum class Intent { STORE, TAKE, RETURN, MOVE_TO, LEND, RETURN_FROM_LEND, QUERY, UNKNOWN }
+public enum class Intent { STORE, TAKE, RETURN, MOVE_TO, LEND, RETURN_FROM_LEND, QUERY, REMIND, UNKNOWN }
 
 /** One object named in the sentence, with an optional quantity (« 12 vis M4 », « 3 m de câble »). */
 public data class ItemMention(
@@ -23,6 +23,8 @@ public data class ParseResult(
     val lang: Lang,
     val confidence: Float,
     val input: String,
+    /** REMIND (E2): when to remind, still unresolved; null when the sentence gives no date. */
+    val date: DateSpec? = null,
 )
 
 /**
@@ -32,6 +34,8 @@ public data class ParseResult(
 public class Parser(
     private val knownItemNames: Collection<String> = emptyList(),
     private val defaultLang: Lang = Lang.FR,
+    /** « 12/03 » is day first unless the host's locale writes the month first (en-US). */
+    private val dayFirst: Boolean = true,
 ) {
     public fun parse(
         text: String,
@@ -56,8 +60,9 @@ public class Parser(
         val question = raw.any { it.key == "?" }
         val toks = rules.clean(raw)
         if (toks.isEmpty()) return ParseResult(Intent.UNKNOWN, emptyList(), null, null, null, language, 0f, text)
-        val sentence = Sentence(toks, rules, knownItemNames, question, text)
-        return sentence.query()
+        val sentence = Sentence(toks, rules, knownItemNames, question, text, DateExpression(language, dayFirst))
+        return sentence.remind()
+            ?: sentence.query()
             ?: sentence.lend()
             ?: sentence.borrow()
             ?: sentence.returnFromLend()
@@ -122,6 +127,8 @@ internal class Rules private constructor(
         },
     )
     val openers = Phrases(lex.openers)
+    val remindPrefixes = Phrases(lex.remindPrefixes)
+    val remindLeads = Phrases(lex.remindLeads)
 
     /** Drops fillers, leading openers and trailing punctuation; spells number words as digits. */
     fun clean(raw: List<Tok>): List<Tok> {
@@ -170,8 +177,35 @@ internal class Sentence(
     private val knownItemNames: Collection<String>,
     private val question: Boolean,
     private val input: String,
+    private val dates: DateExpression,
 ) {
     private val lex = rules.lex
+
+    /**
+     * « rappelle-moi où est le passeport la veille du 12 mars », "remind me to check the tent in 6 months" (E2).
+     * Only a reminder prefix at the start triggers it; the date is cut out before the object is read, so « dans 3
+     * jours » is never taken for a place, and a reminder names no place. A bare « rappel » / "reminder" needs a
+     * date (« rappel de vaccin dans le tiroir » stays a store).
+     */
+    fun remind(): ParseResult? {
+        val prefix = rules.remindPrefixes.matchAt(toks, 0)
+        if (prefix == 0) return null
+        val weak = toks.subList(0, prefix).joinToString(" ") { it.key } in WEAK_REMIND
+        var rest = toks.drop(prefix)
+        val span = dates.find(rest)
+        if (span == null && weak) return null
+        if (span != null) rest = rest.subList(0, span.start) + rest.subList(span.end, rest.size)
+        while (true) {
+            val lead = rules.remindLeads.matchAt(rest, 0)
+            if (lead == 0 || lead >= rest.size) break
+            rest = rest.drop(lead)
+        }
+        while (rest.isNotEmpty() && rest.last().key == ",") rest = rest.dropLast(1)
+        val items = mentions(stripCopula(rest))
+        if (items.isEmpty()) return result(Intent.UNKNOWN, emptyList(), null, null, null, 0f)
+        val confidence = if (span != null) HIGH else MEDIUM
+        return ParseResult(Intent.REMIND, items, null, null, null, lex.lang, confidence, input, span?.spec)
+    }
 
     fun query(): ParseResult? {
         val prefix = rules.queryPrefixes.matchAt(toks, 0)
@@ -539,6 +573,7 @@ internal class Sentence(
         const val LOW = 0.7f
         const val BARE = 0.5f
         const val NO_PLACE = 0.8f
+        val WEAK_REMIND = setOf("rappel", "un rappel", "reminder")
         val PRONOUNS =
             setOf(
                 "i",
