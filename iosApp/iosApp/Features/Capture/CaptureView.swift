@@ -74,6 +74,12 @@ struct CaptureView: View {
         } message: {
             Text("voice_rationale_text")
         }
+        .alert("reminder_permission_title", isPresented: $viewModel.askNotifications) {
+            Button("action_continue") { viewModel.grantNotifications() }
+            Button("action_not_now", role: .cancel) {}
+        } message: {
+            Text("reminder_permission_text")
+        }
         .onChange(of: scenePhase) { phase in
             if phase == .active {
                 handle(router.request)
@@ -332,6 +338,11 @@ private struct CaptureCardView: View {
 
     private var detail: String {
         switch card.intent {
+        case .remind:
+            String(
+                format: NSLocalizedString("capture_card_reminder", comment: ""),
+                card.fireAt.map { momentText($0, withTime: true) } ?? ""
+            )
         case .take: NSLocalizedString("capture_card_taken", comment: "")
         case .lend: String(format: NSLocalizedString("capture_card_lent", comment: ""), card.person ?? "")
         case .returnFromLend: NSLocalizedString("capture_card_returned_from_lend", comment: "")
@@ -342,7 +353,8 @@ private struct CaptureCardView: View {
 
     /// The arrow of `capture_card_stored` is for the eye; VoiceOver hears « rangé dans … ».
     private var spokenDetail: String {
-        let movement = card.intent == .take || card.intent == .lend || card.intent == .returnFromLend
+        let movement = card.intent == .take || card.intent == .lend || card.intent == .returnFromLend ||
+            card.intent == .remind
         if let place = card.placeText, !movement {
             return String(format: NSLocalizedString("capture_card_stored_spoken", comment: ""), place)
         }

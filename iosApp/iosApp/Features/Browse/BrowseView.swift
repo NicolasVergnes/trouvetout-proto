@@ -167,6 +167,9 @@ struct BrowseView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .navigationBarTrailing) {
+            if viewModel.target != .root {
+                PrintInventoryButton { await viewModel.inventory(includeSensitive: app.sensitiveRevealed) }
+            }
             switch viewModel.target {
             case .place:
                 Button("place_rename") { openNameDialog(.rename) }

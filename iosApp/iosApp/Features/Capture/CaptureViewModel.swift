@@ -17,6 +17,8 @@ final class CaptureViewModel: ObservableObject {
     @Published private(set) var listening = false
     /// The explanation shown before the system prompts (H9).
     @Published private(set) var askMicPermission = false
+    /// H9: after the first reminder, the explanation shown before the system question about notifications.
+    @Published var askNotifications = false
     @Published private(set) var voiceNotice: VoiceNotice?
     /// Set by the batch extension (`CaptureViewModel+Batch.swift`).
     @Published var batch: BatchTarget?
@@ -267,9 +269,13 @@ final class CaptureViewModel: ObservableObject {
             events: recorded.events + photoEvents,
             source: source,
             token: cardToken,
-            photo: attachedPhoto
+            photo: attachedPhoto,
+            fireAt: proposal.fireAt
         )
         attachedPhoto = nil
+        if parse.intent == .remind {
+            askNotificationsIfNeeded()
+        }
     }
 
     /// The UI language at the time of the call.

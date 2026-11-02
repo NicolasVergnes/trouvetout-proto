@@ -4,6 +4,7 @@ import SwiftUI
 /// The item sheet: where it is and the movements (U5, U6), photos, fields, tags, flags, optional history.
 struct ItemSheetView: View {
     @StateObject private var viewModel: ItemViewModel
+    @StateObject private var reminders: ItemRemindersModel
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var description = ""
@@ -19,6 +20,7 @@ struct ItemSheetView: View {
 
     init(container: AppContainer, itemId: String) {
         _viewModel = StateObject(wrappedValue: ItemViewModel(container: container, itemId: itemId))
+        _reminders = StateObject(wrappedValue: ItemRemindersModel(container: container, itemId: itemId))
     }
 
     var body: some View {
@@ -33,6 +35,7 @@ struct ItemSheetView: View {
                 photoSection
                 editSection(view)
                 flagsSection(view)
+                RemindersSection(model: reminders)
                 if viewModel.showHistory {
                     historySection
                 }
@@ -276,6 +279,8 @@ private let historyKeys: [String: String] = [
     "ItemRestored": "history_restored",
     "PhotoAttached": "history_photo_attached",
     "PhotoDetached": "history_photo_detached",
+    "ReminderSet": "history_reminder_set",
+    "ReminderDone": "history_reminder_done",
 ]
 
 func historyLabel(_ type: String) -> String {

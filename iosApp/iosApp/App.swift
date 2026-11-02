@@ -4,8 +4,11 @@ import UIKit
 
 @main
 struct TrouveToutApp: App {
+    /// Sets the notification delegate at launch (a tapped reminder may be what started the app).
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var container = AppContainer()
     @StateObject private var router = CaptureRouter.shared
+    @StateObject private var notificationRouter = NotificationRouter.shared
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -13,6 +16,7 @@ struct TrouveToutApp: App {
             ContentView()
                 .environmentObject(container)
                 .environmentObject(router)
+                .environmentObject(notificationRouter)
                 // H3: with the app lock on, the app switcher snapshot and an inactive app show a plain cover.
                 .overlay {
                     if container.lockEnabled, scenePhase != .active {
@@ -61,6 +65,8 @@ final class AppContainer: ObservableObject {
     @Published private(set) var sensitiveRevealed = false
 
     private let lockFlows = FlowSubscriptions()
+    /// Reminder notifications (E2, E6), handed to the system again at each change of the schedule.
+    let reminders = ReminderScheduler()
 
     private var memoryWarning: NSObjectProtocol?
 
@@ -119,6 +125,8 @@ final class AppContainer: ObservableObject {
         )
         // The bundled embedding model (ADR-021); without it the search runs on keywords only.
         config.textModel = LiteRtTextModel()
+        // « 12/03 » in a reminder sentence: month first only where the phone writes dates that way.
+        config.dayFirstDates = Locale.current.region?.identifier != "US"
         return SharedFactory(config: config)
     }
 
@@ -154,6 +162,10 @@ final class AppContainer: ObservableObject {
             let privacy = factory.privacySettings.state
             lockFlows.watch(privacy, scope: factory.uiScope) { [weak self] (state: PrivacyState) in
                 self?.lockEnabled = state.lockEnabled
+            }
+            let schedule = factory.reminders.observeSchedule()
+            lockFlows.watch(schedule, scope: factory.uiScope) { [weak self] (value: ReminderSchedule) in
+                self?.reminders.submit(value)
             }
         }
     }
@@ -210,6 +222,7 @@ final class AppContainer: ObservableObject {
     /// H6 when the store cannot open (lost key): the core's files and key, then the preferences.
     func wipeAfterFailure() {
         let spent = shared
+        reminders.clear()
         Task {
             _ = try? await spent.wipeAllData()
             UiPrefs.clear()
