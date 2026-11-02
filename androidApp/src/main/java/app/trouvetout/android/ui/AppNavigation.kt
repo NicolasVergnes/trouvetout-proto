@@ -22,7 +22,16 @@ fun AppNavigation(
     controller: NavHostController = rememberNavController(),
     searchRequest: String? = null,
     onSearchRequestHandled: () -> Unit = {},
+    itemRequest: String? = null,
+    onItemRequestHandled: () -> Unit = {},
 ) {
+    // A tapped reminder opens its item sheet (E2); this runs only once the app is unlocked.
+    LaunchedEffect(itemRequest) {
+        if (itemRequest != null) {
+            controller.navigate(Routes.item(itemRequest)) { launchSingleTop = true }
+            onItemRequestHandled()
+        }
+    }
     // A question from the quick capture is answered on the home screen, whatever screen was open.
     LaunchedEffect(searchRequest) {
         if (searchRequest !=

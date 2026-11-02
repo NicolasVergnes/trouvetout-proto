@@ -29,10 +29,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -43,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
+import app.trouvetout.android.print.InventoryPrinter
 import app.trouvetout.android.ui.common.AddPhotoButtons
 import app.trouvetout.android.ui.common.LocationPickerDialog
 import app.trouvetout.android.ui.common.PhotoStrip
@@ -55,6 +58,7 @@ import app.trouvetout.core.domain.model.LocationStatus
 import app.trouvetout.core.domain.model.Place
 import app.trouvetout.core.domain.model.PlaceKind
 import app.trouvetout.core.domain.usecase.LocationRef
+import kotlinx.coroutines.launch
 
 /** Root level, one place, or one container (C6, C7, D1–D6). */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,6 +76,9 @@ fun BrowseRoute(
     val allPlaces by viewModel.allPlaces.collectAsStateWithLifecycle()
     val allContainers by viewModel.allContainers.collectAsStateWithLifecycle()
     var dialog by rememberSaveable { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sensitive = LocalSensitive.current
 
     LaunchedEffect(state.gone) { if (state.gone) navigation.onBack() }
 
@@ -94,7 +101,15 @@ fun BrowseRoute(
                         )
                     }
                 },
-                actions = { BrowseActions(target, onDialog = { dialog = it }) },
+                actions = {
+                    BrowseActions(target, onDialog = { dialog = it }, onPrint = {
+                        scope.launch {
+                            val inventory = viewModel.inventory(sensitive.revealed) ?: return@launch
+                            app.expectReturn()
+                            InventoryPrinter.print(context, inventory)
+                        }
+                    })
+                },
             )
         },
     ) { innerPadding ->
@@ -132,7 +147,13 @@ fun BrowseRoute(
 private fun BrowseActions(
     target: BrowseTarget,
     onDialog: (String) -> Unit,
+    onPrint: () -> Unit,
 ) {
+    if (target != BrowseTarget.Root) {
+        IconButton(onClick = onPrint) {
+            Icon(painterResource(R.drawable.ic_print), contentDescription = stringResource(R.string.print_action))
+        }
+    }
     when (target) {
         is BrowseTarget.Place -> {
             TextButton(onClick = { onDialog(DIALOG_RENAME) }) { Text(stringResource(R.string.place_rename)) }

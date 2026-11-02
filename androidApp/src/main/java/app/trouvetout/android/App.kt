@@ -3,6 +3,8 @@ package app.trouvetout.android
 import android.app.Application
 import android.content.ComponentCallbacks2
 import androidx.core.content.edit
+import app.trouvetout.android.notif.ReminderNotifications
+import app.trouvetout.android.notif.ReminderScheduler
 import app.trouvetout.android.ui.common.clearCameraCaptures
 import app.trouvetout.android.ui.settings.ExportSharing
 import app.trouvetout.core.capture.Lang
@@ -23,6 +25,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -87,6 +90,15 @@ class App : Application() {
      */
     val captureDraft = MutableStateFlow<String?>(null)
 
+    /**
+     * The item sheet a tapped reminder opens (E2), once the app is unlocked. Set only from the non-exported
+     * notification alias, with a valid ULID; process memory, like [searchRequest].
+     */
+    val itemRequest = MutableStateFlow<String?>(null)
+
+    /** Reminder alarms and notifications (lot 9). */
+    val reminderScheduler: ReminderScheduler by lazy { ReminderScheduler(this) }
+
     /** Process-wide scope for work that must not die with an Activity (warm-up, releasing the model). */
     val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -99,6 +111,16 @@ class App : Application() {
             ExportSharing.clear(this@App)
             clearCameraCaptures(this@App)
             warmUp(shared)
+        }
+        // Whatever woke the process (screen, widget, alarm, restart), the alarms follow the journal: a reminder
+        // set, removed, renamed, made sensitive or sent to the bin is handed to the system again.
+        ReminderNotifications.ensureChannel(this)
+        appScope.launch {
+            readyShared.collectLatest { factory ->
+                // A wiped core closes its store under the collector; the next core takes over.
+                runCatching { factory.reminders.observeSchedule().collect { reminderScheduler.reconcile(it) } }
+                    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+            }
         }
     }
 
@@ -127,6 +149,7 @@ class App : Application() {
     suspend fun wipeAll() {
         // Whatever happens, the spent core is replaced; a failure still reaches the caller, which says so.
         try {
+            reminderScheduler.clear()
             shared.wipeAllData()
         } finally {
             kotlinx.coroutines.withContext(Dispatchers.IO) { cacheDir.deleteRecursively() }
@@ -174,6 +197,8 @@ class App : Application() {
                 databaseKeys = keys,
             ).apply {
                 textModel = bundledModels(this@App)
+                // « 12/03 » in a reminder sentence: month first only where the phone writes dates that way.
+                dayFirstDates = Locale.getDefault().country != "US"
             },
         )
     }

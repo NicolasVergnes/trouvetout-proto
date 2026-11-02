@@ -7,6 +7,7 @@ import app.trouvetout.android.ui.common.PhotoAttachment
 import app.trouvetout.android.ui.common.PhotoBytes
 import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.data.repository.ContainerContent
+import app.trouvetout.core.data.repository.Inventory
 import app.trouvetout.core.data.repository.PlaceContent
 import app.trouvetout.core.domain.model.Container
 import app.trouvetout.core.domain.model.EventSource
@@ -92,6 +93,13 @@ class BrowseViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
 
     val templates: List<PlaceTemplate> = PlaceTemplates.forLang(uiLang())
+
+    /** C16: what to print, sensitive items only when the screen shows them; null once the place is gone. */
+    suspend fun inventory(includeSensitive: Boolean): Inventory? = when (target) {
+        is BrowseTarget.Place -> app.shared.browse.placeInventory(target.id, includeSensitive)
+        is BrowseTarget.Container -> app.shared.browse.containerInventory(target.id, includeSensitive)
+        BrowseTarget.Root -> null
+    }
 
     fun addPlace(
         name: String,

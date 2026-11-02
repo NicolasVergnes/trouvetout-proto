@@ -78,6 +78,7 @@ fun ItemRoute(
     val history by viewModel.history.collectAsStateWithLifecycle()
     val allPlaces by viewModel.allPlaces.collectAsStateWithLifecycle()
     val allContainers by viewModel.allContainers.collectAsStateWithLifecycle()
+    val reminders by viewModel.reminders.collectAsStateWithLifecycle()
     var dialog by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(state.gone) { if (state.gone) onBack() }
@@ -137,6 +138,16 @@ fun ItemRoute(
                 current.item.archived,
                 !state.busy,
                 viewModel::setArchived,
+            )
+            RemindersSection(
+                reminders,
+                !state.busy,
+                RemindersActions(
+                    onAdd = viewModel::addReminder,
+                    onRemove = viewModel::removeReminder,
+                    onChecking = viewModel::setChecking,
+                    onChecked = viewModel::confirmChecked,
+                ),
             )
             SwitchRow(stringResource(R.string.item_show_history), state.showHistory, true, viewModel::setShowHistory)
             if (state.showHistory) HistoryList(history)
@@ -358,6 +369,8 @@ private fun eventLabel(type: String): String = when (type) {
     "ItemRestored" -> stringResource(R.string.history_restored)
     "PhotoAttached" -> stringResource(R.string.history_photo_attached)
     "PhotoDetached" -> stringResource(R.string.history_photo_detached)
+    "ReminderSet" -> stringResource(R.string.history_reminder_set)
+    "ReminderDone" -> stringResource(R.string.history_reminder_done)
     else -> type
 }
 

@@ -136,6 +136,7 @@ fun QuickCaptureScreen(
                 CaptureField(state, callbacks, Modifier.focusRequester(focus))
                 VoiceStatus(state, callbacks.mic.onOpenAppSettings)
                 state.card?.let { ConfirmationCardView(it, callbacks) }
+                AskNotificationsAfterReminder(state.card)
                 state.problem?.let { problem ->
                     Text(
                         problemText(problem),

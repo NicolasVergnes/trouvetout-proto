@@ -1,5 +1,6 @@
 package app.trouvetout.android.ui.capture
 
+import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -66,6 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
+import app.trouvetout.android.notif.rememberNotificationAsk
 import app.trouvetout.android.ui.common.LocationPickerDialog
 import app.trouvetout.android.ui.common.PhotoAttachment
 import app.trouvetout.android.ui.theme.AppTheme
@@ -244,6 +246,7 @@ fun CaptureScreen(
                 }
             }
             state.card?.let { card -> ConfirmationCardView(card, callbacks) }
+            AskNotificationsAfterReminder(state.card)
             state.problem?.let { problem ->
                 Text(
                     problemText(problem),
@@ -401,6 +404,7 @@ internal fun ConfirmationCardView(
 
 @Composable
 private fun cardDetail(card: ConfirmationCard): String = when (card.intent) {
+    Intent.REMIND -> stringResource(R.string.capture_card_reminder, reminderMoment(card.fireAtMillis ?: 0L))
     Intent.TAKE -> stringResource(R.string.capture_card_taken)
     Intent.LEND -> stringResource(R.string.capture_card_lent, card.person.orEmpty())
     Intent.RETURN_FROM_LEND -> stringResource(R.string.capture_card_returned_from_lend)
@@ -575,6 +579,8 @@ internal fun problemText(problem: CaptureProblem): String = stringResource(
         CaptureProblem.PERSON_MISSING -> R.string.capture_problem_person
         CaptureProblem.COMMAND_REJECTED -> R.string.capture_problem_rejected
         CaptureProblem.INPUT_TOO_LONG -> R.string.capture_problem_too_long
+        CaptureProblem.DATE_MISSING -> R.string.capture_problem_date_missing
+        CaptureProblem.DATE_PAST -> R.string.capture_problem_date_past
     },
 )
 
@@ -615,3 +621,18 @@ private fun CaptureScreenPreview() {
 
 /** Test hook for the instrumented smoke test. */
 const val CAPTURE_FIELD_TAG = "capture_field"
+
+/** « Rappel le 11 mars à 9:00 » (E2): the moment in the phone's format. */
+@Composable
+private fun reminderMoment(millis: Long): String = DateUtils.formatDateTime(
+    LocalContext.current,
+    millis,
+    DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_SHOW_TIME,
+)
+
+/** H9: after the first reminder of a sentence, the notification permission is asked (API 33+). */
+@Composable
+internal fun AskNotificationsAfterReminder(card: ConfirmationCard?) {
+    val ask = rememberNotificationAsk()
+    LaunchedEffect(card?.token) { if (card?.intent == Intent.REMIND) ask() }
+}

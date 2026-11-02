@@ -78,6 +78,8 @@ data class ConfirmationCard(
     val token: Long,
     /** The photo this capture attached: « Modifier » gives it back with the sentence. */
     val photo: AttachedPhoto? = null,
+    /** REMIND (E2): when the reminder fires. */
+    val fireAtMillis: Long? = null,
 )
 
 /** A photo attached by a capture, kept in memory with its card. */
@@ -495,6 +497,7 @@ class CaptureViewModel(
                     source = source,
                     token = ++cardToken,
                     photo = attached,
+                    fireAtMillis = proposal.fireAt?.toEpochMilliseconds(),
                 )
             }
         attached = null

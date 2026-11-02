@@ -12,6 +12,7 @@ import app.trouvetout.core.domain.model.EventSource
 import app.trouvetout.core.domain.model.Photo
 import app.trouvetout.core.domain.model.PhotoOwnerType
 import app.trouvetout.core.domain.model.Place
+import app.trouvetout.core.domain.model.Reminder
 import app.trouvetout.core.domain.usecase.CommandResult
 import app.trouvetout.core.domain.usecase.ItemPatch
 import app.trouvetout.core.domain.usecase.LocationRef
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Instant
 
 data class ItemUiState(
     val busy: Boolean = false,
@@ -75,6 +77,12 @@ class ItemViewModel(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
 
+    /** E2, E6: pending reminders of the item, past ones included (shown as past). */
+    val reminders: StateFlow<List<Reminder>> =
+        app.readyShared
+            .flatMapLatest { it.reminders.observeForItem(itemId) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
+
     val allPlaces: StateFlow<List<Place>> =
         app.readyShared
             .flatMapLatest { it.placeRepository.observeActive() }
@@ -121,6 +129,24 @@ class ItemViewModel(
     fun setArchived(archived: Boolean) = run {
         record(app.shared.itemCommands.setArchived(itemId, archived, EventSource.TEXT))
     }
+
+    /** E2: a reminder at [fireAtMillis] (the screen only offers moments to come). */
+    fun addReminder(fireAtMillis: Long) = run {
+        val at = Instant.fromEpochMilliseconds(fireAtMillis)
+        record(app.shared.attachmentCommands.setReminder(itemId, at, source = EventSource.TEXT))
+    }
+
+    fun removeReminder(reminderId: String) = run {
+        record(app.shared.attachmentCommands.completeReminder(reminderId, EventSource.TEXT))
+    }
+
+    /** E6: « vérifier tous les 6 mois » on or off. */
+    fun setChecking(on: Boolean) = run {
+        record(app.shared.attachmentCommands.setChecking(itemId, on, EventSource.TEXT))
+    }
+
+    /** E6: checked today; the next check is six months away. */
+    fun confirmChecked() = run { record(app.shared.attachmentCommands.confirmChecked(itemId, EventSource.TEXT)) }
 
     fun moveTo(location: LocationRef) = run { record(app.shared.itemCommands.move(itemId, location, EventSource.TEXT)) }
 
