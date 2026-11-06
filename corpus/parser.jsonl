@@ -284,3 +284,7 @@
 {"id": "p0284", "lang": "en", "origin": "synthetic", "input": "remind me where the passport is", "expect": {"intent": "Remind", "items": ["passport"]}}
 {"id": "p0285", "lang": "en", "origin": "synthetic", "input": "remind me about the insurance papers on the 31st of December at 11pm", "expect": {"intent": "Remind", "items": ["insurance papers"], "date": "2026-12-31T23:00"}}
 {"id": "p0286", "lang": "en", "origin": "synthetic", "input": "reminder: passport tomorrow", "expect": {"intent": "Remind", "items": ["passport"], "date": "2026-11-03T09:00"}}
+{"id": "p0287", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi la perceuse dans 2 heures", "expect": {"intent": "Remind", "items": ["perceuse"], "date": "2026-11-02T12:00"}}
+{"id": "p0288", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le passeport dans 2h30", "expect": {"intent": "Remind", "items": ["passeport"], "date": "2026-11-02T12:30"}}
+{"id": "p0289", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le passeport le 12 mars 2030", "expect": {"intent": "Remind", "items": ["passeport"], "date": "2030-03-12T09:00"}}
+{"id": "p0290", "lang": "en", "origin": "synthetic", "input": "remind me to check the tent in 2 hours", "expect": {"intent": "Remind", "items": ["tent"], "date": "2026-11-02T12:00"}}

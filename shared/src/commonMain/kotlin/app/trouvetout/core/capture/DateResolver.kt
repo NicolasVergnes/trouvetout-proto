@@ -10,6 +10,7 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 /**
@@ -35,6 +36,7 @@ internal object DateResolver {
         }
         return when (val day = spec.day) {
             null -> at(today).let { if (it > now) it else at(today.plus(1, DateTimeUnit.DAY)) }
+            is DayRef.InMinutes -> now + day.minutes.minutes
             is DayRef.InDays -> at(today.plus(day.days, DateTimeUnit.DAY))
             is DayRef.InMonths -> at(today.plus(day.months, DateTimeUnit.MONTH))
             is DayRef.NextWeekday -> {

@@ -56,6 +56,27 @@ class DateExpressionTest {
     }
 
     @Test
+    fun should_read_a_span_of_hours_or_minutes_from_now_not_an_hour_of_the_day() {
+        assertEquals(local(11, 2, 12), at("dans 2 heures"))
+        assertEquals(local(11, 2, 11), at("dans une heure"))
+        assertEquals(local(11, 2, 13), at("dans 3 h"))
+        assertEquals(local(11, 2, 12), at("dans 2h"))
+        assertEquals(local(11, 2, 12, 30), at("dans 2h30"))
+        assertEquals(local(11, 2, 10, 45), at("dans 45 minutes"))
+        assertEquals(local(11, 2, 12), at("in 2 hours", Lang.EN))
+        assertEquals(local(11, 2, 11), at("in an hour", Lang.EN))
+        assertEquals(local(11, 2, 10, 45), at("in 45 min", Lang.EN))
+        // « à 2 heures » stays an hour of the day: tomorrow, 2:00 being past at 10:00.
+        assertEquals(local(11, 3, 2), at("à 2 heures"))
+    }
+
+    @Test
+    fun should_keep_any_stated_year_with_its_date() {
+        assertEquals(local(3, 12, year = 2100), at("le 12 mars 2100"))
+        assertEquals(local(3, 12, year = 2019), at("le 12 mars 2019"))
+    }
+
+    @Test
     fun should_read_weekdays_strictly_after_today() {
         assertEquals(local(11, 9), at("lundi"), "today is a Monday: « lundi » is next week")
         assertEquals(local(11, 3), at("mardi"))

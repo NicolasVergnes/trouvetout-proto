@@ -19,6 +19,11 @@ public sealed interface DayRef {
         val months: Int,
     ) : DayRef
 
+    /** « dans 2 heures », "in 45 minutes": counted from the moment it is said, any time of day. */
+    public data class InMinutes(
+        val minutes: Int,
+    ) : DayRef
+
     /** « lundi », "next Monday": the next such weekday strictly after today; [isoDay] 1 = Monday … 7 = Sunday. */
     public data class NextWeekday(
         val isoDay: Int,
@@ -142,16 +147,36 @@ internal class DateExpression(
         return inDuration(toks, i) ?: weekdayAt(toks, i) ?: absoluteAt(toks, i)
     }
 
-    /** « dans 3 jours », "in a week". */
+    /** « dans 3 jours », "in a week", « dans 2h30 ». */
     private fun inDuration(
         toks: List<Tok>,
         i: Int,
+    ): Component? = when {
+        toks[i].key != words.durationLink -> null
+        else -> compactDuration(toks, i) ?: countedDuration(toks, i)
+    }
+
+    /** « dans 2h », « dans 2h30 »: one token after the link. */
+    private fun compactDuration(
+        toks: List<Tok>,
+        i: Int,
     ): Component? {
-        if (toks[i].key != words.durationLink) return null
+        val (hours, minutes) = toks.getOrNull(i + 1)?.key?.let { COMPACT_DURATION.matchEntire(it) }?.destructured
+            ?: return null
+        val total = hours.toInt() * MINUTES + minutes.ifEmpty { "0" }.toInt()
+        return Component(i + 2, DayRef.InMinutes(total))
+    }
+
+    private fun countedDuration(
+        toks: List<Tok>,
+        i: Int,
+    ): Component? {
         val count = toks.getOrNull(i + 1)?.let { countOf(it) } ?: return null
         val unit = toks.getOrNull(i + 2)?.key ?: return null
         val ref =
             when (unit) {
+                in words.minuteUnits -> DayRef.InMinutes(count)
+                in words.durationHourUnits -> DayRef.InMinutes(count * MINUTES)
                 in words.dayUnits -> DayRef.InDays(count)
                 in words.weekUnits -> DayRef.InDays(count * DAYS_PER_WEEK)
                 in words.monthUnits -> DayRef.InMonths(count)
@@ -328,6 +353,9 @@ internal class DateExpression(
         val relativeDays: Map<List<String>, DayRef>,
         val durationLink: String,
         val one: Set<String>,
+        val minuteUnits: Set<String>,
+        /** After « dans » / "in": a span of time (« dans 2 heures »), not an hour of the day (« à 2 heures »). */
+        val durationHourUnits: Set<String>,
         val dayUnits: Set<String>,
         val weekUnits: Set<String>,
         val monthUnits: Set<String>,
@@ -368,7 +396,10 @@ internal class DateExpression(
         const val NOON = 12
         const val AFTERNOON = 14
         const val EVENING = 19
-        val YEAR = Regex("""20\d\d""")
+
+        /** Any year: a past one is refused by the capture, not read as a word of the object's name. */
+        val YEAR = Regex("""\d{4}""")
+        val COMPACT_DURATION = Regex("""(\d{1,2})h(\d{2})?""")
         val NUMERIC = Regex("""(\d{1,2})/(\d{1,2})(?:/(\d{2}|\d{4}))?""")
         val ORDINAL = Regex("""(\d{1,2})(?:er|ere|e|st|nd|rd|th)?""")
 
@@ -476,6 +507,8 @@ internal class DateExpression(
                     ),
                 durationLink = "dans",
                 one = setOf("un", "une"),
+                minuteUnits = setOf("min", "mn", "minute", "minutes"),
+                durationHourUnits = setOf("h", "heure", "heures"),
                 dayUnits = setOf("jour", "jours"),
                 weekUnits = setOf("semaine", "semaines"),
                 monthUnits = setOf("mois"),
@@ -526,6 +559,8 @@ internal class DateExpression(
                     ),
                 durationLink = "in",
                 one = setOf("a", "an", "one"),
+                minuteUnits = setOf("min", "mins", "minute", "minutes"),
+                durationHourUnits = setOf("h", "hr", "hrs", "hour", "hours"),
                 dayUnits = setOf("day", "days"),
                 weekUnits = setOf("week", "weeks"),
                 monthUnits = setOf("month", "months"),
