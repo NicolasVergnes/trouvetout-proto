@@ -53,7 +53,7 @@ final class ItemRemindersModel: ObservableObject {
 
     func add(_ date: Date) {
         let millis = Int64(date.timeIntervalSince1970 * 1000)
-        perform(then: afterAdding) { [self] in
+        perform(askingNotifications: true) { [self] in
             let at = InstantsKt.instantOf(epochMillis: millis)
             let commands = container.shared.attachmentCommands
             return try await commands.setReminder(
@@ -73,7 +73,7 @@ final class ItemRemindersModel: ObservableObject {
     }
 
     func setChecking(_ on: Bool) {
-        perform(then: on ? afterAdding : nil) { [self] in
+        perform(askingNotifications: on) { [self] in
             try await container.shared.attachmentCommands.setChecking(itemId: itemId, on: on, source: .text)
         }
     }
@@ -112,7 +112,7 @@ final class ItemRemindersModel: ObservableObject {
     }
 
     private func perform(
-        then success: (() -> Void)? = nil,
+        askingNotifications: Bool = false,
         _ work: @escaping @MainActor () async throws -> CommandResult
     ) {
         busy = true
@@ -121,8 +121,8 @@ final class ItemRemindersModel: ObservableObject {
             defer { busy = false }
             let result = try? await work()
             failed = !(result is CommandResultDone)
-            if !failed {
-                success?()
+            if !failed, askingNotifications {
+                afterAdding()
             }
         }
     }

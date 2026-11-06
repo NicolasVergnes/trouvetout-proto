@@ -182,7 +182,9 @@ class ReminderNotificationTest {
         assertNull("no alarm left", alarmOf(reminder, ReminderScheduler.IDLE))
         assertTrue("no notification left", notifications.activeNotifications.isEmpty())
         val prefs = app.getSharedPreferences("reminders", android.content.Context.MODE_PRIVATE)
-        assertTrue("no identifier left", prefs.all.isEmpty())
+        // The new core reconciles at once and may write its empty lists: no identifier is what counts.
+        assertTrue("no alarm identifier left", prefs.getStringSet("scheduled", null).isNullOrEmpty())
+        assertTrue("no rung identifier left", prefs.getStringSet("rang", null).isNullOrEmpty())
     }
 
     @Test
