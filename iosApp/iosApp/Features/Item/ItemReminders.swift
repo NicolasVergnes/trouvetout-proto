@@ -50,7 +50,7 @@ final class ItemRemindersModel: ObservableObject {
 
     func add(_ date: Date) {
         let millis = Int64(date.timeIntervalSince1970 * 1000)
-        perform { [self] in
+        perform(then: afterAdding) { [self] in
             let at = InstantsKt.instantOf(epochMillis: millis)
             let commands = container.shared.attachmentCommands
             return try await commands.setReminder(
@@ -61,7 +61,6 @@ final class ItemRemindersModel: ObservableObject {
                 rawInput: nil
             )
         }
-        afterAdding()
     }
 
     func remove(_ reminder: Reminder_) {
@@ -71,11 +70,8 @@ final class ItemRemindersModel: ObservableObject {
     }
 
     func setChecking(_ on: Bool) {
-        perform { [self] in
+        perform(then: on ? afterAdding : nil) { [self] in
             try await container.shared.attachmentCommands.setChecking(itemId: itemId, on: on, source: .text)
-        }
-        if on {
-            afterAdding()
         }
     }
 
@@ -92,6 +88,11 @@ final class ItemRemindersModel: ObservableObject {
         }
     }
 
+    /// The phone's answer may have changed in the Settings app.
+    func refreshAuthorization() {
+        Task { notificationsDenied = await container.reminders.denied() }
+    }
+
     private func afterAdding() {
         Task {
             if await container.reminders.needsAuthorization() {
@@ -101,13 +102,19 @@ final class ItemRemindersModel: ObservableObject {
         }
     }
 
-    private func perform(_ work: @escaping @MainActor () async throws -> CommandResult) {
+    private func perform(
+        then success: (() -> Void)? = nil,
+        _ work: @escaping @MainActor () async throws -> CommandResult
+    ) {
         busy = true
         failed = false
         Task {
             defer { busy = false }
             let result = try? await work()
             failed = !(result is CommandResultDone)
+            if !failed {
+                success?()
+            }
         }
     }
 }
@@ -116,6 +123,7 @@ final class ItemRemindersModel: ObservableObject {
 struct RemindersSection: View {
     @ObservedObject var model: ItemRemindersModel
     @State private var picking = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Section("reminders_title") {
@@ -128,6 +136,12 @@ struct RemindersSection: View {
                     Spacer()
                     Button("reminder_remove") { model.remove(reminder) }
                         .buttonStyle(.borderless)
+                        .accessibilityLabel(
+                            String(
+                                format: NSLocalizedString("reminder_remove_label", comment: ""),
+                                momentText(reminder.fireAt, withTime: true)
+                            )
+                        )
                 }
             }
             Button("reminder_add") { picking = true }
@@ -147,6 +161,11 @@ struct RemindersSection: View {
             }
         }
         .disabled(model.busy)
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                model.refreshAuthorization()
+            }
+        }
         .sheet(isPresented: $picking) {
             MomentPickerSheet { date in
                 picking = false

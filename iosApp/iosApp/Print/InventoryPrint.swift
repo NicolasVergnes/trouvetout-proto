@@ -9,7 +9,8 @@ enum InventoryPrint {
     static func present(_ inventory: Inventory) {
         let info = UIPrintInfo(dictionary: nil)
         info.outputType = .general
-        info.jobName = inventory.title
+        // Named after the app, never after the place: the Print Center shows the job's name.
+        info.jobName = "TrouveTout"
         let controller = UIPrintInteractionController.shared
         controller.printInfo = info
         controller.printFormatter = UISimpleTextPrintFormatter(attributedText: text(inventory))
@@ -65,7 +66,7 @@ enum InventoryPrint {
 
     private static let indent: CGFloat = 18
 
-    private static func font(_ kind: InventoryLineKind) -> UIFont {
+    private static func font(_ kind: InventoryLine.Kind) -> UIFont {
         switch kind {
         case .place: .boldSystemFont(ofSize: 11)
         case .container: UIFont.systemFont(ofSize: 11).withTraits(.traitBold, .traitItalic)

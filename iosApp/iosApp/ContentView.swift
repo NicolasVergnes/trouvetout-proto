@@ -75,12 +75,13 @@ struct ContentView: View {
             }
         }
         // A tapped reminder (E2) opens its item sheet, once the app is unlocked.
-        .onReceive(notifications.$itemId) { _ in openRequestedItem() }
-        .onChange(of: container.locked) { _ in openRequestedItem() }
+        .onReceive(notifications.$itemId) { openRequestedItem($0) }
+        .onChange(of: container.locked) { _ in openRequestedItem(notifications.itemId) }
     }
 
-    private func openRequestedItem() {
-        guard let itemId = notifications.itemId, container.ready, container.locked == false else { return }
+    /// `$itemId` publishes before the property changes: the value comes with the event.
+    private func openRequestedItem(_ requested: String?) {
+        guard let itemId = requested, container.ready, container.locked == false else { return }
         notifications.consume()
         path.append(ItemRoute(id: itemId))
     }

@@ -126,8 +126,15 @@ final class AppContainer: ObservableObject {
         // The bundled embedding model (ADR-021); without it the search runs on keywords only.
         config.textModel = LiteRtTextModel()
         // « 12/03 » in a reminder sentence: month first only where the phone writes dates that way.
-        config.dayFirstDates = Locale.current.region?.identifier != "US"
+        config.dayFirstDates = AppContainer.dayFirst()
         return SharedFactory(config: config)
+    }
+
+    /// « 12/03 »: whether the phone writes the day before the month (its own date format, not a list of countries).
+    private static func dayFirst() -> Bool {
+        let format = DateFormatter.dateFormat(fromTemplate: "dM", options: 0, locale: .current) ?? "d/M"
+        guard let day = format.firstIndex(of: "d"), let month = format.firstIndex(of: "M") else { return true }
+        return day < month
     }
 
     /// Opens the database off the main thread so the first capture (lot 3) is instant; never throws.
@@ -189,6 +196,13 @@ final class AppContainer: ObservableObject {
     func appCameBack() {
         guard ready else { return }
         shared.appLock.foregrounded()
+        // iOS keeps 50 of our reminders: the next ones are set when the app comes back.
+        let factory = shared
+        Task { [weak self] in
+            if let schedule = try? await factory.reminders.schedule() {
+                self?.reminders.submit(schedule)
+            }
+        }
     }
 
     /// The system prompt; a phone whose passcode was removed has nothing to ask and opens.

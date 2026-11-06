@@ -73,7 +73,9 @@ final class ReminderScheduler {
     static let maxPending: Int32 = 50
 
     private let center: NotificationCenterClient
-    private var queue: Task<Void, Never>?
+    private var running: Task<Void, Never>?
+    /// Only the latest schedule waits: a burst of changes (an import) costs one more reconciliation, not one each.
+    private var waiting: ReminderSchedule?
 
     init(center: NotificationCenterClient = SystemNotificationCenter()) {
         self.center = center
@@ -91,12 +93,17 @@ final class ReminderScheduler {
         UNUserNotificationCenter.current().setNotificationCategories([category])
     }
 
-    /// Queues a reconciliation: each one runs after the previous, never two at once.
+    /// Reconciles with [schedule] after the reconciliation running, if any; never two at once.
     func submit(_ schedule: ReminderSchedule) {
-        let previous = queue
-        queue = Task { [weak self] in
-            await previous?.value
-            await self?.reconcile(schedule)
+        waiting = schedule
+        guard running == nil else { return }
+        running = Task { [weak self] in
+            while let next = self?.waiting {
+                self?.waiting = nil
+                await self?.reconcile(next)
+                if Task.isCancelled { break }
+            }
+            self?.running = nil
         }
     }
 
@@ -107,10 +114,13 @@ final class ReminderScheduler {
         let stale = await center.pendingIdentifiers().filter { $0.hasPrefix(Self.prefix) && !wanted.contains($0) }
         center.removePending(stale)
         for reminder in upcoming {
+            // H6: a wipe cancels the task; nothing is added after it.
+            guard !Task.isCancelled else { return }
             if let request = Self.request(for: reminder, now: now) {
                 try? await center.add(request)
             }
         }
+        guard !Task.isCancelled else { return }
         let withdrawn = await center.delivered().filter { shown in
             guard shown.identifier.hasPrefix(Self.prefix) else { return false }
             let reminderId = String(shown.identifier.dropFirst(Self.prefix.count))
@@ -121,8 +131,9 @@ final class ReminderScheduler {
 
     /// H6: every pending and delivered notification goes with the data.
     func clear() {
-        queue?.cancel()
-        queue = nil
+        running?.cancel()
+        running = nil
+        waiting = nil
         center.removeAll()
     }
 

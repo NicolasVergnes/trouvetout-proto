@@ -5,6 +5,7 @@ import SwiftUI
 struct ItemSheetView: View {
     @StateObject private var viewModel: ItemViewModel
     @StateObject private var reminders: ItemRemindersModel
+    @EnvironmentObject private var app: AppContainer
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var description = ""
@@ -30,7 +31,9 @@ struct ItemSheetView: View {
                     .font(.callout)
                     .foregroundStyle(.red)
             }
-            if let view = viewModel.item {
+            if let view = viewModel.item, masked(view) {
+                MaskedRow { Task { _ = await app.revealSensitive() } }
+            } else if let view = viewModel.item {
                 locationSection(view)
                 photoSection
                 editSection(view)
@@ -41,12 +44,14 @@ struct ItemSheetView: View {
                 }
             }
         }
-        .navigationTitle(viewModel.item?.item.name ?? "")
+        .navigationTitle(viewModel.item.map { masked($0) ? "" : $0.item.name } ?? "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("item_delete", role: .destructive) { deleteShown = true }
-                    .disabled(viewModel.busy)
+                if let view = viewModel.item, !masked(view) {
+                    Button("item_delete", role: .destructive) { deleteShown = true }
+                        .disabled(viewModel.busy)
+                }
             }
         }
         .onReceive(viewModel.$item) { view in
@@ -219,6 +224,11 @@ struct ItemSheetView: View {
         if !clean.isEmpty, !tags.contains(clean) {
             tags.append(clean)
         }
+    }
+
+    /// H4: with the app lock on, a sensitive item asks for the owner's authentication first (a tapped reminder too).
+    private func masked(_ view: ItemView) -> Bool {
+        view.item.sensitive && app.lockEnabled && !app.sensitiveRevealed
     }
 
     private func flagsSection(_ view: ItemView) -> some View {

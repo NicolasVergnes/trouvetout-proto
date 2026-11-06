@@ -2422,13 +2422,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "So that your reminders can reach you, the phone asks whether this app may show notifications. They name the object at most, never its place, and stay generic while the phone is locked."
+            "value": "So that your reminders can reach you, the phone asks whether this app may show notifications. They name the object at most, never its place. On the lock screen the phone shows only “TrouveTout reminder”, unless you chose to always show previews."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour que vos rappels vous parviennent, le téléphone demande si l'app peut afficher des notifications. Elles nomment l'objet au plus, jamais son lieu, et restent génériques tant que le téléphone est verrouillé."
+            "value": "Pour que vos rappels vous parviennent, le téléphone demande si l'app peut afficher des notifications. Elles nomment l'objet au plus, jamais son lieu. Sur l'écran verrouillé, le téléphone n'en montre que « Rappel TrouveTout », sauf si vous avez choisi d'afficher toujours les aperçus."
           }
         }
       }
@@ -2461,6 +2461,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Retirer"
+          }
+        }
+      }
+    },
+    "reminder_remove_label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove the reminder of %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer le rappel du %@"
           }
         }
       }
