@@ -149,9 +149,11 @@ class App : Application() {
     suspend fun wipeAll() {
         // Whatever happens, the spent core is replaced; a failure still reaches the caller, which says so.
         try {
-            reminderScheduler.clear()
+            runCatching { reminderScheduler.clear() }
             shared.wipeAllData()
         } finally {
+            // Again once the old core is closed: a reconciliation in between cannot leave an alarm behind.
+            runCatching { reminderScheduler.clear() }
             kotlinx.coroutines.withContext(Dispatchers.IO) { cacheDir.deleteRecursively() }
             uiPrefs.clear()
             recreateShared()
@@ -198,7 +200,7 @@ class App : Application() {
             ).apply {
                 textModel = bundledModels(this@App)
                 // « 12/03 » in a reminder sentence: month first only where the phone writes dates that way.
-                dayFirstDates = Locale.getDefault().country != "US"
+                dayFirstDates = android.text.format.DateFormat.getDateFormatOrder(this@App).firstOrNull() != 'M'
             },
         )
     }

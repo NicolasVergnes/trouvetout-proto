@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -76,9 +77,7 @@ fun BrowseRoute(
     val allPlaces by viewModel.allPlaces.collectAsStateWithLifecycle()
     val allContainers by viewModel.allContainers.collectAsStateWithLifecycle()
     var dialog by rememberSaveable { mutableStateOf<String?>(null) }
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val sensitive = LocalSensitive.current
+    val print = rememberPrintAction(viewModel, app)
 
     LaunchedEffect(state.gone) { if (state.gone) navigation.onBack() }
 
@@ -102,13 +101,7 @@ fun BrowseRoute(
                     }
                 },
                 actions = {
-                    BrowseActions(target, onDialog = { dialog = it }, onPrint = {
-                        scope.launch {
-                            val inventory = viewModel.inventory(sensitive.revealed) ?: return@launch
-                            app.expectReturn()
-                            InventoryPrinter.print(context, inventory)
-                        }
-                    })
+                    BrowseActions(target, onDialog = { dialog = it }, onPrint = print)
                 },
             )
         },
@@ -141,6 +134,31 @@ fun BrowseRoute(
         }
     }
     BrowseDialogs(dialog, viewModel, allPlaces, allContainers, onClose = { dialog = null })
+}
+
+/** C16: prints the place or container shown; a second tap while the inventory is read does nothing. */
+@Composable
+private fun rememberPrintAction(
+    viewModel: BrowseViewModel,
+    app: App,
+): () -> Unit {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sensitive = LocalSensitive.current
+    var printing by remember { mutableStateOf(false) }
+    return {
+        if (!printing) {
+            printing = true
+            scope.launch {
+                val inventory = runCatching { viewModel.inventory(sensitive.revealed) }.getOrNull()
+                if (inventory != null) {
+                    app.expectReturn()
+                    InventoryPrinter.printInventory(context, inventory)
+                }
+                printing = false
+            }
+        }
+    }
 }
 
 @Composable

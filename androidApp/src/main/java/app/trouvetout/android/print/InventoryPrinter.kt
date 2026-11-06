@@ -16,6 +16,7 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.format.DateUtils
+import androidx.core.graphics.withTranslation
 import app.trouvetout.android.R
 import app.trouvetout.core.data.repository.Inventory
 import app.trouvetout.core.data.repository.InventoryLine
@@ -25,15 +26,17 @@ import java.io.IOException
 
 /**
  * C16: a place or a container printed as text through the system print service (which also offers « save as PDF »).
- * The pages are drawn on a `PrintedPdfDocument` at the printer's page size; no WebView (`tools/check-network.sh`).
+ * The pages are drawn on a `PrintedPdfDocument` at the printer's page size, without any web view. The job is named
+ * after the app, never after the place: the print service shows its name in its own notification.
  */
 object InventoryPrinter {
-    fun print(
+    fun printInventory(
         context: Context,
         inventory: Inventory,
     ) {
         val manager = context.getSystemService(PrintManager::class.java) ?: return
-        manager.print(inventory.title, InventoryPrintAdapter(context, entries(context, inventory)), null)
+        val adapter = InventoryPrintAdapter(context, entries(context, inventory))
+        manager.print(context.getString(R.string.app_name), adapter, null)
     }
 
     /** The text of the document, one entry per paragraph, in order. */
@@ -140,7 +143,8 @@ class InventoryPrintAdapter(
     ) {
         val document = PrintedPdfDocument(context, attributes ?: return callback.onWriteFailed(null))
         try {
-            write(document, ranges, cancellationSignal)
+            // Every page is written; the print service keeps the range the user asked for.
+            write(document, cancellationSignal)
             if (cancellationSignal?.isCanceled == true) {
                 callback.onWriteCancelled()
                 return
@@ -156,12 +160,10 @@ class InventoryPrintAdapter(
 
     private fun write(
         document: PrintedPdfDocument,
-        ranges: Array<out PageRange>,
         cancellationSignal: CancellationSignal?,
     ) {
         for ((index, placed) in pages.withIndex()) {
             if (cancellationSignal?.isCanceled == true) return
-            if (ranges.none { it == PageRange.ALL_PAGES || index in it.start..it.end }) continue
             val page = document.startPage(index)
             draw(page.canvas, placed)
             document.finishPage(page)
@@ -200,10 +202,7 @@ class InventoryPrintAdapter(
             placed: List<Placed>,
         ) {
             for (item in placed) {
-                canvas.save()
-                canvas.translate(item.x, item.y)
-                item.layout.draw(canvas)
-                canvas.restore()
+                canvas.withTranslation(item.x, item.y) { item.layout.draw(this) }
             }
         }
 

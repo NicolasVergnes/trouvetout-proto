@@ -54,6 +54,8 @@ import app.trouvetout.android.R
 import app.trouvetout.android.ui.common.AddPhotoButtons
 import app.trouvetout.android.ui.common.LocationPickerDialog
 import app.trouvetout.android.ui.common.PhotoStrip
+import app.trouvetout.android.ui.lock.HiddenRow
+import app.trouvetout.android.ui.lock.LocalSensitive
 import app.trouvetout.android.ui.places.NameDialog
 import app.trouvetout.android.ui.places.ProblemText
 import app.trouvetout.core.data.repository.ItemView
@@ -81,12 +83,15 @@ fun ItemRoute(
     var dialog by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(state.gone) { if (state.gone) onBack() }
+    // H4 in depth: whatever led here (a tapped reminder, a list), a sensitive item stays masked until revealed.
+    val sensitive = LocalSensitive.current
+    val masked = view?.item?.sensitive == true && sensitive.masks(true)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(view?.item?.name ?: "") },
+                title = { Text(if (masked) "" else view?.item?.name.orEmpty()) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -96,13 +101,21 @@ fun ItemRoute(
                     }
                 },
                 actions = {
-                    TextButton(onClick = { dialog = DIALOG_DELETE }) { Text(stringResource(R.string.item_delete)) }
+                    if (!masked) {
+                        TextButton(onClick = { dialog = DIALOG_DELETE }) { Text(stringResource(R.string.item_delete)) }
+                    }
                 },
             )
         },
     ) { innerPadding ->
         val current = view
         if (current == null) return@Scaffold
+        if (masked) {
+            Column(modifier = Modifier.padding(innerPadding).padding(horizontal = 16.dp)) {
+                HiddenRow(stringResource(R.string.search_sensitive_masked), sensitive.onReveal)
+            }
+            return@Scaffold
+        }
         Column(
             modifier =
                 Modifier

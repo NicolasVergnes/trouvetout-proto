@@ -26,7 +26,12 @@ fun rememberNotificationAsk(onResult: (Boolean) -> Unit = {}): () -> Unit {
     val context = LocalContext.current
     var explain by rememberSaveable { mutableStateOf(false) }
     var declined by rememberSaveable { mutableStateOf(false) }
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission(), onResult)
+    val permission =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            // A refusal in the system dialog is an answer too: the explanation does not come back in this screen.
+            declined = !granted
+            onResult(granted)
+        }
     if (explain) {
         AlertDialog(
             onDismissRequest = {

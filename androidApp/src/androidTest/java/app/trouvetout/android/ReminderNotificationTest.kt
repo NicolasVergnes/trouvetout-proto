@@ -2,6 +2,7 @@ package app.trouvetout.android
 
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Intent
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
@@ -9,6 +10,7 @@ import android.os.ParcelFileDescriptor
 import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.trouvetout.android.notif.ReminderNotifications
 import app.trouvetout.android.notif.ReminderReceiver
 import app.trouvetout.android.notif.ReminderScheduler
 import app.trouvetout.android.print.InventoryPrintAdapter
@@ -112,6 +114,29 @@ class ReminderNotificationTest {
         shared().itemCommands.delete(tent, EventSource.TEXT)
         assertNull("an item in the bin rings no more", ring(gone))
         notifications.cancelAll()
+    }
+
+    @Test
+    fun a_reminder_rings_once_whichever_of_its_alarms_comes_first() = runBlocking {
+        val tent = item("tente-une-fois")
+        val reminder = remindIn(tent, HOUR)
+        assertNotNull(ring(reminder))
+        notifications.cancelAll()
+        assertNull("the second alarm finds it rung", ring(reminder))
+        app.reminderScheduler.reconcile(shared().reminders.schedule())
+        assertNull("a rung reminder is not set again", alarmOf(reminder))
+    }
+
+    @Test
+    fun only_the_notification_alias_with_a_valid_id_opens_an_item() {
+        val id = "01HZY0000000000000000000AB"
+        val direct = Intent(app, MainActivity::class.java).putExtra(ReminderNotifications.EXTRA_ITEM_ID, id)
+        assertNull("another app's explicit intent to the main activity", ReminderNotifications.itemOf(direct))
+        val alias = ComponentName(app.packageName, ReminderNotifications.LINK_ALIAS)
+        val bad = Intent().setComponent(alias).putExtra(ReminderNotifications.EXTRA_ITEM_ID, "../../etc")
+        assertNull("not a ULID", ReminderNotifications.itemOf(bad))
+        val good = Intent().setComponent(alias).putExtra(ReminderNotifications.EXTRA_ITEM_ID, id)
+        assertEquals(id, ReminderNotifications.itemOf(good))
     }
 
     @Test

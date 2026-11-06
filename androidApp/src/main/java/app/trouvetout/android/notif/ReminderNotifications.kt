@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import app.trouvetout.android.MainActivity
@@ -76,6 +77,7 @@ object ReminderNotifications {
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setPublicVersion(public)
                 .setAutoCancel(true)
+                .setOnlyAlertOnce(true)
                 .setContentIntent(openIntent(context, reminderId, itemId))
                 .addExtras(android.os.Bundle().apply { putBoolean(EXTRA_NAMED, title != null) })
                 .build()
@@ -120,6 +122,8 @@ object ReminderNotifications {
             } else {
                 Intent(context, MainActivity::class.java)
             }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                // One PendingIntent per reminder whatever the hash of its id (extras do not tell them apart).
+                .setData(Uri.fromParts(ReminderScheduler.SCHEME, reminderId, null))
         return PendingIntent.getActivity(
             context,
             reminderId.hashCode(),
