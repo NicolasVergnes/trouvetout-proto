@@ -202,9 +202,12 @@ internal class Sentence(
         }
         while (rest.isNotEmpty() && rest.last().key == ",") rest = rest.dropLast(1)
         val items = mentions(stripCopula(rest))
-        if (items.isEmpty()) return result(Intent.UNKNOWN, emptyList(), null, null, null, 0f)
         val confidence = if (span != null) HIGH else MEDIUM
-        return ParseResult(Intent.REMIND, items, null, null, null, lex.lang, confidence, input, span?.spec)
+        return if (items.isEmpty()) {
+            result(Intent.UNKNOWN, emptyList(), null, null, null, 0f)
+        } else {
+            ParseResult(Intent.REMIND, items, null, null, null, lex.lang, confidence, input, span?.spec)
+        }
     }
 
     fun query(): ParseResult? {

@@ -101,22 +101,30 @@ internal class DateExpression(
         allowBefore: Boolean,
         allowDay: Boolean,
         allowTime: Boolean,
+        glued: Int = 0,
     ): Component? {
-        var start = at
-        for (skip in 0..MAX_GLUE) {
-            if (start >= toks.size) return null
-            val afterGlue = skip > 0
-            if (allowBefore) {
-                val n = words.dayBefore.matchAt(toks, start)
-                if (n > 0) return Component(start + n, dayBefore = true)
-            }
-            if (allowDay) dayAt(toks, start)?.let { return it }
-            if (allowTime) timeAt(toks, start, afterGlue)?.let { return it }
-            val glue = words.glue.matchAt(toks, start)
-            if (glue == 0) return null
-            start += glue
+        if (at >= toks.size) return null
+        val part = partAt(toks, at, allowBefore, allowDay, allowTime, glued > 0)
+        val glue = if (part == null && glued < MAX_GLUE) words.glue.matchAt(toks, at) else 0
+        return when {
+            part != null -> part
+            glue == 0 -> null
+            else -> componentAt(toks, at + glue, allowBefore, allowDay, allowTime, glued + 1)
         }
-        return null
+    }
+
+    private fun partAt(
+        toks: List<Tok>,
+        i: Int,
+        allowBefore: Boolean,
+        allowDay: Boolean,
+        allowTime: Boolean,
+        afterGlue: Boolean,
+    ): Component? {
+        val before = if (allowBefore) words.dayBefore.matchAt(toks, i) else 0
+        if (before > 0) return Component(i + before, dayBefore = true)
+        val day = if (allowDay) dayAt(toks, i) else null
+        return day ?: if (allowTime) timeAt(toks, i, afterGlue) else null
     }
 
     // ---- days
@@ -150,7 +158,7 @@ internal class DateExpression(
                 in words.yearUnits -> DayRef.InMonths(count * MONTHS_PER_YEAR)
                 else -> return null
             }
-        return Component(i + 3, ref)
+        return Component(i + DURATION_TOKENS, ref)
     }
 
     private fun countOf(tok: Tok): Int? = when {
@@ -245,25 +253,40 @@ internal class DateExpression(
         toks: List<Tok>,
         i: Int,
         afterGlue: Boolean,
+    ): Component? = namedTimeAt(toks, i) ?: clockTokenAt(toks, i) ?: spokenHourAt(toks, i, afterGlue)
+
+    /** « midi », "noon", « dans la matinée ». */
+    private fun namedTimeAt(
+        toks: List<Tok>,
+        i: Int,
     ): Component? {
         words.timeWords[toks[i].key]?.let { return Component(i + 1, time = it to 0) }
-        words.timePhrases.entries.firstOrNull { (p, _) -> Tokens.matchAt(toks, i, p) > 0 }?.let { (p, hour) ->
-            return Component(i + p.size, time = hour to 0)
-        }
-        val key = toks[i].key
-        CLOCK.matchEntire(key)?.let { m ->
-            val hour = m.groupValues[1].toInt()
-            val minute = m.groupValues[2].ifEmpty { "0" }.toInt()
-            val suffix = m.groupValues[3]
-            return clock(toks, i + 1, hour, minute, suffix)
-        }
+        val phrase = words.timePhrases.entries.firstOrNull { (p, _) -> Tokens.matchAt(toks, i, p) > 0 } ?: return null
+        return Component(i + phrase.key.size, time = phrase.value to 0)
+    }
+
+    /** One token: « 18h30 », « 21:00 », "6pm". */
+    private fun clockTokenAt(
+        toks: List<Tok>,
+        i: Int,
+    ): Component? {
+        val (hour, minute, suffix) = CLOCK.matchEntire(toks[i].key)?.destructured ?: return null
+        return clock(toks, i + 1, hour.toInt(), minute.ifEmpty { "0" }.toInt(), suffix)
+    }
+
+    /** Several tokens: « 18 heures 30 », "6 pm", or a bare number right after « à » / "at". */
+    private fun spokenHourAt(
+        toks: List<Tok>,
+        i: Int,
+        afterGlue: Boolean,
+    ): Component? {
         if (!toks[i].isNumber) return null
-        val hour = key.toIntOrNull() ?: return null
+        val hour = toks[i].key.toIntOrNull() ?: return null
         val next = toks.getOrNull(i + 1)?.key
         return when {
             next in words.hourUnits -> {
                 val minutes = toks.getOrNull(i + 2)?.takeIf { it.isNumber }?.key?.toIntOrNull()
-                val end = if (minutes != null && minutes < MINUTES) i + 3 else i + 2
+                val end = if (minutes != null && minutes < MINUTES) i + HOUR_AND_MINUTE_TOKENS else i + 2
                 clock(toks, end, hour, minutes?.takeIf { it < MINUTES } ?: 0, "")
             }
             next in MERIDIEM -> clock(toks, i + 2, hour, 0, next.orEmpty())
@@ -296,6 +319,7 @@ internal class DateExpression(
     }
 
     /** Folded word lists of one language. */
+    @Suppress("LongParameterList") // a word-list record, built twice (FR, EN) with named arguments
     private class Words(
         val glue: Phrases,
         val dayBefore: Phrases,
@@ -325,6 +349,12 @@ internal class DateExpression(
     private companion object {
         const val MAX_PARTS = 3
         const val MAX_GLUE = 2
+
+        /** « dans 3 jours »: link, count, unit. */
+        const val DURATION_TOKENS = 3
+
+        /** « 18 heures 30 »: hour, unit, minutes. */
+        const val HOUR_AND_MINUTE_TOKENS = 3
         const val MAX_COUNT = 999
         const val MAX_DAY = 31
         const val MAX_HOUR = 23
@@ -358,33 +388,79 @@ internal class DateExpression(
             return !leapDay || year == null || isLeap(year)
         }
 
+        @Suppress("MagicNumber") // the Gregorian leap-year rule
         fun isLeap(year: Int): Boolean = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
 
-        fun <V> phraseMap(vararg entries: Pair<String, V>): Map<List<String>, V> =
-            entries
-                .map { (text, value) -> Tokens.tokenize(text).map(Tok::key) to value }
-                .sortedByDescending { it.first.size }
-                .toMap(LinkedHashMap())
+        fun <V> phraseMap(vararg entries: Pair<String, V>): Map<List<String>, V> = entries
+            .map { (text, value) -> Tokens.tokenize(text).map(Tok::key) to value }
+            .sortedByDescending { it.first.size }
+            .toMap(LinkedHashMap())
 
         val FR_MONTHS =
             mapOf(
-                "janvier" to 1, "janv" to 1, "fevrier" to 2, "fevr" to 2, "fev" to 2, "mars" to 3, "avril" to 4,
-                "avr" to 4, "mai" to 5, "juin" to 6, "juillet" to 7, "juil" to 7, "aout" to 8, "septembre" to 9,
-                "sept" to 9, "octobre" to 10, "oct" to 10, "novembre" to 11, "nov" to 11, "decembre" to 12, "dec" to 12,
+                "janvier" to 1,
+                "janv" to 1,
+                "fevrier" to 2,
+                "fevr" to 2,
+                "fev" to 2,
+                "mars" to 3,
+                "avril" to 4,
+                "avr" to 4,
+                "mai" to 5,
+                "juin" to 6,
+                "juillet" to 7,
+                "juil" to 7,
+                "aout" to 8,
+                "septembre" to 9,
+                "sept" to 9,
+                "octobre" to 10,
+                "oct" to 10,
+                "novembre" to 11,
+                "nov" to 11,
+                "decembre" to 12,
+                "dec" to 12,
             )
         val EN_MONTHS =
             mapOf(
-                "january" to 1, "jan" to 1, "february" to 2, "feb" to 2, "march" to 3, "mar" to 3, "april" to 4,
-                "apr" to 4, "may" to 5, "june" to 6, "jun" to 6, "july" to 7, "jul" to 7, "august" to 8, "aug" to 8,
-                "september" to 9, "sept" to 9, "sep" to 9, "october" to 10, "oct" to 10, "november" to 11, "nov" to 11,
-                "december" to 12, "dec" to 12,
+                "january" to 1,
+                "jan" to 1,
+                "february" to 2,
+                "feb" to 2,
+                "march" to 3,
+                "mar" to 3,
+                "april" to 4,
+                "apr" to 4,
+                "may" to 5,
+                "june" to 6,
+                "jun" to 6,
+                "july" to 7,
+                "jul" to 7,
+                "august" to 8,
+                "aug" to 8,
+                "september" to 9,
+                "sept" to 9,
+                "sep" to 9,
+                "october" to 10,
+                "oct" to 10,
+                "november" to 11,
+                "nov" to 11,
+                "december" to 12,
+                "dec" to 12,
             )
 
         val FR =
             Words(
-                glue = Phrases(listOf("le", "pour le", "pour", "a", "vers", "au", "d'ici", "dans la", "en", "des", ",")),
-                dayBefore = Phrases(listOf("la veille du", "la veille de la", "la veille de l'", "la veille de", "veille du")),
-                combined = phraseMap("ce soir" to (0 to EVENING), "ce matin" to (0 to MORNING), "ce midi" to (0 to NOON)),
+                glue = Phrases(
+                    listOf("le", "pour le", "pour", "a", "vers", "au", "d'ici", "dans la", "en", "des", ","),
+                ),
+                dayBefore = Phrases(
+                    listOf("la veille du", "la veille de la", "la veille de l'", "la veille de", "veille du"),
+                ),
+                combined = phraseMap(
+                    "ce soir" to (0 to EVENING),
+                    "ce matin" to (0 to MORNING),
+                    "ce midi" to (0 to NOON),
+                ),
                 relativeDays =
                     phraseMap(
                         "aujourd'hui" to DayRef.InDays(0),
@@ -406,7 +482,12 @@ internal class DateExpression(
                 yearUnits = setOf("an", "ans", "annee", "annees"),
                 weekdays =
                     mapOf(
-                        "lundi" to 1, "mardi" to 2, "mercredi" to 3, "jeudi" to 4, "vendredi" to 5, "samedi" to 6,
+                        "lundi" to 1,
+                        "mardi" to 2,
+                        "mercredi" to 3,
+                        "jeudi" to 4,
+                        "vendredi" to 5,
+                        "samedi" to 6,
                         "dimanche" to 7,
                     ),
                 nextBefore = emptySet(),
@@ -415,7 +496,11 @@ internal class DateExpression(
                 ofLink = "",
                 firstOfMonth = setOf("1er", "1ere", "premier"),
                 timeWords = mapOf("midi" to NOON, "matin" to MORNING, "soir" to EVENING, "apres-midi" to AFTERNOON),
-                timePhrases = phraseMap("dans la matinee" to MORNING, "dans la soiree" to EVENING, "en soiree" to EVENING),
+                timePhrases = phraseMap(
+                    "dans la matinee" to MORNING,
+                    "dans la soiree" to EVENING,
+                    "en soiree" to EVENING,
+                ),
                 hourUnits = setOf("h", "heure", "heures"),
                 atLinks = setOf("a", "vers"),
                 periods = phraseMap("du soir" to true, "de l'apres-midi" to true, "du matin" to false),
@@ -425,7 +510,11 @@ internal class DateExpression(
             Words(
                 glue = Phrases(listOf("on", "at", "the", "for", "by", "around", "in the", "this", ",")),
                 dayBefore = Phrases(listOf("the day before", "day before", "the eve of", "the night before")),
-                combined = phraseMap("tonight" to (0 to EVENING), "this evening" to (0 to EVENING), "this morning" to (0 to MORNING)),
+                combined = phraseMap(
+                    "tonight" to (0 to EVENING),
+                    "this evening" to (0 to EVENING),
+                    "this morning" to (0 to MORNING),
+                ),
                 relativeDays =
                     phraseMap(
                         "today" to DayRef.InDays(0),
@@ -443,15 +532,26 @@ internal class DateExpression(
                 yearUnits = setOf("year", "years"),
                 weekdays =
                     mapOf(
-                        "monday" to 1, "tuesday" to 2, "wednesday" to 3, "thursday" to 4, "friday" to 5,
-                        "saturday" to 6, "sunday" to 7,
+                        "monday" to 1,
+                        "tuesday" to 2,
+                        "wednesday" to 3,
+                        "thursday" to 4,
+                        "friday" to 5,
+                        "saturday" to 6,
+                        "sunday" to 7,
                     ),
                 nextBefore = setOf("next"),
                 nextAfter = emptySet(),
                 months = EN_MONTHS,
                 ofLink = "of",
                 firstOfMonth = emptySet(),
-                timeWords = mapOf("noon" to NOON, "midday" to NOON, "morning" to MORNING, "evening" to EVENING, "afternoon" to AFTERNOON),
+                timeWords = mapOf(
+                    "noon" to NOON,
+                    "midday" to NOON,
+                    "morning" to MORNING,
+                    "evening" to EVENING,
+                    "afternoon" to AFTERNOON,
+                ),
                 timePhrases = emptyMap(),
                 hourUnits = setOf("o'clock"),
                 atLinks = setOf("at", "around", "by"),

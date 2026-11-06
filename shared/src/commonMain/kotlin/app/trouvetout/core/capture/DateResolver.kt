@@ -28,6 +28,7 @@ internal object DateResolver {
     ): Instant {
         val today = now.toLocalDateTime(timeZone).date
         val time = LocalTime(spec.hour ?: DEFAULT_HOUR, spec.minute)
+
         fun at(date: LocalDate): Instant {
             val day = if (spec.dayBefore) date.minus(1, DateTimeUnit.DAY) else date
             return LocalDateTime(day, time).toInstant(timeZone)

@@ -128,6 +128,7 @@ public sealed interface CaptureOutcome {
  * [CaptureProposal] shown on the confirmation card → [commit] turns it into events through the lot 1 commands.
  * Nothing is written before [commit].
  */
+@Suppress("LongParameterList") // the core's collaborators and the seams of its clock, set where the core is built
 public class CaptureService internal constructor(
     private val db: TrouveToutDb,
     private val items: ItemCommands,
@@ -392,21 +393,26 @@ public class CaptureService internal constructor(
             Intent.STORE -> storeCommand(mention, existing, ref)
             Intent.TAKE -> existing?.let { items.take(it, source, parse.input) }
             Intent.RETURN -> existing?.let { putBackCommand(it, ref) }
-            Intent.MOVE_TO -> if (existing != null &&
-                ref != null
-            ) {
-                items.move(existing, ref, source, parse.input)
-            } else {
-                null
-            }
+            Intent.MOVE_TO -> moveCommand(existing, ref)
             Intent.LEND -> existing?.let { items.lend(it, parse.person.orEmpty(), source, parse.input) }
             Intent.RETURN_FROM_LEND -> existing?.let { items.putBack(it, source, parse.input) }
-            Intent.REMIND -> if (existing != null && fireAt != null) {
-                attachments?.setReminder(existing, fireAt, ReminderKind.DATE, source, parse.input)
-            } else {
-                null
-            }
+            Intent.REMIND -> remindCommand(existing)
             Intent.QUERY, Intent.UNKNOWN -> null
+        }
+
+        private suspend fun moveCommand(
+            existing: String?,
+            ref: LocationRef?,
+        ): CommandResult? = if (existing != null && ref != null) {
+            items.move(existing, ref, source, parse.input)
+        } else {
+            null
+        }
+
+        private suspend fun remindCommand(existing: String?): CommandResult? = if (existing != null && fireAt != null) {
+            attachments?.setReminder(existing, fireAt, ReminderKind.DATE, source, parse.input)
+        } else {
+            null
         }
 
         private suspend fun storeCommand(

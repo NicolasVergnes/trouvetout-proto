@@ -5,11 +5,11 @@ import app.trouvetout.core.capture.Intent
 import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.capture.ParseResult
 import app.trouvetout.core.capture.Parser
-import kotlinx.serialization.Serializable
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /** One line of `corpus/parser.jsonl` (format in `docs/06-corpus-recherche.md` §1). */
