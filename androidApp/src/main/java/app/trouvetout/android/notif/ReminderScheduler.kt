@@ -75,7 +75,7 @@ class ReminderScheduler(
     ) {
         val window = (now - MISSED_HORIZON_MILLIS)..now
         for (missed in schedule.reminders.filter { it.fireAtMillis in window }) {
-            if (markRang(missed.id)) {
+            if (ReminderNotifications.enabled(context) && markRang(missed.id)) {
                 ReminderNotifications.post(context, missed.id, missed.title, missed.kind, missed.itemId)
             }
         }

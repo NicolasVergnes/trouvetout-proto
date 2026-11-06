@@ -26,6 +26,8 @@ class ReminderReceiver : BroadcastReceiver() {
     ) {
         val reminderId = ReminderScheduler.reminderOf(intent) ?: return
         val app = context.applicationContext as App
+        // Nothing could show: not counted as rung, so it rings at the next reconciliation once they are allowed again.
+        if (!ReminderNotifications.enabled(app)) return
         if (!app.reminderScheduler.markRang(reminderId)) return
         val pending = goAsync()
         app.appScope.launch {
