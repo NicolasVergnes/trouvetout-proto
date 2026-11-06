@@ -107,12 +107,14 @@ public class BrowseRepository internal constructor(
     }.filterNotNull()
 
     /** C16: everything under [placeId] to print, sensitive items only if [includeSensitive]; null once gone. */
+    @Throws(Exception::class) // to Swift: an error it can handle, not the end of the process
     public suspend fun placeInventory(
         placeId: String,
         includeSensitive: Boolean,
     ): Inventory? = inventoryBuilder(includeSensitive).forPlace(placeId)
 
     /** C16: the content of one container to print; null when it is gone. */
+    @Throws(Exception::class)
     public suspend fun containerInventory(
         containerId: String,
         includeSensitive: Boolean,

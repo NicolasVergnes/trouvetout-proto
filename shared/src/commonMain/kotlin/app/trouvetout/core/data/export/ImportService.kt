@@ -217,7 +217,7 @@ public class ImportService internal constructor(
     /** Lot 9: a reminder's identifiers and instant reach the system (alarm URIs, notification tags): checked. */
     private fun Event.hasWellFormedReminder(): Boolean = when (val p = payload) {
         is EventPayload.ReminderSet ->
-            Ulid.isValid(p.reminderId) && Ulid.isValid(p.itemId) && p.fireAtEpochMillis in MIN_AT..MAX_AT
+            Ulid.isValid(p.reminderId) && Ulid.isValid(p.itemId) && p.fireAtEpochMillis in MIN_AT..MAX_REMINDER_AT
         is EventPayload.ReminderDone -> Ulid.isValid(p.reminderId) && (p.itemId == null || Ulid.isValid(p.itemId))
         else -> true
     }
@@ -276,6 +276,9 @@ public class ImportService internal constructor(
         const val BATCH = 1_000
         const val THUMB_SUFFIX = "_t.jpg"
         const val MIN_AT = 0L
+
+        /** Year 10000: « dans 999 ans » or « 12/03/9999 » can be said, and an export of them must import. */
+        const val MAX_REMINDER_AT = 253_402_300_800_000L
         const val MAX_AT = 32_503_680_000_000L // year 3000
     }
 }

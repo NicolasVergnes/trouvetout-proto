@@ -140,6 +140,78 @@ class ExportImportTest {
     }
 
     @Test
+    fun should_restore_a_reminder_through_export_and_import_even_a_very_far_one() = runTest {
+        val a = Device("device-A")
+        val item = "01HF7YAT0036JB21DGC2GBCCVA"
+        val near = "01HF7YAT0036JB21DGC2GBCCVB"
+        val far = "01HF7YAT0036JB21DGC2GBCCVC"
+        val year3025 = 33_301_296_000_000L // « dans 999 ans » can be said
+        a.store.append(
+            listOf(
+                a.fx.event(EventPayload.ItemCreated(item, "passeport")),
+                a.fx.event(EventPayload.ReminderSet(near, item, 1_900_000_000_000L)),
+                a.fx.event(EventPayload.ReminderSet(far, item, year3025)),
+            ),
+        )
+        val export = a.exporter.export()
+        val b = Device("device-B")
+
+        val report = assertIs<ImportResult.Done>(b.importer.import(transfer(a, export.relativePath, b))).report
+
+        assertEquals(0, report.invalidLines)
+        assertEquals(a.store.all(), b.store.all())
+        assertEquals(setOf(near, far), b.db.reminderQueries.selectLive().executeAsList().map { it.id }.toSet())
+    }
+
+    @Test
+    fun should_refuse_imported_reminders_whose_identifiers_or_instant_could_reach_the_system() = runTest {
+        val b = Device("device-B")
+        val item = "01HF7YAT0036JB21DGC2GBCCVA"
+        val good = "01HF7YAT0036JB21DGC2GBCCVB"
+
+        fun line(
+            id: Int,
+            type: String,
+            fields: String,
+        ) = """{"id":"01HF7YAT0036JB21DGC2GBC${id.toString().padStart(3, '0')}","at":1700000001000,""" +
+            """"deviceId":"dev","actor":"me","type":"$type","payload":{"type":"$type",$fields},"source":"TEXT"}"""
+
+        fun set(
+            reminder: String,
+            owner: String,
+            at: Long,
+        ) = """"reminderId":"$reminder","itemId":"$owner","fireAtEpochMillis":$at"""
+
+        val events =
+            listOf(
+                line(100, "ItemCreated", """"itemId":"$item","name":"passeport""""),
+                line(101, "ReminderSet", set(good, item, 1_900_000_000_000L)),
+                line(102, "ReminderSet", set("../x", item, 1_900_000_000_000L)),
+                line(103, "ReminderSet", set(good, "not-an-ulid", 1_900_000_000_000L)),
+                line(104, "ReminderSet", set(good, item, -1L)),
+                line(105, "ReminderSet", set(good, item, 253_402_300_800_001L)),
+                line(106, "ReminderDone", """"reminderId":"../x""""),
+                line(107, "ReminderDone", """"reminderId":"$good","itemId":"not-an-ulid""""),
+            ).joinToString("\n")
+        val manifest =
+            """{"formatVersion":1,"appVersion":"1","schemaVersion":1,"exportedAt":1,"deviceId":"x",""" +
+                """"counts":{"events":8,"items":1,"places":0,"containers":0,"photos":0}}"""
+        b.files.write(
+            "imports/reminders.zip",
+            zipOf(
+                entry(ExportEntries.MANIFEST, manifest.encodeToByteArray()),
+                entry(ExportEntries.EVENTS, events.encodeToByteArray()),
+            ),
+        )
+
+        val report = assertIs<ImportResult.Done>(b.importer.import("imports/reminders.zip")).report
+
+        assertEquals(6, report.invalidLines)
+        assertEquals(2, report.eventsAppended)
+        assertEquals(listOf(good), b.db.reminderQueries.selectLive().executeAsList().map { it.id })
+    }
+
+    @Test
     fun should_tolerate_a_newer_minor_export_with_unknown_fields_and_types() = runTest {
         val b = Device("device-B")
         val manifest =

@@ -68,6 +68,7 @@ public class ReminderRepository internal constructor(
         }
 
     /** One-shot read of the same list, for a host woken without a running flow (boot, app update). */
+    @Throws(Exception::class) // to Swift: an error it can handle, not the end of the process
     public suspend fun schedule(): ReminderSchedule = withContext(dispatchers.io) {
         val rows = db.reminderQueries.selectLive().executeAsList()
         ReminderSchedule(rows.map { scheduled(it.id, it.item_id, it.fire_at, it.kind, it.name, it.sensitive) })

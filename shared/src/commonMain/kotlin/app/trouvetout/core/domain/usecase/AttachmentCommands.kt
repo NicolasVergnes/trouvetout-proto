@@ -53,6 +53,7 @@ public class AttachmentCommands internal constructor(
         return ctx.commit(listOf(ctx.event(EventPayload.PhotoDetached(photoId), source)))
     }
 
+    @Throws(Exception::class) // to Swift: an error it can handle, not the end of the process
     public suspend fun setReminder(
         itemId: String,
         fireAt: Instant,
@@ -66,6 +67,7 @@ public class AttachmentCommands internal constructor(
     }
 
     /** Removes a reminder (E2) or acknowledges it; undone by setting it again. */
+    @Throws(Exception::class)
     public suspend fun completeReminder(
         reminderId: String,
         source: EventSource,
@@ -80,6 +82,7 @@ public class AttachmentCommands internal constructor(
      * switching it off completes every pending CHECK of the item (an import can bring several). Nothing to write
      * gives an empty [CommandResult.Done].
      */
+    @Throws(Exception::class)
     public suspend fun setChecking(
         itemId: String,
         on: Boolean,
@@ -98,6 +101,7 @@ public class AttachmentCommands internal constructor(
     }
 
     /** E6 « vérifié »: the pending checks are done and the next one is six months from now, in one append. */
+    @Throws(Exception::class)
     public suspend fun confirmChecked(
         itemId: String,
         source: EventSource,
