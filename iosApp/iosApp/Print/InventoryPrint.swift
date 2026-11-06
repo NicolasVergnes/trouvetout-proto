@@ -14,7 +14,10 @@ enum InventoryPrint {
         let controller = UIPrintInteractionController.shared
         controller.printInfo = info
         controller.printFormatter = UISimpleTextPrintFormatter(attributedText: text(inventory))
-        controller.present(animated: true)
+        // The controller is a singleton: the text does not stay in memory once the sheet is gone.
+        controller.present(animated: true) { finished, _, _ in
+            finished.printFormatter = nil
+        }
     }
 
     /// The document: title, path, date, then one paragraph per line, indented by depth.
@@ -101,16 +104,20 @@ private extension UIFont {
 /// The « Imprimer » button of a place or a container; sensitive items are printed only when shown (H4).
 struct PrintInventoryButton: View {
     let load: () async -> Inventory?
+    @State private var loading = false
 
     var body: some View {
         Button {
+            loading = true
             Task {
                 if let inventory = await load() {
                     InventoryPrint.present(inventory)
                 }
+                loading = false
             }
         } label: {
             Label("print_action", systemImage: "printer")
         }
+        .disabled(loading)
     }
 }

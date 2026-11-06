@@ -10,6 +10,7 @@ private final class FakeCenter: NotificationCenterClient {
     var shown: [(identifier: String, named: Bool)] = []
     var removedDelivered: [String] = []
     var cleared = false
+    var refusesAdding = false
 
     func pendingIdentifiers() async -> [String] {
         Array(requests.keys)
@@ -20,6 +21,9 @@ private final class FakeCenter: NotificationCenterClient {
     }
 
     func add(_ request: UNNotificationRequest) async throws {
+        if refusesAdding {
+            throw CocoaError(.featureUnsupported)
+        }
         requests[request.identifier] = request
     }
 
@@ -167,6 +171,55 @@ final class RemindersTests: XCTestCase {
         await ReminderScheduler(center: center).reconcile(schedule)
         XCTAssertEqual(center.requests.count, 50)
         XCTAssertNil(center.requests[ReminderScheduler.prefix + past])
+    }
+
+    func testARefusedRequestDoesNotLeaveTheOlderTextToRing() async throws {
+        let passport = try await item("passeport")
+        let reminder = try await remind(passport, in: 3600)
+        let center = FakeCenter()
+        let scheduler = ReminderScheduler(center: center)
+        let schedule = try await shared.reminders.schedule()
+        await scheduler.reconcile(schedule)
+        XCTAssertNotNil(center.requests[ReminderScheduler.prefix + reminder])
+
+        center.refusesAdding = true
+        await scheduler.reconcile(schedule)
+        XCTAssertNil(center.requests[ReminderScheduler.prefix + reminder])
+
+        center.refusesAdding = false
+        await scheduler.reconcile(schedule)
+        XCTAssertNotNil(center.requests[ReminderScheduler.prefix + reminder], "set again at the next reconciliation")
+    }
+
+    func testAClearStopsTheWaitingScheduleAndASubmitStillWorksAfterIt() async throws {
+        let tent = try await item("tente")
+        let reminder = try await remind(tent, in: 3600)
+        let center = FakeCenter()
+        let scheduler = ReminderScheduler(center: center)
+        let schedule = try await shared.reminders.schedule()
+
+        scheduler.submit(schedule)
+        scheduler.clear()
+        for _ in 0 ..< 20 {
+            await Task.yield()
+        }
+        XCTAssertTrue(center.requests.isEmpty, "H6: nothing is added after a wipe")
+
+        scheduler.submit(schedule)
+        for _ in 0 ..< 100 where center.requests.isEmpty {
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertNotNil(center.requests[ReminderScheduler.prefix + reminder])
+    }
+
+    func testTheRouterKeepsOnlyAWellFormedItemIdentifier() {
+        let router = NotificationRouter()
+        router.open(itemId: "../../etc")
+        XCTAssertNil(router.itemId)
+        router.open(itemId: "01HZY0000000000000000000AB")
+        XCTAssertEqual(router.itemId, "01HZY0000000000000000000AB")
+        router.consume()
+        XCTAssertNil(router.itemId)
     }
 
     func testThePrintedInventoryIsAPdfWithTheItemsC16() async throws {

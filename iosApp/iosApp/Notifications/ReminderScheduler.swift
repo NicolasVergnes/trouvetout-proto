@@ -76,6 +76,7 @@ final class ReminderScheduler {
     private var running: Task<Void, Never>?
     /// Only the latest schedule waits: a burst of changes (an import) costs one more reconciliation, not one each.
     private var waiting: ReminderSchedule?
+    private var generation = 0
 
     init(center: NotificationCenterClient = SystemNotificationCenter()) {
         self.center = center
@@ -97,13 +98,20 @@ final class ReminderScheduler {
     func submit(_ schedule: ReminderSchedule) {
         waiting = schedule
         guard running == nil else { return }
+        generation += 1
+        let mine = generation
         running = Task { [weak self] in
             while let next = self?.waiting {
                 self?.waiting = nil
                 await self?.reconcile(next)
-                if Task.isCancelled { break }
+                if Task.isCancelled {
+                    break
+                }
             }
-            self?.running = nil
+            // A task cancelled by `clear()` does not forget the one started after it.
+            if self?.generation == mine {
+                self?.running = nil
+            }
         }
     }
 
@@ -116,8 +124,12 @@ final class ReminderScheduler {
         for reminder in upcoming {
             // H6: a wipe cancels the task; nothing is added after it.
             guard !Task.isCancelled else { return }
-            if let request = Self.request(for: reminder, now: now) {
-                try? await center.add(request)
+            guard let request = Self.request(for: reminder, now: now) else { continue }
+            do {
+                try await center.add(request)
+            } catch {
+                // Not replaced, so the older text must not ring: the item may have become sensitive since (H4).
+                center.removePending([request.identifier])
             }
         }
         guard !Task.isCancelled else { return }
@@ -131,6 +143,7 @@ final class ReminderScheduler {
 
     /// H6: every pending and delivered notification goes with the data.
     func clear() {
+        generation += 1
         running?.cancel()
         running = nil
         waiting = nil

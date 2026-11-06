@@ -12,6 +12,9 @@ final class ItemRemindersModel: ObservableObject {
     /// H9: the explanation shown before the system question, after the first reminder.
     @Published var askPermission = false
     @Published private(set) var notificationsDenied = false
+    /// « Not now », or reminders brought by an import: the question is still open and nothing will ring.
+    @Published private(set) var notificationsNotAsked = false
+    @Published var picking = false
 
     let itemId: String
     private let container: AppContainer
@@ -34,7 +37,7 @@ final class ItemRemindersModel: ObservableObject {
         flows.watch(flow, scope: shared.uiScope) { [weak self] (list: NSArray) in
             self?.reminders = (list as? [Reminder_]) ?? []
         }
-        Task { notificationsDenied = await container.reminders.denied() }
+        refreshAuthorization()
     }
 
     var dated: [Reminder_] {
@@ -84,13 +87,19 @@ final class ItemRemindersModel: ObservableObject {
     func grant() {
         Task {
             _ = await container.reminders.requestAuthorization()
-            notificationsDenied = await container.reminders.denied()
+            container.refreshReminders()
+            await readAuthorization()
         }
     }
 
     /// The phone's answer may have changed in the Settings app.
     func refreshAuthorization() {
-        Task { notificationsDenied = await container.reminders.denied() }
+        Task { await readAuthorization() }
+    }
+
+    private func readAuthorization() async {
+        notificationsDenied = await container.reminders.denied()
+        notificationsNotAsked = await container.reminders.needsAuthorization()
     }
 
     private func afterAdding() {
@@ -98,7 +107,7 @@ final class ItemRemindersModel: ObservableObject {
             if await container.reminders.needsAuthorization() {
                 askPermission = true
             }
-            notificationsDenied = await container.reminders.denied()
+            await readAuthorization()
         }
     }
 
@@ -119,11 +128,9 @@ final class ItemRemindersModel: ObservableObject {
     }
 }
 
-/// E2 / E6 on the item sheet: dated reminders (moments to come only), the six-month check and its « checked ».
+/// E2 / E6 on the item sheet: dated reminders (past ones marked), the six-month check and its « checked ».
 struct RemindersSection: View {
     @ObservedObject var model: ItemRemindersModel
-    @State private var picking = false
-    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Section("reminders_title") {
@@ -136,6 +143,7 @@ struct RemindersSection: View {
                     Spacer()
                     Button("reminder_remove") { model.remove(reminder) }
                         .buttonStyle(.borderless)
+                        .frame(minHeight: 44)
                         .accessibilityLabel(
                             String(
                                 format: NSLocalizedString("reminder_remove_label", comment: ""),
@@ -144,7 +152,7 @@ struct RemindersSection: View {
                         )
                 }
             }
-            Button("reminder_add") { picking = true }
+            Button("reminder_add") { model.picking = true }
             Toggle(isOn: Binding(get: { model.check != nil }, set: { model.setChecking($0) })) {
                 VStack(alignment: .leading) {
                     Text("reminder_check_switch")
@@ -159,25 +167,12 @@ struct RemindersSection: View {
                 Text("reminder_notifications_off").font(.footnote).foregroundStyle(.secondary)
                 Button("reminder_open_settings") { CaptureTexts.openAppSettings() }
             }
+            if model.notificationsNotAsked, !model.reminders.isEmpty {
+                Text("reminder_notifications_not_asked").font(.footnote).foregroundStyle(.secondary)
+                Button("reminder_notifications_allow") { model.grant() }
+            }
         }
         .disabled(model.busy)
-        .onChange(of: scenePhase) { phase in
-            if phase == .active {
-                model.refreshAuthorization()
-            }
-        }
-        .sheet(isPresented: $picking) {
-            MomentPickerSheet { date in
-                picking = false
-                model.add(date)
-            }
-        }
-        .alert("reminder_permission_title", isPresented: $model.askPermission) {
-            Button("action_continue") { model.grant() }
-            Button("action_not_now", role: .cancel) {}
-        } message: {
-            Text("reminder_permission_text")
-        }
     }
 
     private func checkText(_ check: Reminder_) -> String {
@@ -185,6 +180,46 @@ struct RemindersSection: View {
         let text = momentText(check.fireAt, withTime: false)
         let key = date <= Date() ? "reminder_check_due" : "reminder_check_next"
         return String(format: NSLocalizedString(key, comment: ""), text)
+    }
+}
+
+/// The picker and the notification question of [RemindersSection], presented from the form: a `Form` repeats a
+/// section's modifiers on its lazy rows.
+struct RemindersPresentation: ViewModifier {
+    @ObservedObject var model: ItemRemindersModel
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var picked: Date?
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: scenePhase) { phase in
+                if phase == .active {
+                    model.refreshAuthorization()
+                }
+            }
+            .sheet(
+                isPresented: $model.picking,
+                onDismiss: addPicked,
+                content: {
+                    MomentPickerSheet { date in
+                        picked = date
+                        model.picking = false
+                    }
+                }
+            )
+            .alert("reminder_permission_title", isPresented: $model.askPermission) {
+                Button("action_continue") { model.grant() }
+                Button("action_not_now", role: .cancel) {}
+            } message: {
+                Text("reminder_permission_text")
+            }
+    }
+
+    /// Once the sheet is gone: the question that follows the first reminder would be lost during its dismissal.
+    private func addPicked() {
+        guard let date = picked else { return }
+        picked = nil
+        model.add(date)
     }
 }
 

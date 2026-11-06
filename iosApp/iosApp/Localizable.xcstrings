@@ -2369,6 +2369,38 @@
         }
       }
     },
+    "reminder_notifications_allow": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow notifications"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autoriser les notifications"
+          }
+        }
+      }
+    },
+    "reminder_notifications_not_asked": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The phone has not yet been allowed to show notifications: these reminders will not ring."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le téléphone n'a pas encore l'autorisation d'afficher les notifications : ces rappels ne sonneront pas."
+          }
+        }
+      }
+    },
     "reminder_notifications_off": {
       "localizations": {
         "en": {

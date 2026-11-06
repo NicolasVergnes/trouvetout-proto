@@ -44,6 +44,7 @@ struct ItemSheetView: View {
                 }
             }
         }
+        .modifier(RemindersPresentation(model: reminders))
         .navigationTitle(viewModel.item.map { masked($0) ? "" : $0.item.name } ?? "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -11,6 +11,9 @@ extension CaptureViewModel {
     }
 
     func grantNotifications() {
-        Task { _ = await container.reminders.requestAuthorization() }
+        Task {
+            _ = await container.reminders.requestAuthorization()
+            container.refreshReminders()
+        }
     }
 }

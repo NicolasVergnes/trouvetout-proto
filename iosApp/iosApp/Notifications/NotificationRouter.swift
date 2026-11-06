@@ -35,15 +35,27 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     /// A reminder due while the app is open still shows, as a banner.
     func userNotificationCenter(
         _: UNUserNotificationCenter,
-        willPresent _: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        willPresent _: UNNotification,
+        withCompletionHandler completion: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completion([.banner, .list, .sound])
     }
 
-    func userNotificationCenter(_: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    /// The completion-handler form: the `async` one of this delegate has been known to end on the wrong thread.
+    func userNotificationCenter(
+        _: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completion: @escaping () -> Void
+    ) {
         guard response.notification.request.identifier.hasPrefix(ReminderScheduler.prefix),
               let itemId = response.notification.request.content.userInfo[ReminderScheduler.itemKey] as? String
-        else { return }
-        await MainActor.run { NotificationRouter.shared.open(itemId: itemId) }
+        else {
+            completion()
+            return
+        }
+        Task { @MainActor in
+            NotificationRouter.shared.open(itemId: itemId)
+            completion()
+        }
     }
 }

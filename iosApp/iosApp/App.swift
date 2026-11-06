@@ -185,6 +185,8 @@ final class AppContainer: ObservableObject {
         // H3: a sheet or an alert is presented above the root and so above the lock cover: closed before the app
         // switcher snapshot, and never left open behind a lock.
         if lockEnabled {
+            // The print sheet presents itself, outside the root's presentations.
+            UIPrintInteractionController.shared.dismiss(animated: false)
             for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
                 for window in scene.windows {
                     window.rootViewController?.dismiss(animated: false)
@@ -197,11 +199,18 @@ final class AppContainer: ObservableObject {
         guard ready else { return }
         shared.appLock.foregrounded()
         // iOS keeps 50 of our reminders: the next ones are set when the app comes back.
+        refreshReminders()
+    }
+
+    /// Hands the reminders to the system again, for what the flow does not tell: time passing, or the answer to the
+    /// notification question (a request added before that answer may be refused).
+    func refreshReminders() {
+        guard ready else { return }
         let factory = shared
         Task { [weak self] in
-            if let schedule = try? await factory.reminders.schedule() {
-                self?.reminders.submit(schedule)
-            }
+            // A wipe may have replaced the core meanwhile: nothing of the old one goes to the system.
+            guard let schedule = try? await factory.reminders.schedule(), self?.shared === factory else { return }
+            self?.reminders.submit(schedule)
         }
     }
 
@@ -239,6 +248,7 @@ final class AppContainer: ObservableObject {
         reminders.clear()
         Task {
             _ = try? await spent.wipeAllData()
+            reminders.clear()
             UiPrefs.clear()
             AppDirectories.clearCaches()
             recreateShared()
