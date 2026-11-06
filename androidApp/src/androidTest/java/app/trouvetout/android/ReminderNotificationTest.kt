@@ -21,6 +21,7 @@ import app.trouvetout.core.domain.model.EventSource
 import app.trouvetout.core.domain.usecase.CommandResult
 import app.trouvetout.core.domain.usecase.ItemDraft
 import app.trouvetout.core.domain.usecase.ItemPatch
+import app.trouvetout.core.reminder.ReminderSchedule
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -45,6 +46,8 @@ class ReminderNotificationTest {
 
     private suspend fun shared(): SharedFactory = app.readyShared.first()
 
+    private fun App.emptySchedule() = ReminderSchedule(emptyList())
+
     private suspend fun item(name: String): String {
         val done = shared().itemCommands.create(ItemDraft(name), null, EventSource.TEXT) as CommandResult.Done
         return (done.events.first().payload as EventPayload.ItemCreated).itemId
@@ -60,9 +63,12 @@ class ReminderNotificationTest {
         return (done.events.single().payload as EventPayload.ReminderSet).reminderId
     }
 
-    private fun alarmOf(reminderId: String): PendingIntent? = PendingIntent.getBroadcast(
+    private fun alarmOf(
+        reminderId: String,
+        kind: Int = ReminderScheduler.AWAKE,
+    ): PendingIntent? = PendingIntent.getBroadcast(
         app,
-        0,
+        kind,
         Intent(app, ReminderReceiver::class.java).setData(Uri.fromParts(ReminderScheduler.SCHEME, reminderId, null)),
         PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
     )
@@ -122,9 +128,33 @@ class ReminderNotificationTest {
         val reminder = remindIn(tent, HOUR)
         assertNotNull(ring(reminder))
         notifications.cancelAll()
+        // The system removes it a moment later: not what the second alarm is checked against.
+        repeat(POLLS) { if (notifications.activeNotifications.any { it.tag == reminder }) delay(POLL_MILLIS) }
+        assertTrue(notifications.activeNotifications.none { it.tag == reminder })
         assertNull("the second alarm finds it rung", ring(reminder))
+        // A schedule emitted before the reminder existed does not make it ring again.
+        app.reminderScheduler.reconcile(app.emptySchedule())
+        assertNull("still rung", ring(reminder))
         app.reminderScheduler.reconcile(shared().reminders.schedule())
         assertNull("a rung reminder is not set again", alarmOf(reminder))
+        assertNull("nor its other alarm", alarmOf(reminder, ReminderScheduler.IDLE))
+    }
+
+    @Test
+    fun an_alarm_held_back_by_the_system_is_kept_until_the_horizon() = runBlocking {
+        val lamp = item("lampe-retardee")
+        val reminder = remindIn(lamp, HOUR)
+        assertNotNull(awaitAlarm(reminder))
+        val schedule = shared().reminders.schedule()
+        val fireAt = schedule.reminders.first { it.id == reminder }.fireAtMillis
+
+        app.reminderScheduler.reconcile(schedule, now = fireAt + 11 * MINUTE)
+        assertNotNull("11 min late: it may still ring", alarmOf(reminder))
+        assertNotNull(alarmOf(reminder, ReminderScheduler.IDLE))
+
+        app.reminderScheduler.reconcile(schedule, now = fireAt + 3 * DAY)
+        assertNull("3 days late: an old backlog", alarmOf(reminder))
+        assertNull(alarmOf(reminder, ReminderScheduler.IDLE))
     }
 
     @Test
@@ -149,7 +179,10 @@ class ReminderNotificationTest {
         app.wipeAll()
         app.readyShared.first { it !== before }
         assertNull("no alarm left", alarmOf(reminder))
+        assertNull("no alarm left", alarmOf(reminder, ReminderScheduler.IDLE))
         assertTrue("no notification left", notifications.activeNotifications.isEmpty())
+        val prefs = app.getSharedPreferences("reminders", android.content.Context.MODE_PRIVATE)
+        assertTrue("no identifier left", prefs.all.isEmpty())
     }
 
     @Test
@@ -167,7 +200,9 @@ class ReminderNotificationTest {
     }
 
     private companion object {
-        const val HOUR = 3_600_000L
+        const val MINUTE = 60_000L
+        const val HOUR = 60 * MINUTE
+        const val DAY = 24 * HOUR
         const val POLLS = 50
         const val POLL_MILLIS = 200L
     }

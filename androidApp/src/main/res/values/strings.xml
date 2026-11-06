@@ -264,7 +264,7 @@
     <string name="reminder_notifications_off">Notifications are off for this app: the reminders are kept, but no notification will come.</string>
     <string name="reminder_open_settings">Notification settings</string>
     <string name="reminder_permission_title">Allow notifications?</string>
-    <string name="reminder_permission_text">So that your reminders can reach you, the phone asks whether this app may show notifications. They name the object at most, never its place, and stay generic on the lock screen.</string>
+    <string name="reminder_permission_text">So that your reminders can reach you, the phone asks whether this app may show notifications. They name the object at most, never its place. On the lock screen, the name stays visible if your phone is set to show all notification content; otherwise only “TrouveTout reminder” appears.</string>
     <string name="reminder_time_title">At what time?</string>
     <string name="reminder_in_past">That moment has passed: choose a later one.</string>
     <string name="action_not_now">Not now</string>

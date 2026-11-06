@@ -156,7 +156,8 @@ fun ItemRoute(
             if (state.showHistory) HistoryList(history)
         }
     }
-    when (dialog) {
+    // A dialog restored over a masked sheet (H4) stays closed.
+    when (dialog.takeUnless { masked }) {
         DIALOG_MOVE ->
             LocationPickerDialog(
                 title = stringResource(R.string.item_move_to),

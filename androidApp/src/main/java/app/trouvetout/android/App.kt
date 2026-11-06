@@ -154,6 +154,7 @@ class App : Application() {
         } finally {
             // Again once the old core is closed: a reconciliation in between cannot leave an alarm behind.
             runCatching { reminderScheduler.clear() }
+            itemRequest.value = null
             kotlinx.coroutines.withContext(Dispatchers.IO) { cacheDir.deleteRecursively() }
             uiPrefs.clear()
             recreateShared()

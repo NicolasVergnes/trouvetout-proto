@@ -37,8 +37,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = app
-        // A tapped reminder (E2); a recreated activity does not open it twice.
-        if (savedInstanceState == null) ReminderNotifications.itemOf(intent)?.let { app.itemRequest.value = it }
+        // A tapped reminder (E2); neither a recreated activity nor a relaunch from the recent apps opens it again.
+        val fromHistory = intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+        if (savedInstanceState == null && !fromHistory) {
+            ReminderNotifications.itemOf(intent)?.let { app.itemRequest.value = it }
+        }
         // Before the first frame (a rotation, a relaunch): never one frame without the flag.
         secure(app.current?.privacySettings?.state?.value?.lockEnabled == true)
         setContent {

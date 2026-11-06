@@ -18,7 +18,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -56,6 +59,11 @@ fun QuickCaptureRoute(
     val mic = rememberMicActions(viewModel)
     LaunchedEffect(Unit) { if (startWithVoice) mic.onMic() }
     LaunchedEffect(state.searchQuery) { state.searchQuery?.let(onSearch) }
+    // H9: the panel waits for the answer to the notification question before closing.
+    var asking by remember { mutableStateOf(false) }
+    var closeAfterAnswer by remember { mutableStateOf(false) }
+    val askingNow by rememberUpdatedState(asking)
+    LaunchedEffect(asking, closeAfterAnswer) { if (closeAfterAnswer && !asking) onClose() }
     val callbacks =
         remember(viewModel, mic, onClose) {
             CaptureCallbacks(
@@ -69,7 +77,9 @@ fun QuickCaptureRoute(
                 onDismissCard = { token ->
                     viewModel.dismissCard(token)
                     val now = viewModel.state.value
-                    if (!now.listening && now.input.isBlank() && now.pending == null) onClose()
+                    if (!now.listening && now.input.isBlank() && now.pending == null) {
+                        if (askingNow) closeAfterAnswer = true else onClose()
+                    }
                 },
                 onEditLast = viewModel::editLast,
                 onUndo = viewModel::undo,
@@ -87,6 +97,7 @@ fun QuickCaptureRoute(
         onClose = onClose,
         locked = locked,
         onOpenApp = onOpenApp,
+        onAskingNotifications = { asking = it },
     )
 }
 
@@ -99,6 +110,7 @@ fun QuickCaptureScreen(
     /** H3: the app is locked; a question is then handed to the home screen with the sentence. */
     locked: Boolean = false,
     onOpenApp: (String) -> Unit = {},
+    onAskingNotifications: (Boolean) -> Unit = {},
 ) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(focusField) { if (focusField) focus.requestFocus() }
@@ -136,7 +148,7 @@ fun QuickCaptureScreen(
                 CaptureField(state, callbacks, Modifier.focusRequester(focus))
                 VoiceStatus(state, callbacks.mic.onOpenAppSettings)
                 state.card?.let { ConfirmationCardView(it, callbacks) }
-                AskNotificationsAfterReminder(state.card)
+                AskNotificationsAfterReminder(state.card, onAskingNotifications)
                 state.problem?.let { problem ->
                     Text(
                         problemText(problem),

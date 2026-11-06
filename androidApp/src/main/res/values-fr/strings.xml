@@ -265,7 +265,7 @@
     <string name="reminder_notifications_off">Les notifications de l\'app sont désactivées : les rappels sont gardés, mais aucune notification ne viendra.</string>
     <string name="reminder_open_settings">Réglages des notifications</string>
     <string name="reminder_permission_title">Autoriser les notifications ?</string>
-    <string name="reminder_permission_text">Pour que vos rappels vous parviennent, le téléphone demande si l\'app peut afficher des notifications. Elles nomment l\'objet au plus, jamais son lieu, et restent génériques sur l\'écran verrouillé.</string>
+    <string name="reminder_permission_text">Pour que vos rappels vous parviennent, le téléphone demande si l\'app peut afficher des notifications. Elles nomment l\'objet au plus, jamais son lieu. Sur l\'écran verrouillé, le nom reste visible si votre téléphone est réglé pour afficher tout le contenu des notifications ; sinon, seul « Rappel TrouveTout » apparaît.</string>
     <string name="reminder_time_title">À quelle heure ?</string>
     <string name="reminder_in_past">Ce moment est passé : choisissez-en un plus tard.</string>
     <string name="action_not_now">Pas maintenant</string>

@@ -632,7 +632,10 @@ private fun reminderMoment(millis: Long): String = DateUtils.formatDateTime(
 
 /** H9: after the first reminder of a sentence, the notification permission is asked (API 33+). */
 @Composable
-internal fun AskNotificationsAfterReminder(card: ConfirmationCard?) {
-    val ask = rememberNotificationAsk()
+internal fun AskNotificationsAfterReminder(
+    card: ConfirmationCard?,
+    onAsking: (Boolean) -> Unit = {},
+) {
+    val ask = rememberNotificationAsk(onAsking)
     LaunchedEffect(card?.token) { if (card?.intent == Intent.REMIND) ask() }
 }

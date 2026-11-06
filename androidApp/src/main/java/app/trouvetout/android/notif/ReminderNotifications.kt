@@ -16,8 +16,9 @@ import app.trouvetout.core.domain.model.ReminderKind
 
 /**
  * Reminder notifications (E2, E6, H4). The text names the item at most, never its place; a sensitive item (title
- * null) gets the generic text, and so does the lock screen (`setPublicVersion`). Tapping opens the item sheet through
- * [LINK_ALIAS], a non-exported alias of the main activity: no other app can open a sheet by sending an intent.
+ * null) gets the generic text. On the lock screen the phone's own setting decides (ADR-024): the generic text
+ * (`setPublicVersion`) when it hides sensitive content, the name when it shows everything. Tapping opens the item sheet
+ * through [LINK_ALIAS], a non-exported alias of the main activity: no other app can open a sheet by sending an intent.
  */
 object ReminderNotifications {
     const val CHANNEL_ID: String = "reminders"
@@ -37,7 +38,6 @@ object ReminderNotifications {
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
                 description = context.getString(R.string.notif_channel_description)
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PRIVATE
             }
         manager.createNotificationChannel(channel)
     }

@@ -15,7 +15,7 @@ import app.trouvetout.core.reminder.ScheduledReminder
  * moment). Two inexact alarms per reminder, no exact alarm and no permission (ADR-024): `setWindow` (10 minutes) rings
  * on time while the phone is in use, `setAndAllowWhileIdle` still rings when the phone sleeps (Doze defers the first
  * one to its next maintenance window). The first to ring wins: each reminder rings once, the other alarm finds it
- * [rang]. The preferences file `reminders` holds identifiers only, never a name.
+ * [rang]. The preferences file `reminders` holds identifiers and the instant each one rang, never a name.
  */
 class ReminderScheduler(
     private val context: Context,
@@ -30,8 +30,10 @@ class ReminderScheduler(
         now: Long = System.currentTimeMillis(),
     ) {
         val rang = rangIds()
-        // An alarm inside its window may not have rung yet: it stays, unless that reminder already rang.
-        val upcoming = schedule.upcoming(now - WINDOW_MILLIS, MAX_REMINDERS).filter { it.id !in rang }
+        val armed = scheduledIds()
+        // An alarm may not have rung yet, its window still open or the system holding it back (Doze, standby bucket):
+        // it stays, unless that reminder already rang. Past a horizon it is an old backlog, and goes.
+        val upcoming = schedule.reminders.filter { it.id !in rang && mayStillRing(it, armed, now) }.take(MAX_REMINDERS)
         val wanted = upcoming.map { it.id }.toSet()
         // Cancel first: the system caps the alarms of an app.
         for (gone in scheduledIds() - wanted) cancelAlarms(gone)
@@ -39,11 +41,13 @@ class ReminderScheduler(
         for ((reminderId, named) in ReminderNotifications.shown(context)) {
             if (schedule.withdraws(reminderId, named)) ReminderNotifications.cancel(context, reminderId)
         }
-        val live = schedule.reminders.map { it.id }.toSet()
+        // Past the horizon a reminder can ring no more. Not pruned from the schedule: an emission older than a
+        // reminder does not name it yet, and dropping it here would let its second alarm ring.
+        val oldest = now - MISSED_HORIZON_MILLIS
+        val kept = rangEntries().filter { (it.substringAfter(RANG_AT).toLongOrNull() ?: 0L) > oldest }
         prefs.edit {
             putStringSet(KEY_IDS, wanted)
-            // A reminder done, deleted or archived leaves the « rang » list with it.
-            putStringSet(KEY_RANG, rang.intersect(live))
+            putStringSet(KEY_RANG, kept.toSet())
         }
     }
 
@@ -53,9 +57,10 @@ class ReminderScheduler(
      */
     @Synchronized
     fun markRang(reminderId: String): Boolean {
-        val rang = rangIds()
-        if (reminderId in rang) return false
-        prefs.edit { putStringSet(KEY_RANG, rang + reminderId) }
+        if (reminderId in rangIds()) return false
+        prefs.edit { putStringSet(KEY_RANG, rangEntries() + "$reminderId$RANG_AT${System.currentTimeMillis()}") }
+        // The other alarm would only wake the phone for nothing.
+        cancelAlarms(reminderId)
         return true
     }
 
@@ -85,6 +90,15 @@ class ReminderScheduler(
         prefs.edit { clear() }
     }
 
+    private fun mayStillRing(
+        reminder: ScheduledReminder,
+        armed: Set<String>,
+        now: Long,
+    ): Boolean {
+        val age = now - reminder.fireAtMillis
+        return age < WINDOW_MILLIS || (reminder.id in armed && age < MISSED_HORIZON_MILLIS)
+    }
+
     private fun arm(reminder: ScheduledReminder) {
         val manager = alarms ?: return
         manager.setWindow(AlarmManager.RTC_WAKEUP, reminder.fireAtMillis, WINDOW_MILLIS, alarm(reminder.id, AWAKE))
@@ -102,7 +116,9 @@ class ReminderScheduler(
 
     private fun scheduledIds(): Set<String> = prefs.getStringSet(KEY_IDS, emptySet()).orEmpty().toSet()
 
-    private fun rangIds(): Set<String> = prefs.getStringSet(KEY_RANG, emptySet()).orEmpty().toSet()
+    private fun rangEntries(): Set<String> = prefs.getStringSet(KEY_RANG, emptySet()).orEmpty().toSet()
+
+    private fun rangIds(): Set<String> = rangEntries().map { it.substringBefore(RANG_AT) }.toSet()
 
     private fun alarm(
         reminderId: String,
@@ -128,6 +144,9 @@ class ReminderScheduler(
         private const val PREFS = "reminders"
         private const val KEY_IDS = "scheduled"
         private const val KEY_RANG = "rang"
+
+        /** Between the identifier of a reminder and the instant it rang. */
+        private const val RANG_AT = "@"
 
         /** The reminder an alarm intent is for; only a well-formed identifier is accepted. */
         fun reminderOf(intent: Intent?): String? = intent?.data

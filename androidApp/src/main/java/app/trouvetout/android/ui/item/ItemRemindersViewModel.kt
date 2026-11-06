@@ -61,7 +61,8 @@ class ItemRemindersViewModel(
                     command() !is CommandResult.Done
                 } catch (cancelled: CancellationException) {
                     throw cancelled
-                } catch (_: IllegalStateException) {
+                } catch (_: RuntimeException) {
+                    // A store failure (SQLite included) is said on the sheet, it does not end the app.
                     true
                 }
             _state.value = RemindersUiState(busy = false, failed = failed)
