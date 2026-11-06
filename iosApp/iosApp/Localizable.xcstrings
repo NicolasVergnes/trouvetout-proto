@@ -49,6 +49,22 @@
         }
       }
     },
+    "action_not_now": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas maintenant"
+          }
+        }
+      }
+    },
     "action_ok": {
       "localizations": {
         "en": {
@@ -317,6 +333,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Remis en place"
+          }
+        }
+      }
+    },
+    "capture_card_reminder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder on %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappel le %@"
           }
         }
       }
@@ -785,6 +817,38 @@
         }
       }
     },
+    "capture_problem_date_missing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When? Add a day or a time, for example “tomorrow at 10”."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand ? Ajoutez un jour ou une heure, par exemple « demain à 10h »."
+          }
+        }
+      }
+    },
+    "capture_problem_date_past": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That moment has already passed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce moment est déjà passé."
+          }
+        }
+      }
+    },
     "capture_problem_item": {
       "localizations": {
         "en": {
@@ -1101,6 +1165,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Photo retirée"
+          }
+        }
+      }
+    },
+    "history_reminder_done": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder removed"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappel retiré"
+          }
+        }
+      }
+    },
+    "history_reminder_set": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder set"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappel posé"
           }
         }
       }
@@ -1697,6 +1793,54 @@
         }
       }
     },
+    "notif_check": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifier : %@"
+          }
+        }
+      }
+    },
+    "notif_generic": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TrouveTout reminder"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappel TrouveTout"
+          }
+        }
+      }
+    },
+    "notif_reminder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappel : %@"
+          }
+        }
+      }
+    },
     "photo_description": {
       "localizations": {
         "en": {
@@ -2013,6 +2157,390 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lieux"
+          }
+        }
+      }
+    },
+    "print_action": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Print"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imprimer"
+          }
+        }
+      }
+    },
+    "print_empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing stored here."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien n'est rangé ici."
+          }
+        }
+      }
+    },
+    "print_hidden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sensitive objects not printed: %lld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objets sensibles non imprimés : %lld"
+          }
+        }
+      }
+    },
+    "print_lent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lent to %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prêté à %@"
+          }
+        }
+      }
+    },
+    "print_printed_on": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Printed on %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imprimé le %@"
+          }
+        }
+      }
+    },
+    "print_taken": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "taken out"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sorti"
+          }
+        }
+      }
+    },
+    "reminder_add": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a reminder"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un rappel"
+          }
+        }
+      }
+    },
+    "reminder_check_due": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check due since %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérification à faire depuis le %@"
+          }
+        }
+      }
+    },
+    "reminder_check_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For an object that matters: a notification asks whether it is still where you think."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour un objet qui compte : une notification demande s'il est toujours là où vous le pensez."
+          }
+        }
+      }
+    },
+    "reminder_check_next": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next check: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prochaine vérification : %@"
+          }
+        }
+      }
+    },
+    "reminder_check_switch": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remind me to check it every 6 months"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me faire vérifier tous les 6 mois"
+          }
+        }
+      }
+    },
+    "reminder_checked": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked today"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifié aujourd'hui"
+          }
+        }
+      }
+    },
+    "reminder_in_past": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That moment has passed: choose a later one."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce moment est passé : choisissez-en un plus tard."
+          }
+        }
+      }
+    },
+    "reminder_notifications_allow": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow notifications"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autoriser les notifications"
+          }
+        }
+      }
+    },
+    "reminder_notifications_not_asked": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The phone has not yet been allowed to show notifications: these reminders will not ring."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le téléphone n'a pas encore l'autorisation d'afficher les notifications : ces rappels ne sonneront pas."
+          }
+        }
+      }
+    },
+    "reminder_notifications_off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications are off for this app: the reminders are kept, but no notification will come."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les notifications de l'app sont désactivées : les rappels sont gardés, mais aucune notification ne viendra."
+          }
+        }
+      }
+    },
+    "reminder_open_settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglages"
+          }
+        }
+      }
+    },
+    "reminder_past": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (past)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (passé)"
+          }
+        }
+      }
+    },
+    "reminder_permission_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "So that your reminders can reach you, the phone asks whether this app may show notifications. They name the object at most, never its place. On the lock screen the phone shows only “TrouveTout reminder”, unless you chose to always show previews."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour que vos rappels vous parviennent, le téléphone demande si l'app peut afficher des notifications. Elles nomment l'objet au plus, jamais son lieu. Sur l'écran verrouillé, le téléphone n'en montre que « Rappel TrouveTout », sauf si vous avez choisi d'afficher toujours les aperçus."
+          }
+        }
+      }
+    },
+    "reminder_permission_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow notifications?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autoriser les notifications ?"
+          }
+        }
+      }
+    },
+    "reminder_remove": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer"
+          }
+        }
+      }
+    },
+    "reminder_remove_label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove the reminder of %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer le rappel du %@"
+          }
+        }
+      }
+    },
+    "reminder_time_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand"
+          }
+        }
+      }
+    },
+    "reminders_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappels"
           }
         }
       }

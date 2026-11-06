@@ -111,9 +111,13 @@ final class SettingsViewModel: ObservableObject {
     }
 
     func wipeAll() {
+        // H6: pending and delivered reminder notifications go first, with the data.
+        container.reminders.clear()
         perform { [self] in
             defer {
                 // Whatever happened, the spent factory is replaced, the preferences and the stale share link dropped.
+                // Again once the old core is closed: a reconciliation in between cannot leave a notification behind.
+                container.reminders.clear()
                 UiPrefs.clear()
                 AppDirectories.clearCaches()
                 container.recreateShared()

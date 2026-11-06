@@ -17,7 +17,7 @@ import kotlin.time.Clock
 internal class CommandContext(
     private val store: EventStore,
     private val ids: MonotonicUlidGenerator,
-    private val clock: Clock,
+    val clock: Clock,
     private val deviceId: String,
 ) {
     private val idLock = Mutex()

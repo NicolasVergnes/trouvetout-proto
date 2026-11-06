@@ -234,3 +234,57 @@
 {"id": "p0234", "lang": "en", "origin": "synthetic", "input": "um where are the christmas lights", "expect": {"intent": "Query", "query": "christmas lights"}}
 {"id": "p0235", "lang": "en", "origin": "synthetic", "input": "looking for the yoga mat", "expect": {"intent": "Query", "query": "yoga mat"}}
 {"id": "p0236", "lang": "en", "origin": "synthetic", "input": "where is the drill?", "expect": {"intent": "Query", "query": "drill"}}
+{"id": "p0237", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi où est le passeport la veille du 12 mars", "expect": {"intent": "Remind", "items": ["passeport"], "date": "2027-03-11T09:00"}}
+{"id": "p0238", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le passeport demain", "expect": {"intent": "Remind", "items": ["passeport"], "date": "2026-11-03T09:00"}}
+{"id": "p0239", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi où sont les décos de Noël le 1er décembre", "expect": {"intent": "Remind", "items": ["décos de Noël"], "date": "2026-12-01T09:00"}}
+{"id": "p0240", "lang": "fr", "origin": "synthetic", "input": "rappelle moi de vérifier la tente dans 6 mois", "expect": {"intent": "Remind", "items": ["tente"], "date": "2027-05-02T09:00"}}
+{"id": "p0241", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le chargeur du kindle ce soir", "expect": {"intent": "Remind", "items": ["chargeur du kindle"], "date": "2026-11-02T19:00"}}
+{"id": "p0242", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi de prendre la perceuse samedi", "expect": {"intent": "Remind", "items": ["perceuse"], "date": "2026-11-07T09:00"}}
+{"id": "p0243", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi la clé du garage lundi prochain à 8h", "expect": {"intent": "Remind", "items": ["clé du garage"], "date": "2026-11-09T08:00"}}
+{"id": "p0244", "lang": "fr", "origin": "synthetic", "input": "fais-moi penser au carnet de santé dans 3 jours", "expect": {"intent": "Remind", "items": ["carnet de santé"], "date": "2026-11-05T09:00"}}
+{"id": "p0245", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi où est le livret de famille le 15 janvier à 18h30", "expect": {"intent": "Remind", "items": ["livret de famille"], "date": "2027-01-15T18:30"}}
+{"id": "p0246", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi les billets d'avion la veille du 20 décembre", "expect": {"intent": "Remind", "items": ["billets d'avion"], "date": "2026-12-19T09:00"}}
+{"id": "p0247", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le passeport et la carte d'identité le 5 février", "expect": {"intent": "Remind", "items": ["passeport", "carte d'identité"], "date": "2027-02-05T09:00"}}
+{"id": "p0248", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi la valise rouge dans une semaine", "expect": {"intent": "Remind", "items": ["valise rouge"], "date": "2026-11-09T09:00"}}
+{"id": "p0249", "lang": "fr", "origin": "synthetic", "input": "rappelez-moi où est la tente le 14 juillet", "expect": {"intent": "Remind", "items": ["tente"], "date": "2027-07-14T09:00"}}
+{"id": "p0250", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi la raquette de tennis demain à 17h", "expect": {"intent": "Remind", "items": ["raquette de tennis"], "date": "2026-11-03T17:00"}}
+{"id": "p0251", "lang": "fr", "origin": "synthetic", "input": "mets un rappel pour le passeport le 12/03", "expect": {"intent": "Remind", "items": ["passeport"], "date": "2027-03-12T09:00"}}
+{"id": "p0252", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi les pneus neige dans deux semaines", "expect": {"intent": "Remind", "items": ["pneus neige"], "date": "2026-11-16T09:00"}}
+{"id": "p0253", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi où j'ai rangé les guirlandes le 30 novembre", "expect": {"intent": "Remind", "items": ["guirlandes"], "date": "2026-11-30T09:00"}}
+{"id": "p0254", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le parapluie après-demain matin", "expect": {"intent": "Remind", "items": ["parapluie"], "date": "2026-11-04T09:00"}}
+{"id": "p0255", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi l'agrafeuse à 15h", "expect": {"intent": "Remind", "items": ["agrafeuse"], "date": "2026-11-02T15:00"}}
+{"id": "p0256", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi les lunettes de soleil le mois prochain", "expect": {"intent": "Remind", "items": ["lunettes de soleil"], "date": "2026-12-02T09:00"}}
+{"id": "p0257", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi de sortir le sapin le 1er décembre 2026 à 10h", "expect": {"intent": "Remind", "items": ["sapin"], "date": "2026-12-01T10:00"}}
+{"id": "p0258", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi la caisse à outils dans 1 an", "expect": {"intent": "Remind", "items": ["caisse à outils"], "date": "2027-11-02T09:00"}}
+{"id": "p0259", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le casque de vélo mercredi soir", "expect": {"intent": "Remind", "items": ["casque de vélo"], "date": "2026-11-04T19:00"}}
+{"id": "p0260", "lang": "fr", "origin": "synthetic", "input": "programme un rappel pour la tondeuse le 1er avril", "expect": {"intent": "Remind", "items": ["tondeuse"], "date": "2027-04-01T09:00"}}
+{"id": "p0261", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le passeport", "expect": {"intent": "Remind", "items": ["passeport"]}}
+{"id": "p0262", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi les piles AA à midi", "expect": {"intent": "Remind", "items": ["piles AA"], "date": "2026-11-02T12:00"}}
+{"id": "p0263", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le sac de couchage dimanche à 9h", "expect": {"intent": "Remind", "items": ["sac de couchage"], "date": "2026-11-08T09:00"}}
+{"id": "p0264", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi du carnet de vaccination la semaine prochaine", "expect": {"intent": "Remind", "items": ["carnet de vaccination"], "date": "2026-11-09T09:00"}}
+{"id": "p0265", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi de chercher le chargeur du téléphone vers 20h", "expect": {"intent": "Remind", "items": ["chargeur du téléphone"], "date": "2026-11-02T20:00"}}
+{"id": "p0266", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le contrat d'assurance le 31 décembre à 23h", "expect": {"intent": "Remind", "items": ["contrat d'assurance"], "date": "2026-12-31T23:00"}}
+{"id": "p0267", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le passeport à 8h", "expect": {"intent": "Remind", "items": ["passeport"], "date": "2026-11-03T08:00"}}
+{"id": "p0268", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi où est la perceuse le 3 novembre à 8 h du soir", "expect": {"intent": "Remind", "items": ["perceuse"], "date": "2026-11-03T20:00"}}
+{"id": "p0269", "lang": "fr", "origin": "synthetic", "input": "rappel de vaccin dans le tiroir", "expect": {"intent": "Store", "items": ["rappel de vaccin"], "place": "tiroir"}}
+{"id": "p0270", "lang": "en", "origin": "synthetic", "input": "remind me where the passport is on March 11", "expect": {"intent": "Remind", "items": ["passport"], "date": "2027-03-11T09:00"}}
+{"id": "p0271", "lang": "en", "origin": "synthetic", "input": "remind me to check the tent in 6 months", "expect": {"intent": "Remind", "items": ["tent"], "date": "2027-05-02T09:00"}}
+{"id": "p0272", "lang": "en", "origin": "synthetic", "input": "remind me about the christmas lights on December 1st", "expect": {"intent": "Remind", "items": ["christmas lights"], "date": "2026-12-01T09:00"}}
+{"id": "p0273", "lang": "en", "origin": "synthetic", "input": "remind me where the car keys are tomorrow at 8am", "expect": {"intent": "Remind", "items": ["car keys"], "date": "2026-11-03T08:00"}}
+{"id": "p0274", "lang": "en", "origin": "synthetic", "input": "remind me to grab the umbrella tonight", "expect": {"intent": "Remind", "items": ["umbrella"], "date": "2026-11-02T19:00"}}
+{"id": "p0275", "lang": "en", "origin": "synthetic", "input": "remind me about the drill next Monday", "expect": {"intent": "Remind", "items": ["drill"], "date": "2026-11-09T09:00"}}
+{"id": "p0276", "lang": "en", "origin": "synthetic", "input": "remind me where the passport is the day before March 12", "expect": {"intent": "Remind", "items": ["passport"], "date": "2027-03-11T09:00"}}
+{"id": "p0277", "lang": "en", "origin": "synthetic", "input": "remind me to take the tent on Friday at 6pm", "expect": {"intent": "Remind", "items": ["tent"], "date": "2026-11-06T18:00"}}
+{"id": "p0278", "lang": "en", "origin": "synthetic", "input": "set a reminder for the spare bulbs in two weeks", "expect": {"intent": "Remind", "items": ["spare bulbs"], "date": "2026-11-16T09:00"}}
+{"id": "p0279", "lang": "en", "origin": "synthetic", "input": "remind me where I put my glasses in 3 days", "expect": {"intent": "Remind", "items": ["glasses"], "date": "2026-11-05T09:00"}}
+{"id": "p0280", "lang": "en", "origin": "synthetic", "input": "remind me of the passport and the visa on January 5", "expect": {"intent": "Remind", "items": ["passport", "visa"], "date": "2027-01-05T09:00"}}
+{"id": "p0281", "lang": "en", "origin": "synthetic", "input": "remind me to find the yoga mat at noon", "expect": {"intent": "Remind", "items": ["yoga mat"], "date": "2026-11-02T12:00"}}
+{"id": "p0282", "lang": "en", "origin": "synthetic", "input": "remind me about the winter tires next month", "expect": {"intent": "Remind", "items": ["winter tires"], "date": "2026-12-02T09:00"}}
+{"id": "p0283", "lang": "en", "origin": "synthetic", "input": "please remind me where the camping stove is on Sunday morning", "expect": {"intent": "Remind", "items": ["camping stove"], "date": "2026-11-08T09:00"}}
+{"id": "p0284", "lang": "en", "origin": "synthetic", "input": "remind me where the passport is", "expect": {"intent": "Remind", "items": ["passport"]}}
+{"id": "p0285", "lang": "en", "origin": "synthetic", "input": "remind me about the insurance papers on the 31st of December at 11pm", "expect": {"intent": "Remind", "items": ["insurance papers"], "date": "2026-12-31T23:00"}}
+{"id": "p0286", "lang": "en", "origin": "synthetic", "input": "reminder: passport tomorrow", "expect": {"intent": "Remind", "items": ["passport"], "date": "2026-11-03T09:00"}}
+{"id": "p0287", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi la perceuse dans 2 heures", "expect": {"intent": "Remind", "items": ["perceuse"], "date": "2026-11-02T12:00"}}
+{"id": "p0288", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le passeport dans 2h30", "expect": {"intent": "Remind", "items": ["passeport"], "date": "2026-11-02T12:30"}}
+{"id": "p0289", "lang": "fr", "origin": "synthetic", "input": "rappelle-moi le passeport le 12 mars 2030", "expect": {"intent": "Remind", "items": ["passeport"], "date": "2030-03-12T09:00"}}
+{"id": "p0290", "lang": "en", "origin": "synthetic", "input": "remind me to check the tent in 2 hours", "expect": {"intent": "Remind", "items": ["tent"], "date": "2026-11-02T12:00"}}

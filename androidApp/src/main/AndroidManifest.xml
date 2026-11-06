@@ -2,11 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Requested at first use, after an explanation (H9); the app works without it (text). The audio is turned
-         into text by the on-device recogniser only (B2) and never stored. Camera and notifications: later lots. -->
+         into text by the on-device recogniser only (B2) and never stored. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!-- H3: the optional app lock asks the device owner through the system prompt (normal permission, no dialog). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <!-- E2, E6 (lot 9): reminder notifications, requested at the first reminder after an explanation (API 33+);
+         the alarms are set again after a restart. No exact alarm. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Backups are disabled; the rules below additionally exclude every data domain (defence in depth, A9 is the only backup channel). -->
     <!-- Lets the app see whether a camera app handles a capture (API 30+ package visibility); no permission. -->
@@ -41,6 +46,13 @@
             </intent-filter>
         </activity>
 
+        <!-- The only way in from a reminder notification (E2): not exported, so no other app can open an item
+             sheet; MainActivity accepts an item id only when it arrives through this alias. -->
+        <activity-alias
+            android:name=".notif.ReminderLink"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+
         <!-- Quick capture (B5) started by the widget and the tile through the app's own PendingIntents. -->
         <activity
             android:name=".capture.CaptureActivity"
@@ -62,6 +74,21 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/capture_widget_info" />
+        </receiver>
+
+        <!-- The app's own reminder alarms (PendingIntents of AlarmManager); not exported. -->
+        <receiver
+            android:name=".notif.ReminderReceiver"
+            android:exported="false" />
+
+        <!-- Exported for the system's protected broadcasts only (restart, app update): the alarms are set again. -->
+        <receiver
+            android:name=".notif.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
         </receiver>
 
         <!-- Only the system UI can bind it (BIND_QUICK_SETTINGS_TILE). -->

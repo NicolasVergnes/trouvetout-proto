@@ -54,6 +54,8 @@ import app.trouvetout.android.R
 import app.trouvetout.android.ui.common.AddPhotoButtons
 import app.trouvetout.android.ui.common.LocationPickerDialog
 import app.trouvetout.android.ui.common.PhotoStrip
+import app.trouvetout.android.ui.lock.HiddenRow
+import app.trouvetout.android.ui.lock.LocalSensitive
 import app.trouvetout.android.ui.places.NameDialog
 import app.trouvetout.android.ui.places.ProblemText
 import app.trouvetout.core.data.repository.ItemView
@@ -81,12 +83,15 @@ fun ItemRoute(
     var dialog by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(state.gone) { if (state.gone) onBack() }
+    // H4 in depth: whatever led here (a tapped reminder, a list), a sensitive item stays masked until revealed.
+    val sensitive = LocalSensitive.current
+    val masked = view?.item?.sensitive == true && sensitive.masks(true)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(view?.item?.name ?: "") },
+                title = { Text(if (masked) "" else view?.item?.name.orEmpty()) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -96,13 +101,21 @@ fun ItemRoute(
                     }
                 },
                 actions = {
-                    TextButton(onClick = { dialog = DIALOG_DELETE }) { Text(stringResource(R.string.item_delete)) }
+                    if (!masked) {
+                        TextButton(onClick = { dialog = DIALOG_DELETE }) { Text(stringResource(R.string.item_delete)) }
+                    }
                 },
             )
         },
     ) { innerPadding ->
         val current = view
         if (current == null) return@Scaffold
+        if (masked) {
+            Column(modifier = Modifier.padding(innerPadding).padding(horizontal = 16.dp)) {
+                HiddenRow(stringResource(R.string.search_sensitive_masked), sensitive.onReveal)
+            }
+            return@Scaffold
+        }
         Column(
             modifier =
                 Modifier
@@ -138,11 +151,13 @@ fun ItemRoute(
                 !state.busy,
                 viewModel::setArchived,
             )
+            RemindersSection(itemId, enabled = !state.busy)
             SwitchRow(stringResource(R.string.item_show_history), state.showHistory, true, viewModel::setShowHistory)
             if (state.showHistory) HistoryList(history)
         }
     }
-    when (dialog) {
+    // A dialog restored over a masked sheet (H4) stays closed.
+    when (dialog.takeUnless { masked }) {
         DIALOG_MOVE ->
             LocationPickerDialog(
                 title = stringResource(R.string.item_move_to),
@@ -345,21 +360,25 @@ private fun HistoryList(history: List<Event>) {
 }
 
 @Composable
-private fun eventLabel(type: String): String = when (type) {
-    "ItemCreated" -> stringResource(R.string.history_created)
-    "ItemStored" -> stringResource(R.string.history_stored)
-    "ItemMovedTo" -> stringResource(R.string.history_moved)
-    "ItemTaken" -> stringResource(R.string.history_taken)
-    "ItemReturned" -> stringResource(R.string.history_returned)
-    "ItemLent" -> stringResource(R.string.history_lent)
-    "ItemUpdated" -> stringResource(R.string.history_updated)
-    "ItemArchived" -> stringResource(R.string.history_archived)
-    "ItemDeleted" -> stringResource(R.string.history_deleted)
-    "ItemRestored" -> stringResource(R.string.history_restored)
-    "PhotoAttached" -> stringResource(R.string.history_photo_attached)
-    "PhotoDetached" -> stringResource(R.string.history_photo_detached)
-    else -> type
-}
+private fun eventLabel(type: String): String = HISTORY_LABELS[type]?.let { stringResource(it) } ?: type
+
+private val HISTORY_LABELS =
+    mapOf(
+        "ItemCreated" to R.string.history_created,
+        "ItemStored" to R.string.history_stored,
+        "ItemMovedTo" to R.string.history_moved,
+        "ItemTaken" to R.string.history_taken,
+        "ItemReturned" to R.string.history_returned,
+        "ItemLent" to R.string.history_lent,
+        "ItemUpdated" to R.string.history_updated,
+        "ItemArchived" to R.string.history_archived,
+        "ItemDeleted" to R.string.history_deleted,
+        "ItemRestored" to R.string.history_restored,
+        "PhotoAttached" to R.string.history_photo_attached,
+        "PhotoDetached" to R.string.history_photo_detached,
+        "ReminderSet" to R.string.history_reminder_set,
+        "ReminderDone" to R.string.history_reminder_done,
+    )
 
 private fun formatQuantity(value: Double): String = if (value ==
     value.toLong().toDouble()

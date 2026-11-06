@@ -45,17 +45,17 @@
       "Agent(android-reviewer)",
       "Agent(ios-reviewer)",
       "Agent(search-quality-evaluator)",
-      "Bash(rm *)"
+      "Bash(rm *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "WebFetch(*)"
     ],
     "ask": [
       "Bash(git rebase *)",
       "Bash(git reset *)",
-      "Bash(curl *)",
-      "Bash(wget *)",
       "Bash(brew *)",
       "Bash(npm *)",
-      "Bash(pip *)",
-      "WebFetch"
+      "Bash(pip *)"
     ],
     "deny": [
       "Read(./**/*.jks)",

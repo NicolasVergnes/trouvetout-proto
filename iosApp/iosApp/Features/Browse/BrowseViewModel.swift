@@ -195,6 +195,17 @@ final class BrowseViewModel: ObservableObject {
         }
     }
 
+    /// C16: what to print, sensitive items only when shown; nil once the place or the container is gone.
+    func inventory(includeSensitive: Bool) async -> Inventory? {
+        let browse = appContainer.shared.browse
+        switch target {
+        case let .place(id): return try? await browse.placeInventory(placeId: id, includeSensitive: includeSensitive)
+        case let .container(id):
+            return try? await browse.containerInventory(containerId: id, includeSensitive: includeSensitive)
+        case .root: return nil
+        }
+    }
+
     func photoPath(_ fileName: String) -> String {
         appContainer.shared.photoStore.absolutePath(fileName: fileName)
     }

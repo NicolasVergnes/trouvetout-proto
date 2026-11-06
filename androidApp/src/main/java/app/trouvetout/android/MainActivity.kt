@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
+import app.trouvetout.android.notif.ReminderNotifications
 import app.trouvetout.android.ui.AppNavigation
 import app.trouvetout.android.ui.lock.DeviceAuth
 import app.trouvetout.android.ui.lock.LocalSensitive
@@ -36,10 +37,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = app
+        // A tapped reminder (E2); neither a recreated activity nor a relaunch from the recent apps opens it again.
+        val fromHistory = intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+        if (savedInstanceState == null && !fromHistory) {
+            ReminderNotifications.itemOf(intent)?.let { app.itemRequest.value = it }
+        }
         // Before the first frame (a rotation, a relaunch): never one frame without the flag.
         secure(app.current?.privacySettings?.state?.value?.lockEnabled == true)
         setContent {
             val searchRequest by app.searchRequest.collectAsStateWithLifecycle()
+            val itemRequest by app.itemRequest.collectAsStateWithLifecycle()
             val failure by app.storeFailure.collectAsStateWithLifecycle()
             // Null until the store opened: nothing of the inventory is drawn before the lock is known.
             val locked by app.locked.collectAsStateWithLifecycle(initialValue = null)
@@ -70,6 +77,8 @@ class MainActivity : ComponentActivity() {
                                         controller = navController,
                                         searchRequest = searchRequest,
                                         onSearchRequestHandled = { app.searchRequest.value = null },
+                                        itemRequest = itemRequest,
+                                        onItemRequestHandled = { app.itemRequest.value = null },
                                     )
                                 }
                             }
@@ -77,6 +86,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        ReminderNotifications.itemOf(intent)?.let { app.itemRequest.value = it }
     }
 
     override fun onStart() {

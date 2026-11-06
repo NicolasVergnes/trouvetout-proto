@@ -6,6 +6,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var container: AppContainer
     @EnvironmentObject private var router: CaptureRouter
+    @EnvironmentObject private var notifications: NotificationRouter
     @State private var path = NavigationPath()
     @AppStorage(UiPrefs.simpleModeKey) private var simpleMode = false
 
@@ -73,6 +74,17 @@ struct ContentView: View {
                 path = NavigationPath()
             }
         }
+        // A tapped reminder (E2) opens its item sheet, once the app is unlocked.
+        .onAppear { openRequestedItem() }
+        .onChange(of: notifications.itemId) { _ in openRequestedItem() }
+        .onChange(of: container.ready) { _ in openRequestedItem() }
+        .onChange(of: container.locked) { _ in openRequestedItem() }
+    }
+
+    private func openRequestedItem() {
+        guard let itemId = notifications.itemId, container.ready, container.locked == false else { return }
+        notifications.consume()
+        path.append(ItemRoute(id: itemId))
     }
 }
 
@@ -150,6 +162,7 @@ private struct LockView: View {
             ContentView()
                 .environmentObject(AppContainer())
                 .environmentObject(CaptureRouter.shared)
+                .environmentObject(NotificationRouter.shared)
         }
     }
 #endif

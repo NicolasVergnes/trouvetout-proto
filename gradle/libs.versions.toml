@@ -8,6 +8,8 @@ android-targetSdk = "37"
 
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.12.0"
+# Calendar dates and time zones for reminders (E2, E6, ADR-024); 0.7+ builds on kotlin.time.Instant.
+kotlinx-datetime = "0.8.0"
 sqldelight = "2.4.1"
 # Encryption at rest (H2, ADR-023); the iOS app links the same 4.19 core through the SQLCipher.swift package.
 sqlcipher-android = "4.19.1"
@@ -31,6 +33,7 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }

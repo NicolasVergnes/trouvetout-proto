@@ -246,4 +246,42 @@
     <string name="quick_locked_question_title">Terminer dans l\'app</string>
     <string name="quick_locked_question_text">Cette phrase demande un choix, et l\'app est verrouillée. Ouvrez-la pour terminer : votre phrase vous y attend.</string>
     <string name="quick_locked_question_open">Ouvrir l\'app</string>
+
+    <!-- Lot 9 : rappels (E2, E6) et impression (C16). Une notification ne nomme jamais un lieu. -->
+    <string name="notif_channel_name">Rappels</string>
+    <string name="notif_channel_description">Les rappels que vous posez sur vos objets. Jamais de promotion.</string>
+    <string name="notif_generic">Rappel TrouveTout</string>
+    <string name="notif_reminder">Rappel : %1$s</string>
+    <string name="notif_check">Vérifier : %1$s</string>
+    <string name="reminders_title">Rappels</string>
+    <string name="reminder_past">%1$s (passé)</string>
+    <string name="reminder_remove">Retirer</string>
+    <string name="reminder_add">Ajouter un rappel</string>
+    <string name="reminder_check_switch">Me faire vérifier tous les 6 mois</string>
+    <string name="reminder_check_hint">Pour un objet qui compte : une notification demande s\'il est toujours là où vous le pensez.</string>
+    <string name="reminder_check_due">Vérification à faire depuis le %1$s</string>
+    <string name="reminder_check_next">Prochaine vérification : %1$s</string>
+    <string name="reminder_checked">Vérifié aujourd\'hui</string>
+    <string name="reminder_notifications_off">Les notifications de l\'app sont désactivées : les rappels sont gardés, mais aucune notification ne viendra.</string>
+    <string name="reminder_open_settings">Réglages des notifications</string>
+    <string name="reminder_permission_title">Autoriser les notifications ?</string>
+    <string name="reminder_permission_text">Pour que vos rappels vous parviennent, le téléphone demande si l\'app peut afficher des notifications. Elles nomment l\'objet au plus, jamais son lieu. Sur l\'écran verrouillé, le nom reste visible si votre téléphone est réglé pour afficher tout le contenu des notifications ; sinon, seul « Rappel TrouveTout » apparaît.</string>
+    <string name="reminder_time_title">À quelle heure ?</string>
+    <string name="reminder_in_past">Ce moment est passé : choisissez-en un plus tard.</string>
+    <string name="action_not_now">Pas maintenant</string>
+    <string name="history_reminder_set">Rappel posé</string>
+    <string name="history_reminder_done">Rappel retiré</string>
+    <string name="capture_card_reminder">Rappel le %1$s</string>
+    <string name="capture_problem_date_missing">Quand ? Ajoutez un jour ou une heure, par exemple « demain à 10h ».</string>
+    <string name="capture_problem_date_past">Ce moment est déjà passé.</string>
+    <string name="print_action">Imprimer</string>
+    <string name="print_printed_on">Imprimé le %1$s</string>
+    <string name="print_empty">Rien n\'est rangé ici.</string>
+    <string name="print_taken">sorti</string>
+    <string name="print_lent">prêté à %1$s</string>
+    <plurals name="print_hidden">
+        <item quantity="one">%d objet sensible non imprimé</item>
+        <item quantity="many">%d objets sensibles non imprimés</item>
+        <item quantity="other">%d objets sensibles non imprimés</item>
+    </plurals>
 </resources>

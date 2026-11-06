@@ -18,7 +18,9 @@ import app.trouvetout.core.platform.CoroutineDispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /** What a place screen shows (C7): the place itself (null at the root), its path, and what it holds. */
 public data class PlaceContent(
@@ -103,6 +105,32 @@ public class BrowseRepository internal constructor(
             )
         }
     }.filterNotNull()
+
+    /** C16: everything under [placeId] to print, sensitive items only if [includeSensitive]; null once gone. */
+    @Throws(Exception::class) // to Swift: an error it can handle, not the end of the process
+    public suspend fun placeInventory(
+        placeId: String,
+        includeSensitive: Boolean,
+    ): Inventory? = inventoryBuilder(includeSensitive).forPlace(placeId)
+
+    /** C16: the content of one container to print; null when it is gone. */
+    @Throws(Exception::class)
+    public suspend fun containerInventory(
+        containerId: String,
+        includeSensitive: Boolean,
+    ): Inventory? = inventoryBuilder(includeSensitive).forContainer(containerId)
+
+    private suspend fun inventoryBuilder(includeSensitive: Boolean): InventoryBuilder {
+        val all = items.observeActive().first()
+        return withContext(dispatchers.io) {
+            InventoryBuilder(
+                places = db.placeQueries.selectAll().executeAsList().map { it.toPlace() },
+                containers = db.containerQueries.selectActive().executeAsList().map { it.toContainer() },
+                items = all,
+                includeSensitive = includeSensitive,
+            )
+        }
+    }
 
     /** The item of a sheet; stops emitting (never emits null) once the item is deleted. */
     public fun observeItem(itemId: String): Flow<ItemView> = items.observeItem(itemId).filterNotNull()

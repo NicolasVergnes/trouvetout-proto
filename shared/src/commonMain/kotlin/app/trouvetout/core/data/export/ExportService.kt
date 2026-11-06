@@ -121,6 +121,9 @@ public class ExportService internal constructor(
                 it.toLocationState().toSnapshot(resolver)
             },
             photos = db.photoQueries.selectAll().executeAsList().map { it.toPhoto().toSnapshot() },
+            reminders = db.reminderQueries.selectAll().executeAsList().map {
+                SnapshotReminder(it.id, it.item_id, it.fire_at, it.kind, it.done)
+            },
         )
     }
 

@@ -58,7 +58,7 @@ Choix de bibliothèques (à confirmer au premier lot si une alternative s'impose
 - **Item** (objet) : `id`, `name`, `description?`, `tags[]`, `quantity?`, `unit?`, `photoIds[]`, `sensitive` (bool), `pinned` (bool), `archived` (bool), `createdAt`, `deletedAt?`.
 - **Location state** (dérivé) : pour chaque Item, `placeId?` ou `containerId?` courant, `state` (`stored | taken | lent | archived`), `lentTo?`, `since`.
 - **Photo** : `id`, `fileName`, `width`, `height`, `thumbName`, `sha256`, `createdAt`.
-- **Reminder** : `id`, `itemId`, `fireAt`, `kind` (`date | check`), `done`.
+- **Reminder** : `id`, `itemId`, `fireAt`, `kind` (`date | check`), `done`. Lot 9 (ADR-024) : `done` = retiré ou vérification acquittée, jamais écrit par la machine ; un rappel à venir n'est pas `done` et `fireAt` est futur ; la lecture qui sert aux notifications joint `item` (objet à la corbeille ou archivé : pas de notification, nom nul pour un objet sensible).
 - **Embedding** : `ownerType` (`item | place | container | photo`), `ownerId`, `modelId`, `dim`, `vector` (BLOB float16), `textHash`.
 
 ### 3.2 Journal d'événements (A4) — cœur du modèle

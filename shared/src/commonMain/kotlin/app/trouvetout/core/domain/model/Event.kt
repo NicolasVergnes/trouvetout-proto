@@ -317,11 +317,12 @@ public sealed interface EventPayload {
     @SerialName("ReminderDone")
     public data class ReminderDone(
         val reminderId: String,
+        /** Lot 9 (additive): the reminder's item, so that the item history shows it; absent in older events. */
+        val itemId: String? = null,
     ) : EventPayload {
         override val typeName: String get() = "ReminderDone"
-        override val subjects: List<EventSubject> get() = listOf(
-            EventSubject(EventSubject.SubjectType.REMINDER, reminderId),
-        )
+        override val subjects: List<EventSubject>
+            get() = listOfNotNull(EventSubject(EventSubject.SubjectType.REMINDER, reminderId), itemId?.let { item(it) })
     }
 
     /**

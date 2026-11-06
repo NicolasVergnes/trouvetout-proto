@@ -245,4 +245,41 @@
     <string name="quick_locked_question_title">Finish in the app</string>
     <string name="quick_locked_question_text">This sentence needs a choice, and the app is locked. Open it to finish: your sentence will be waiting.</string>
     <string name="quick_locked_question_open">Open the app</string>
+
+    <!-- Lot 9: reminders (E2, E6) and printing (C16). Notifications never name a place. -->
+    <string name="notif_channel_name">Reminders</string>
+    <string name="notif_channel_description">The reminders you set on your objects. Never any promotion.</string>
+    <string name="notif_generic">TrouveTout reminder</string>
+    <string name="notif_reminder">Reminder: %1$s</string>
+    <string name="notif_check">Check: %1$s</string>
+    <string name="reminders_title">Reminders</string>
+    <string name="reminder_past">%1$s (past)</string>
+    <string name="reminder_remove">Remove</string>
+    <string name="reminder_add">Add a reminder</string>
+    <string name="reminder_check_switch">Remind me to check it every 6 months</string>
+    <string name="reminder_check_hint">For an object that matters: a notification asks whether it is still where you think.</string>
+    <string name="reminder_check_due">Check due since %1$s</string>
+    <string name="reminder_check_next">Next check: %1$s</string>
+    <string name="reminder_checked">Checked today</string>
+    <string name="reminder_notifications_off">Notifications are off for this app: the reminders are kept, but no notification will come.</string>
+    <string name="reminder_open_settings">Notification settings</string>
+    <string name="reminder_permission_title">Allow notifications?</string>
+    <string name="reminder_permission_text">So that your reminders can reach you, the phone asks whether this app may show notifications. They name the object at most, never its place. On the lock screen, the name stays visible if your phone is set to show all notification content; otherwise only “TrouveTout reminder” appears.</string>
+    <string name="reminder_time_title">At what time?</string>
+    <string name="reminder_in_past">That moment has passed: choose a later one.</string>
+    <string name="action_not_now">Not now</string>
+    <string name="history_reminder_set">Reminder set</string>
+    <string name="history_reminder_done">Reminder removed</string>
+    <string name="capture_card_reminder">Reminder on %1$s</string>
+    <string name="capture_problem_date_missing">When? Add a day or a time, for example \"tomorrow at 10\".</string>
+    <string name="capture_problem_date_past">That moment has already passed.</string>
+    <string name="print_action">Print</string>
+    <string name="print_printed_on">Printed on %1$s</string>
+    <string name="print_empty">Nothing stored here.</string>
+    <string name="print_taken">taken out</string>
+    <string name="print_lent">lent to %1$s</string>
+    <plurals name="print_hidden">
+        <item quantity="one">%d sensitive object not printed</item>
+        <item quantity="other">%d sensitive objects not printed</item>
+    </plurals>
 </resources>

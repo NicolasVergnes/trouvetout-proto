@@ -29,6 +29,8 @@ struct ConfirmationCard {
     let token: Int
     /// The photo this capture attached: « Modifier » gives it back with the sentence.
     var photo: AttachedPhoto?
+    /// REMIND (E2): when the reminder fires.
+    var fireAt: KotlinInstant?
 }
 
 /// A photo attached by a capture, kept in memory with its card.

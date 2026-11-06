@@ -76,9 +76,19 @@ public class UndoService internal constructor(
         is EventPayload.ContainerMoved -> previousContainerPlace(p.containerId, before = event)
         is EventPayload.PhotoAttached -> EventPayload.PhotoDetached(p.photoId)
         is EventPayload.PhotoDetached -> reattach(p.photoId, before = event)
-        is EventPayload.ReminderSet -> EventPayload.ReminderDone(p.reminderId)
+        is EventPayload.ReminderSet -> EventPayload.ReminderDone(p.reminderId, p.itemId)
+        is EventPayload.ReminderDone -> reminderBefore(p.reminderId, before = event)
         else -> null
     }
+
+    /** Removing a reminder is undone by setting it again, same id (the projection then marks it pending). */
+    private suspend fun reminderBefore(
+        reminderId: String,
+        before: Event,
+    ): EventPayload? = historyBefore(EventSubject(SubjectType.REMINDER, reminderId), before)
+        .map { it.payload }
+        .filterIsInstance<EventPayload.ReminderSet>()
+        .lastOrNull()
 
     private suspend fun historyBefore(
         subject: EventSubject,

@@ -194,4 +194,44 @@ class ParserTest {
         assertEquals(Intent.STORE, ready.intent)
         assertEquals("garage", ready.place)
     }
+
+    // ---- E2: reminders
+
+    @Test
+    fun should_read_a_reminder_with_its_object_and_date() {
+        val r = fr("rappelle-moi où est le passeport la veille du 12 mars")
+        assertEquals(Intent.REMIND, r.intent)
+        assertEquals(listOf("passeport"), r.items.map { it.name })
+        assertNull(r.place)
+        assertEquals(DateSpec(DayRef.OnDate(12, 3, null), dayBefore = true), r.date)
+        val e = en("remind me where the passport is on March 11 at 9am")
+        assertEquals(Intent.REMIND, e.intent)
+        assertEquals(listOf("passport"), e.items.map { it.name })
+        assertEquals(DateSpec(DayRef.OnDate(11, 3, null), hour = 9), e.date)
+    }
+
+    @Test
+    fun should_never_read_the_date_of_a_reminder_as_a_place_or_a_name() {
+        val r = fr("rappelle moi de vérifier la tente dans 6 mois")
+        assertEquals(Intent.REMIND, r.intent)
+        assertEquals(listOf("tente"), r.items.map { it.name })
+        assertEquals(DayRef.InMonths(6), r.date?.day)
+        val split = fr("rappelle-moi le passeport et les billets demain à 18h")
+        assertEquals(listOf("passeport", "billets"), split.items.map { it.name })
+        assertEquals(DateSpec(DayRef.InDays(1), hour = 18), split.date)
+        assertEquals(listOf("clé à molette"), fr("fais-moi penser à la clé à molette lundi").items.map { it.name })
+        assertEquals(listOf("tent"), en("remind me to check the tent in 6 months").items.map { it.name })
+    }
+
+    @Test
+    fun should_keep_a_reminder_without_date_and_detect_its_language() {
+        val bare = fr("rappelle-moi le passeport")
+        assertEquals(Intent.REMIND, bare.intent)
+        assertNull(bare.date)
+        assertEquals(Lang.FR, parser.parse("rappelle-moi où est le passeport demain").lang)
+        assertEquals(Lang.EN, parser.parse("remind me where the passport is tomorrow").lang)
+        assertEquals(Intent.REMIND, parser.parse("remind me where the passport is tomorrow").intent)
+        assertEquals(Intent.STORE, fr("rappel de vaccin dans le tiroir").intent, "a bare « rappel » needs a date")
+        assertEquals(Intent.QUERY, fr("où est le passeport ?").intent)
+    }
 }

@@ -68,7 +68,7 @@ Les identifiants (`itemId`, `placeId`, `containerId`, `photoId`, `reminderId`) s
 | `PhotoAttached` | `photoId`, `ownerType` (`ITEM`/`PLACE`/`CONTAINER`), `ownerId`, `fileName`, `thumbName`, `width`, `height`, `sha256` | attache une photo stockée dans `photos/` |
 | `PhotoDetached` | `photoId` | détache (le fichier est purgé après 30 jours, lot 2) |
 | `ReminderSet` | `reminderId`, `itemId`, `fireAtEpochMillis`, `kind` (`DATE`/`CHECK`) | programme un rappel |
-| `ReminderDone` | `reminderId` | clôt le rappel |
+| `ReminderDone` | `reminderId`, `itemId?` (lot 9) | clôt le rappel : retiré, ou vérification acquittée (`CHECK`) |
 
 Un lecteur qui rencontre un type inconnu (ou un payload qu'il ne sait pas décoder) **le conserve tel quel** dans son
 journal, l'ignore dans la projection et le réécrit à l'identique dans ses exports : rien n'est perdu en passant par une
@@ -143,7 +143,8 @@ La recherche par mots-clés n'a pas de table : son index est construit en mémoi
 manifest.json     { "formatVersion": 1, "appVersion": "...", "schemaVersion": 1, "exportedAt": <ms UTC>,
                     "deviceId": "...", "counts": { "events": n, "items": n, "places": n, "containers": n, "photos": n } }
 events.jsonl      journal complet, un événement par ligne (§2), trié par (at, deviceId, id)
-snapshot.json     projection lisible : { "items", "places", "containers", "locations", "photos" } — jamais importé
+snapshot.json     projection lisible : { "items", "places", "containers", "locations", "photos", "reminders" }
+                  — jamais importé ; "reminders" (lot 9) : { "id", "itemId", "fireAt" <ms UTC>, "kind", "done" }
 photos/<id>.jpg   originaux recompressés (côté long ≤ 2048 px, JPEG ~85, sans les métadonnées d'origine) ;
                   les miniatures ne sont pas exportées, l'app les régénère à l'import
 ```

@@ -4,8 +4,11 @@ import UIKit
 
 @main
 struct TrouveToutApp: App {
+    /// Sets the notification delegate at launch (a tapped reminder may be what started the app).
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var container = AppContainer()
     @StateObject private var router = CaptureRouter.shared
+    @StateObject private var notificationRouter = NotificationRouter.shared
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -13,6 +16,7 @@ struct TrouveToutApp: App {
             ContentView()
                 .environmentObject(container)
                 .environmentObject(router)
+                .environmentObject(notificationRouter)
                 // H3: with the app lock on, the app switcher snapshot and an inactive app show a plain cover.
                 .overlay {
                     if container.lockEnabled, scenePhase != .active {
@@ -61,6 +65,8 @@ final class AppContainer: ObservableObject {
     @Published private(set) var sensitiveRevealed = false
 
     private let lockFlows = FlowSubscriptions()
+    /// Reminder notifications (E2, E6), handed to the system again at each change of the schedule.
+    let reminders = ReminderScheduler()
 
     private var memoryWarning: NSObjectProtocol?
 
@@ -119,7 +125,16 @@ final class AppContainer: ObservableObject {
         )
         // The bundled embedding model (ADR-021); without it the search runs on keywords only.
         config.textModel = LiteRtTextModel()
+        // « 12/03 » in a reminder sentence: month first only where the phone writes dates that way.
+        config.dayFirstDates = AppContainer.dayFirst()
         return SharedFactory(config: config)
+    }
+
+    /// « 12/03 »: whether the phone writes the day before the month (its own date format, not a list of countries).
+    private static func dayFirst() -> Bool {
+        let format = DateFormatter.dateFormat(fromTemplate: "dM", options: 0, locale: .current) ?? "d/M"
+        guard let day = format.firstIndex(of: "d"), let month = format.firstIndex(of: "M") else { return true }
+        return day < month
     }
 
     /// Opens the database off the main thread so the first capture (lot 3) is instant; never throws.
@@ -155,6 +170,10 @@ final class AppContainer: ObservableObject {
             lockFlows.watch(privacy, scope: factory.uiScope) { [weak self] (state: PrivacyState) in
                 self?.lockEnabled = state.lockEnabled
             }
+            let schedule = factory.reminders.observeSchedule()
+            lockFlows.watch(schedule, scope: factory.uiScope) { [weak self] (value: ReminderSchedule) in
+                self?.reminders.submit(value)
+            }
         }
     }
 
@@ -166,6 +185,8 @@ final class AppContainer: ObservableObject {
         // H3: a sheet or an alert is presented above the root and so above the lock cover: closed before the app
         // switcher snapshot, and never left open behind a lock.
         if lockEnabled {
+            // The print sheet presents itself, outside the root's presentations.
+            UIPrintInteractionController.shared.dismiss(animated: false)
             for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
                 for window in scene.windows {
                     window.rootViewController?.dismiss(animated: false)
@@ -177,6 +198,20 @@ final class AppContainer: ObservableObject {
     func appCameBack() {
         guard ready else { return }
         shared.appLock.foregrounded()
+        // iOS keeps 50 of our reminders: the next ones are set when the app comes back.
+        refreshReminders()
+    }
+
+    /// Hands the reminders to the system again, for what the flow does not tell: time passing, or the answer to the
+    /// notification question (a request added before that answer may be refused).
+    func refreshReminders() {
+        guard ready else { return }
+        let factory = shared
+        Task { [weak self] in
+            // A wipe may have replaced the core meanwhile: nothing of the old one goes to the system.
+            guard let schedule = try? await factory.reminders.schedule(), self?.shared === factory else { return }
+            self?.reminders.submit(schedule)
+        }
     }
 
     /// The system prompt; a phone whose passcode was removed has nothing to ask and opens.
@@ -210,8 +245,10 @@ final class AppContainer: ObservableObject {
     /// H6 when the store cannot open (lost key): the core's files and key, then the preferences.
     func wipeAfterFailure() {
         let spent = shared
+        reminders.clear()
         Task {
             _ = try? await spent.wipeAllData()
+            reminders.clear()
             UiPrefs.clear()
             AppDirectories.clearCaches()
             recreateShared()

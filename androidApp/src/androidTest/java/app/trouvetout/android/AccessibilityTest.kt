@@ -11,6 +11,12 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.trouvetout.android.ui.capture.CAPTURE_FIELD_TAG
+import app.trouvetout.core.domain.model.EventPayload
+import app.trouvetout.core.domain.model.EventSource
+import app.trouvetout.core.domain.usecase.CommandResult
+import app.trouvetout.core.domain.usecase.ItemDraft
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -53,6 +59,25 @@ class AccessibilityTest {
         compose.waitUntilAtLeastOneExists(hasTestTag("open_search"), timeoutMillis = TIMEOUT)
         compose.onNode(hasTestTag("open_search")).performClick()
         compose.waitUntilAtLeastOneExists(hasContentDescription(backLabel()), timeoutMillis = TIMEOUT)
+        compose.onRoot().tryPerformAccessibilityChecks()
+    }
+
+    /** Lot 9: the item sheet with its reminders section, opened as a tapped reminder opens it. */
+    @Test
+    fun the_item_sheet_with_its_reminders_passes_the_accessibility_checks() {
+        compose.waitUntilAtLeastOneExists(hasTestTag(CAPTURE_FIELD_TAG), timeoutMillis = TIMEOUT)
+        val app = compose.activity.application as App
+        val itemId =
+            runBlocking {
+                val commands = app.readyShared.first().itemCommands
+                val created = commands.create(ItemDraft("a11y-rappel"), null, EventSource.TEXT)
+                ((created as CommandResult.Done).events.first().payload as EventPayload.ItemCreated).itemId
+            }
+        app.itemRequest.value = itemId
+        compose.waitUntilAtLeastOneExists(
+            hasText(compose.activity.getString(R.string.reminder_add)),
+            timeoutMillis = TIMEOUT,
+        )
         compose.onRoot().tryPerformAccessibilityChecks()
     }
 

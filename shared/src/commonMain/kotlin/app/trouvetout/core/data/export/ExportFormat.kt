@@ -140,6 +140,16 @@ public data class SnapshotPhoto(
     val detachedAt: Long? = null,
 )
 
+/** Lot 9 (E2, E6): one reminder, done or not; [kind] is DATE or CHECK (« vérifier tous les 6 mois »). */
+@Serializable
+public data class SnapshotReminder(
+    val id: String,
+    val itemId: String,
+    val fireAt: Long,
+    val kind: String,
+    val done: Boolean = false,
+)
+
 @Serializable
 public data class Snapshot(
     val items: List<SnapshotItem>,
@@ -147,6 +157,8 @@ public data class Snapshot(
     val containers: List<SnapshotContainer>,
     val locations: List<SnapshotLocation>,
     val photos: List<SnapshotPhoto>,
+    /** Added in lot 9; older snapshots have none. */
+    val reminders: List<SnapshotReminder> = emptyList(),
 )
 
 /** Largest archive a host copies into `imports/` before handing it to the core (1 GiB). */

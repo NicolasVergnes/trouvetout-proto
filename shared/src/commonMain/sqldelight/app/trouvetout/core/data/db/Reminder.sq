@@ -26,3 +26,22 @@ SELECT id, item_id, fire_at, kind, done FROM reminder WHERE item_id = ? ORDER BY
 
 deleteAll:
 DELETE FROM reminder;
+
+-- Lot 9: what the apps schedule. Reminders of deleted (in the bin) or archived items stay in the table and come back
+-- with the item; the name is read at each emission, so a rename, a « sensitive » switch or a deletion re-emits.
+selectLive:
+SELECT reminder.id, reminder.item_id, reminder.fire_at, reminder.kind, item.name, item.sensitive
+FROM reminder JOIN item ON item.id = reminder.item_id
+WHERE reminder.done = 0 AND item.deleted_at IS NULL AND item.archived = 0
+ORDER BY reminder.fire_at, reminder.id;
+
+selectLiveById:
+SELECT reminder.id, reminder.item_id, reminder.fire_at, reminder.kind, item.name, item.sensitive
+FROM reminder JOIN item ON item.id = reminder.item_id
+WHERE reminder.id = ? AND reminder.done = 0 AND item.deleted_at IS NULL AND item.archived = 0;
+
+selectPendingByItem:
+SELECT id, item_id, fire_at, kind, done FROM reminder WHERE item_id = ? AND done = 0 ORDER BY fire_at, id;
+
+selectAll:
+SELECT id, item_id, fire_at, kind, done FROM reminder ORDER BY fire_at, id;

@@ -33,6 +33,7 @@ import app.trouvetout.core.platform.FileStore
 import app.trouvetout.core.platform.createFileStore
 import app.trouvetout.core.privacy.AppLock
 import app.trouvetout.core.privacy.PrivacySettings
+import app.trouvetout.core.reminder.ReminderRepository
 import app.trouvetout.core.search.PhotoFiles
 import app.trouvetout.core.search.SearchService
 import kotlinx.coroutines.CancellationException
@@ -80,7 +81,7 @@ public class SharedFactory(
     public val itemCommands: ItemCommands by lazy { ItemCommands(commandContext) }
     public val placeCommands: PlaceCommands by lazy { PlaceCommands(commandContext) }
     public val containerCommands: ContainerCommands by lazy { ContainerCommands(commandContext) }
-    public val attachmentCommands: AttachmentCommands by lazy { AttachmentCommands(commandContext) }
+    public val attachmentCommands: AttachmentCommands by lazy { AttachmentCommands(commandContext, config::timeZone) }
     public val undo: UndoService by lazy { UndoService(eventStore, commandContext, deviceId) }
 
     /** Text capture (lot 3): sentence → proposal → events. [captureLang] is the host's UI language. */
@@ -93,10 +94,17 @@ public class SharedFactory(
             config.dispatchers.io,
             config.captureLang,
             locked = { appLock.locked.value },
+            attachments = attachmentCommands,
+            clock = config.clock,
+            timeZone = config::timeZone,
+            dayFirst = config.dayFirstDates,
         )
     }
 
     public val itemRepository: ItemRepository by lazy { ItemRepository(database, config.dispatchers) }
+
+    /** Reminders (E2, E6) for the item sheet and the notifications the apps schedule (lot 9). */
+    public val reminders: ReminderRepository by lazy { ReminderRepository(database, config.dispatchers) }
     public val placeRepository: PlaceRepository by lazy { PlaceRepository(database, config.dispatchers) }
     public val containerRepository: ContainerRepository by lazy { ContainerRepository(database, config.dispatchers) }
 
