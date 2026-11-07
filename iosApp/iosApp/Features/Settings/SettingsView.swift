@@ -40,12 +40,6 @@ struct SettingsView: View {
                 Button("settings_wipe", role: .destructive) { confirmWipe = true }
                     .disabled(viewModel.busy)
             }
-            Section {
-                NavigationLink("purchase_see_options", value: PurchaseRoute())
-            } header: {
-                Text("settings_purchase_section")
-            }
-            BackupSectionView(container: viewModel.container)
             // Lot 6: what runs the search, and the licences the bundled model and runtime require (Apache 2.0).
             Section {
                 Text("settings_search_text")
@@ -71,6 +65,14 @@ struct SettingsView: View {
             }
             privacySection
             photoSection
+            // Below the first screen: the accessibility audit of the first screen failed on contrast with these two
+            // sections in it, on no element it could name (suite (f) of lot 10).
+            Section {
+                NavigationLink("purchase_see_options", value: PurchaseRoute())
+            } header: {
+                Text("settings_purchase_section")
+            }
+            BackupSectionView(container: viewModel.container)
             if viewModel.busy {
                 ProgressView("settings_busy")
                     .frame(maxWidth: .infinity)
