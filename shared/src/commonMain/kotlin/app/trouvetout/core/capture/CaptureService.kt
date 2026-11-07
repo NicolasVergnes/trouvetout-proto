@@ -156,6 +156,7 @@ public class CaptureService internal constructor(
     private val canAddItems: suspend () -> Boolean = { true },
 ) {
     /** [lang] is the UI language, used only when a sentence gives no clue about its own. */
+    @Throws(Exception::class) // to Swift: an error it can handle, not the end of the process
     public suspend fun propose(
         text: String,
         lang: Lang? = null,
@@ -203,6 +204,7 @@ public class CaptureService internal constructor(
      * objects (« marteau, tournevis ») is a store there. Movements and questions are unchanged. When [location]
      * no longer exists the plain proposal is returned (the host then asks, as for any sentence without a place).
      */
+    @Throws(Exception::class)
     public suspend fun proposeIn(
         text: String,
         location: LocationRef,
@@ -229,6 +231,7 @@ public class CaptureService internal constructor(
      * Writes the proposal. [placeChoice] is required when [CaptureProposal.needsPlaceDecision]; [itemChoices] gives,
      * per target, the existing item to act on (null = create for STORE, = ask for movements).
      */
+    @Throws(Exception::class)
     public suspend fun commit(
         proposal: CaptureProposal,
         placeChoice: PlaceChoice? = null,

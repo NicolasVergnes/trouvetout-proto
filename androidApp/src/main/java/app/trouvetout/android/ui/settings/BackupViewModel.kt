@@ -1,6 +1,7 @@
 package app.trouvetout.android.ui.settings
 
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.trouvetout.android.App
@@ -48,10 +49,13 @@ data class BackupCallbacks(
     val onCancelKey: () -> Unit,
     val onBackUpNow: () -> Unit,
     val onTurnOff: () -> Unit,
+    val onChooseOtherFile: () -> Unit,
     val onRestore: () -> Unit,
     val onRestoreWithKey: (String) -> Unit,
     val onCancelRestore: () -> Unit,
     val onDismissMessage: () -> Unit,
+    /** Whether the text typed is the end of the key: the core's rule, the same on iOS. */
+    val confirmsKeyEnd: (String, String) -> Boolean,
 )
 
 /** A9: the steps of the settings section; the rules are in the core's `BackupService`. */
@@ -62,7 +66,8 @@ class BackupViewModel(
     val state: StateFlow<BackupUiState> = _state
 
     init {
-        viewModelScope.launch { read() }
+        // A backup that ran by itself while this screen is open.
+        viewModelScope.launch { app.backupChanges.collect { runCatching { read() } } }
     }
 
     /** The picker created the file: the key is drawn, nothing is kept until it is confirmed. */
@@ -73,11 +78,21 @@ class BackupViewModel(
         }
     }
 
-    fun cancelNewKey() = _state.update { it.copy(newKey = null, newLocation = null) }
+    /** No backup was made: the empty file the picker created goes too. */
+    fun cancelNewKey() {
+        val uri = _state.value.newLocation
+        _state.update { it.copy(newKey = null, newLocation = null) }
+        if (uri != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                runCatching { DocumentsContract.deleteDocument(app.contentResolver, uri) }
+            }
+        }
+    }
 
     /** The user retyped the end of the key: backups start, the first one now. */
     fun confirmNewKey() {
         val current = _state.value
+        if (current.busy) return
         val key = current.newKey ?: return
         val uri = current.newLocation ?: return
         _state.update { it.copy(newKey = null, newLocation = null) }
@@ -89,6 +104,19 @@ class BackupViewModel(
         }
     }
 
+    /** The file was lost: another one, with the key the user already wrote down. */
+    fun otherFileChosen(uri: Uri) {
+        run {
+            val shared = shared()
+            withContext(Dispatchers.IO) {
+                app.backupRunner.releaseAccess()
+                app.backupRunner.keepAccess(uri)
+            }
+            shared.backup.relocate(uri.toString())
+            write(shared)
+        }
+    }
+
     fun backUpNow() {
         run { write(shared()) }
     }
@@ -96,12 +124,15 @@ class BackupViewModel(
     /** Backups stop; the file stays where it is, and the app forgets the key and its access to the file. */
     fun disable() {
         run {
-            val shared = shared()
-            val location = shared.backup.state().location
-            shared.backup.disable()
-            location?.let { withContext(Dispatchers.IO) { app.backupRunner.releaseAccess(it) } }
+            shared().backup.disable()
+            withContext(Dispatchers.IO) { app.backupRunner.releaseAccess() }
         }
     }
+
+    fun confirmsKeyEnd(
+        key: String,
+        typed: String,
+    ): Boolean = app.current?.backup?.confirmsKeyEnd(key, typed) == true
 
     fun restoreChosen(uri: Uri) = _state.update { it.copy(restoreFrom = uri) }
 
@@ -117,9 +148,16 @@ class BackupViewModel(
             val target = File(shared.config.dataDirectory, relativePath)
             withContext(Dispatchers.IO) {
                 target.parentFile?.mkdirs()
-                app.contentResolver.openInputStream(uri)?.use { input ->
-                    target.outputStream().use { output -> copyBounded(input, output, BackupService.MAX_BACKUP_BYTES) }
-                } ?: throw IOException("unreadable document")
+                try {
+                    app.contentResolver.openInputStream(uri)?.use { input ->
+                        target.outputStream().use { output ->
+                            copyBounded(input, output, BackupService.MAX_BACKUP_BYTES)
+                        }
+                    } ?: throw IOException("unreadable document")
+                } catch (failure: IOException) {
+                    target.delete()
+                    throw failure
+                }
             }
             val result = shared.backup.restore(relativePath, recoveryKey)
             _state.update { it.copy(message = BackupMessage.Restored(result)) }
@@ -129,8 +167,13 @@ class BackupViewModel(
     fun dismissMessage() = _state.update { it.copy(message = null) }
 
     private suspend fun write(shared: SharedFactory) {
-        app.backupRunner.runNow(shared)
-        if (shared.backup.state().problem == null) _state.update { it.copy(message = BackupMessage.Written) }
+        val before = shared.backup.state().lastSuccessMillis
+        app.backUpNow()
+        val after = shared.backup.state()
+        // Only for what really happened: leaving the app cancels it, a failure is said in the section.
+        if (after.problem == null && after.lastSuccessMillis != before) {
+            _state.update { it.copy(message = BackupMessage.Written) }
+        }
     }
 
     private suspend fun shared(): SharedFactory = app.readyShared.first()

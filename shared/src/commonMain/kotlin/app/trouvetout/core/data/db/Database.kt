@@ -31,6 +31,9 @@ public object MetaKeys {
     public const val BACKUP_LAST_TRIED: String = "backup_last_tried"
     public const val BACKUP_LAST_HEAD: String = "backup_last_head"
     public const val BACKUP_PROBLEM: String = "backup_problem"
+
+    /** Set while the destination is being written: still there later, the copy was cut and the file may be damaged. */
+    public const val BACKUP_COPYING: String = "backup_copying"
 }
 
 /** Opens (creating or migrating) the SQLite database; implemented per platform, the caller owns the driver. */

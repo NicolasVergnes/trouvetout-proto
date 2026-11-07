@@ -6,7 +6,8 @@ import app.trouvetout.core.platform.toNSData
 
 /**
  * The iOS store: its own Keychain item, which the total wipe does not remove and a reinstall normally keeps. A Keychain
- * that cannot answer (before the first unlock) gives « no date » and is never written over, so a date cannot be lost.
+ * that cannot answer (before the first unlock) gives « no date » and is never written over; a write it refuses puts the
+ * previous date back.
  */
 public class KeychainLicenseStore(
     private val item: KeychainItem,
@@ -14,8 +15,10 @@ public class KeychainLicenseStore(
     override fun trialStartMillis(): Long? = item.read().data?.toByteArray()?.decodeToString()?.toLongOrNull()
 
     override fun setTrialStartMillis(millis: Long) {
-        if (item.read().failed) return
+        val current = item.read()
+        if (current.failed) return
         item.remove()
-        item.write(millis.toString().encodeToByteArray().toNSData())
+        val written = item.write(millis.toString().encodeToByteArray().toNSData())
+        if (!written) current.data?.let { item.write(it) }
     }
 }

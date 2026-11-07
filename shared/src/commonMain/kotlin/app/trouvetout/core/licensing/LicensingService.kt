@@ -56,7 +56,10 @@ public class LicensingService internal constructor(
     }
 
     private fun settledStart(now: Long): Long {
-        val firstLaunch = store?.trialStartMillis() ?: now.also { store?.setTrialStartMillis(it) }
+        // A date older than the app is a phone that was at the wrong time: it must not end the trial for good.
+        val firstLaunch =
+            store?.trialStartMillis()?.takeIf { it >= EARLIEST_PLAUSIBLE_MILLIS }
+                ?: now.also { store?.setTrialStartMillis(it) }
         val oldest = db.eventQueries.oldestAtSince(EARLIEST_PLAUSIBLE_MILLIS).executeAsOne().oldest
         // A journal imported from the future does not push the first launch forward.
         return listOfNotNull(firstLaunch, oldest).min()

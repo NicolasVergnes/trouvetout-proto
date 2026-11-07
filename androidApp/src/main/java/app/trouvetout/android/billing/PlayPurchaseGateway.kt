@@ -42,6 +42,7 @@ class PlayPurchaseGateway(
 
     /** At the first use: the app also wakes for an alarm or a quick capture, and must not call the store for those. */
     private val client: BillingClient by lazy {
+        // Lives as long as the process, never closed: a payment confirmed later arrives through its listener.
         BillingClient
             .newBuilder(context)
             .setListener(this)
@@ -58,10 +59,11 @@ class PlayPurchaseGateway(
         if (!connected()) return null
         val oneTime = client.queryPurchasesAsync(purchasesOf(ProductType.INAPP))
         val subscriptions = client.queryPurchasesAsync(purchasesOf(ProductType.SUBS))
-        if (!oneTime.billingResult.isOk() || !subscriptions.billingResult.isOk()) return null
-        val owned = (oneTime.purchasesList + subscriptions.purchasesList).filter(::isOwned)
+        val answers = listOf(oneTime, subscriptions).filter { it.billingResult.isOk() }
+        val owned = answers.flatMap { it.purchasesList }.filter(::isOwned)
         owned.forEach { acknowledge(it) }
-        return owned.isNotEmpty()
+        // One answer that says « yes » is enough; a « no » needs both.
+        return if (owned.isNotEmpty()) true else false.takeIf { answers.size == 2 }
     }
 
     override suspend fun products(): List<StoreProduct> {
@@ -98,7 +100,7 @@ class PlayPurchaseGateway(
         val launched = withContext(Dispatchers.Main) { client.launchBillingFlow(activity, params) }
         if (!launched.isOk()) {
             flow = null
-            return PurchaseOutcome.UNAVAILABLE
+            return outcomeOf(launched, emptyList())
         }
         return answer.await()
     }
@@ -126,10 +128,9 @@ class PlayPurchaseGateway(
         else -> PurchaseOutcome.UNAVAILABLE
     }
 
-    private fun isOwned(purchase: Purchase): Boolean =
-        purchase.purchaseState == Purchase.PurchaseState.PURCHASED &&
-            purchase.products.any { it == LIFETIME_ID || it == YEARLY_ID } &&
-            verifier.isGenuine(purchase.originalJson, purchase.signature)
+    private fun isOwned(purchase: Purchase): Boolean = purchase.purchaseState == Purchase.PurchaseState.PURCHASED &&
+        purchase.products.any { it == LIFETIME_ID || it == YEARLY_ID } &&
+        verifier.isGenuine(purchase.originalJson, purchase.signature)
 
     /** Unacknowledged, the store refunds after three days; a failure here is retried at the next refresh. */
     private suspend fun acknowledge(purchase: Purchase) {
@@ -164,12 +165,11 @@ class PlayPurchaseGateway(
         }
 
     /** The plain yearly base plan, without any promotional offer. */
-    private fun yearlyOffer(details: ProductDetails): Offer? =
-        details.subscriptionOfferDetails
-            ?.firstOrNull { it.basePlanId == YEARLY_BASE_PLAN && it.offerId == null }
-            ?.let { offer ->
-                offer.pricingPhases.pricingPhaseList.firstOrNull()?.let { Offer(offer.offerToken, it.formattedPrice) }
-            }
+    private fun yearlyOffer(details: ProductDetails): Offer? = details.subscriptionOfferDetails
+        ?.firstOrNull { it.basePlanId == YEARLY_BASE_PLAN && it.offerId == null }
+        ?.let { offer ->
+            offer.pricingPhases.pricingPhaseList.firstOrNull()?.let { Offer(offer.offerToken, it.formattedPrice) }
+        }
 
     private fun purchasesOf(type: String) = QueryPurchasesParams.newBuilder().setProductType(type).build()
 

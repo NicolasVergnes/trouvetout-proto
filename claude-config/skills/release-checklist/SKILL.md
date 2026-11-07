@@ -14,7 +14,8 @@ disable-model-invocation: true
 - [ ] Nom : le nom affiché peut rester « TrouveTout » pour la bêta ; vérifier qu'aucun identifiant technique (bundle id, package, schéma d'URL, domaine des packs) ne devra changer au renommage (ADR-010).
 
 ## Essai et achats
-- [ ] Produit créé dans App Store Connect et Play Console (non consommable 10 € **ou** abonnement 2 €/an — un seul retenu) ; prix par pays revus.
+- [ ] Produits `unlock_lifetime` (10 €) et `subscription_yearly` (2 €/an, plan de base `yearly`) créés dans App Store Connect et Play Console (ADR-014, ADR-025) ; prix par pays revus. Le nom de package est définitif dans la console : le choisir avant (ADR-010).
+- [ ] `-Ptrouvetout.playLicenseKey` fourni au build (`bundleRelease` refuse sans lui) ; achat réel de test **sur le build de release (R8)** : Play Billing fonctionne sans sa télémétrie, acquittement compris (ADR-025). Sinon, revenir à la décision de l'utilisateur.
 - [ ] Test sandbox : achat, restauration sur second appareil, remboursement ; essai : date forcée à +6 mois → seuls les ajouts sont bloqués, écran d'échéance clair, export toujours possible.
 - [ ] Textes de l'écran d'échéance FR/EN sans pression commerciale (« Vos données restent à vous »).
 

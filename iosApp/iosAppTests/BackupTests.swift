@@ -89,19 +89,53 @@ final class BackupTests: XCTestCase {
         return try await target.backup.restore(relativePath: relative, recoveryKey: key)
     }
 
-    func testTheCopyReplacesTheChosenFileEvenWhenShorter() throws {
-        let directory = FileManager.default.temporaryDirectory
+    private func temporaryFolder() throws -> URL {
+        let folder = FileManager.default.temporaryDirectory
             .appendingPathComponent("tt-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let source = directory.appendingPathComponent("source")
-        let chosen = directory.appendingPathComponent("chosen")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        return folder
+    }
+
+    /// `startAccessing…` answers false outside a picker, which the real location requires: the app's own folder
+    /// stands for the chosen one through a bookmark made by hand.
+    private func location(of folder: URL, name: String) throws -> String {
+        "\(name)\n\(try folder.bookmarkData().base64EncodedString())"
+    }
+
+    func testTheCopyReplacesTheFileInOneStepAndLeavesNothingBeside() throws {
+        let folder = try temporaryFolder()
+        let source = folder.appendingPathComponent("source")
+        let chosen = folder.appendingPathComponent("chosen.ttbk")
         try Data("new".utf8).write(to: source)
         try Data("an older and longer backup".utf8).write(to: chosen)
+        let location = try location(of: folder, name: "chosen.ttbk")
 
-        let location = try BackupDestination.bookmark(of: chosen)
+        XCTAssertTrue(BackupDestination.reachable(location))
         XCTAssertTrue(BackupDestination.write(from: source, to: location))
-        XCTAssertEqual(try Data(contentsOf: chosen), Data("new".utf8))
 
-        XCTAssertFalse(BackupDestination.write(from: source, to: "not a bookmark"))
+        XCTAssertEqual(try Data(contentsOf: chosen), Data("new".utf8))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: chosen.path + ".tmp"))
+    }
+
+    func testAFolderOutOfReachIsSaid() throws {
+        let folder = try temporaryFolder()
+        let location = try location(of: folder, name: "chosen.ttbk")
+        try FileManager.default.removeItem(at: folder)
+
+        XCTAssertFalse(BackupDestination.reachable(location))
+        XCTAssertFalse(BackupDestination.reachable("not a location"))
+    }
+
+    func testARestoredFileIsCopiedUpToTheLimitOnly() throws {
+        let folder = try temporaryFolder()
+        let picked = folder.appendingPathComponent("picked")
+        let target = folder.appendingPathComponent("imports/copy")
+        try Data(repeating: 7, count: 100).write(to: picked)
+
+        XCTAssertThrowsError(try BackupDestination.copyBounded(picked, to: target, limit: 99))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: target.path), "nothing partial stays")
+
+        try BackupDestination.copyBounded(picked, to: target, limit: 100)
+        XCTAssertEqual(try Data(contentsOf: target).count, 100)
     }
 }

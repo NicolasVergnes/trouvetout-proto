@@ -63,12 +63,14 @@ final class PurchaseViewModel: ObservableObject {
         perform { [self] in
             container.shared.appLock.expectReturn()
             switch await container.purchases.restore() {
-            case .none:
-                message = .unavailable
-            case .some(true):
+            case .owned:
                 message = .restored
-            case .some(false):
+            case .nothing:
                 message = .nothingToRestore
+            case .cancelled:
+                break
+            case .unavailable:
+                message = .unavailable
             }
             await container.syncPurchases()
         }
@@ -176,6 +178,36 @@ struct PurchaseView: View {
             set: { presented in
                 if !presented {
                     viewModel.message = nil
+                }
+            }
+        )
+    }
+}
+
+/// U11, on the capture screen: says what stops and what does not, at the moment it matters; the sentence stays in the
+/// field.
+struct TrialEndedAlert: ViewModifier {
+    @ObservedObject var viewModel: CaptureViewModel
+    let onOpenPurchase: () -> Void
+
+    func body(content: Content) -> some View {
+        content.alert("purchase_ended_title", isPresented: presented) {
+            Button("purchase_see_options") {
+                viewModel.dismissMessages()
+                onOpenPurchase()
+            }
+            Button("purchase_later", role: .cancel) { viewModel.dismissMessages() }
+        } message: {
+            Text("capture_problem_trial_ended")
+        }
+    }
+
+    private var presented: Binding<Bool> {
+        Binding(
+            get: { viewModel.problem == .trialEnded },
+            set: { isPresented in
+                if !isPresented {
+                    viewModel.dismissMessages()
                 }
             }
         )

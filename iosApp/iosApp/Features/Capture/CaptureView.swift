@@ -81,16 +81,7 @@ struct CaptureView: View {
         } message: {
             Text("voice_rationale_text")
         }
-        // U11: says what stops and what does not, at the moment it matters; the sentence stays in the field.
-        .alert("purchase_ended_title", isPresented: trialEndedPresented) {
-            Button("purchase_see_options") {
-                viewModel.dismissMessages()
-                onOpenPurchase()
-            }
-            Button("purchase_later", role: .cancel) { viewModel.dismissMessages() }
-        } message: {
-            Text("capture_problem_trial_ended")
-        }
+        .modifier(TrialEndedAlert(viewModel: viewModel, onOpenPurchase: onOpenPurchase))
         .alert("reminder_permission_title", isPresented: $viewModel.askNotifications) {
             Button("action_continue") { viewModel.grantNotifications() }
             Button("action_not_now", role: .cancel) {}
@@ -113,17 +104,6 @@ struct CaptureView: View {
             onSearch(query)
         }
         .onDisappear { viewModel.stopListening() }
-    }
-
-    private var trialEndedPresented: Binding<Bool> {
-        Binding(
-            get: { viewModel.problem == .trialEnded },
-            set: { presented in
-                if !presented {
-                    viewModel.dismissMessages()
-                }
-            }
-        )
     }
 
     /// I7 « Ranger »: listens when the phone recognises speech on the device, otherwise opens the keyboard.

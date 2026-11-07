@@ -200,6 +200,13 @@ class LicensingServiceTest {
     }
 
     @Test
+    fun a_first_launch_on_a_phone_at_the_wrong_time_does_not_end_the_trial() = runTest {
+        store.value = 1_000L
+        assertTrue(factory().licensing.status().canAddItems)
+        assertEquals(start, store.value, "replaced by the date the phone gives now")
+    }
+
+    @Test
     fun a_date_ahead_of_the_clock_does_not_push_the_start_forward() = runTest {
         val factory = factory()
         clock.millis = start + 1_000_000L

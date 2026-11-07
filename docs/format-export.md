@@ -202,4 +202,4 @@ Un fichier `.ttbk` contient une archive d'export ci-dessus, chiffrée. Il s'ouvr
 - Clé du fichier : HKDF-SHA-256 (RFC 5869) de la clé de secours, sel de l'en-tête, info `trouvetout-backup-v1`, 32 octets.
 - Blocs : l'archive coupée en blocs de 1 Mio, le dernier éventuellement plus court, chacun scellé en AES-256-GCM (texte chiffré puis étiquette de 16 octets). Nonce de 12 octets : 3 octets nuls, numéro du bloc à partir de 0 (8 octets, gros-boutiste), `1` pour le dernier bloc et `0` sinon. Données additionnelles : l'en-tête entier.
 
-Altérer, réordonner, tronquer ou prolonger le fichier empêche de l'ouvrir.
+Altérer, réordonner, tronquer ou prolonger le fichier empêche de l'ouvrir. Comme l'export, la sauvegarde ne contient rien de `meta` : ni la date d'essai, ni l'état d'achat, ni la clé, ni l'emplacement.

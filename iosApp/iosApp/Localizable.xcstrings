@@ -161,6 +161,22 @@
         }
       }
     },
+    "backup_choose_other": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose another folder"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisir un autre dossier"
+          }
+        }
+      }
+    },
     "backup_disable": {
       "localizations": {
         "en": {
@@ -198,13 +214,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn on and choose the file"
+            "value": "Turn on and choose the folder"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Activer et choisir le fichier"
+            "value": "Activer et choisir le dossier"
           }
         }
       }
@@ -230,13 +246,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keeps an encrypted copy of your objects and photos in a file you choose, in iCloud Drive for example. It is updated when you open the app, at most once a day and only after a change. Only your recovery key opens it: without it nobody can, not even us."
+            "value": "Keeps an encrypted copy of all your data (objects, sensitive ones included, places, photos, history) in a folder you choose. If that folder is in iCloud Drive, that service sends the file: it receives an unreadable file, and sees its size and dates. It is updated when you open the app, at most once a day and only after a change. Only your recovery key opens it: without it nobody can, not even us."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Garde une copie chiffrée de vos objets et photos dans un fichier que vous choisissez, dans iCloud Drive par exemple. Elle se met à jour quand vous ouvrez l'app, au plus une fois par jour et seulement après un changement. Seule votre clé de secours l'ouvre : sans elle, personne ne le peut, pas même nous."
+            "value": "Garde une copie chiffrée de toutes vos données (objets, y compris sensibles, lieux, photos, historique) dans un dossier que vous choisissez. Si ce dossier est dans iCloud Drive, c'est ce service qui envoie le fichier : il reçoit un fichier illisible, dont il voit la taille et les dates. Elle se met à jour quand vous ouvrez l'app, au plus une fois par jour et seulement après un changement. Seule votre clé de secours l'ouvre : sans elle, personne ne le peut, pas même nous."
           }
         }
       }
@@ -278,13 +294,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Write this key down and keep it away from this phone. It is shown only once. Without it, nobody can open your backup on a new phone, not even us."
+            "value": "Write this key down and keep it away from this phone. It is shown only once, and only while the app stays open: note it without leaving. Without it, nobody can open your backup on a new phone, not even us. The app keeps a copy in its encrypted database for the next backups; erasing all data removes it."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notez cette clé et gardez-la loin de ce téléphone. Elle n'est affichée qu'une fois. Sans elle, personne ne peut ouvrir votre sauvegarde sur un nouveau téléphone, pas même nous."
+            "value": "Notez cette clé et gardez-la loin de ce téléphone. Elle n'est affichée qu'une fois, et seulement tant que l'app reste ouverte : notez-la sans en sortir. Sans elle, personne ne peut ouvrir votre sauvegarde sur un nouveau téléphone, pas même nous. L'app en garde une copie dans sa base chiffrée pour les sauvegardes suivantes ; la suppression totale l'efface."
           }
         }
       }
@@ -321,6 +337,22 @@
         }
       }
     },
+    "backup_lost": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The chosen folder is gone or the app lost access to it. Choose another folder: your key stays the same."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le dossier choisi a disparu ou l'app n'y a plus accès. Choisissez un autre dossier : votre clé reste la même."
+          }
+        }
+      }
+    },
     "backup_never": {
       "localizations": {
         "en": {
@@ -349,6 +381,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ce fichier n'est pas une sauvegarde."
+          }
+        }
+      }
+    },
+    "backup_off_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turning off stops the backups and the app forgets the key. The last file stays where it is: delete it if you wish."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactiver arrête les sauvegardes et l'app oublie la clé. Le dernier fichier reste où il est : supprimez-le si vous le souhaitez."
           }
         }
       }
@@ -2678,13 +2726,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No purchase found on this account."
+            "value": "No purchase found on this account. Check which Apple account is active."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aucun achat trouvé sur ce compte."
+            "value": "Aucun achat trouvé sur ce compte. Vérifiez le compte Apple actif."
           }
         }
       }
@@ -4358,13 +4406,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Objects, places, photos and history will be deleted from this phone. Export first if you want to keep them. This cannot be undone. Only the start date of the free trial stays on this phone. A backup file you chose stays where it is, unreadable without its key."
+            "value": "Objects, places, photos and history will be deleted from this phone. Export first if you want to keep them. This cannot be undone. The start date of the free trial stays on this phone, in its keychain, even if you uninstall the app. What has already left the app is not erased: exports, PDFs, the phone's notification history, and the backup file in the folder you chose (unreadable without its key)."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d'abord si vous voulez les garder. Cette action est irréversible. Seule la date de début de l'essai gratuit reste sur ce téléphone. Un fichier de sauvegarde que vous avez choisi reste où il est, illisible sans sa clé."
+            "value": "Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d'abord si vous voulez les garder. Cette action est irréversible. La date de début de l'essai gratuit reste sur ce téléphone, dans son trousseau, même si vous désinstallez l'application. Ce qui est déjà sorti de l'app n'est pas effacé : exports, PDF, historique des notifications du téléphone, et le fichier de sauvegarde dans le dossier que vous avez choisi (illisible sans sa clé)."
           }
         }
       }

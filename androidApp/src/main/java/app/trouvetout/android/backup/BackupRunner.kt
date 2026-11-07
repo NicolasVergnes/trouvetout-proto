@@ -12,11 +12,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileNotFoundException
 
 /**
  * Copies a prepared backup (A9) to the file the user chose, through the system's document provider: the app has no
  * network, the provider (Google Drive, for one) sends it. Foreground only (N6): the export and the encryption stop when
- * the app leaves; the copy, once started, finishes, as it replaces the previous backup.
+ * the app leaves. The copy goes on, as it overwrites the previous backup; if the process dies during it, the core finds
+ * its mark, says so and tries again (ADR-025: the picker gives one file, so nothing can replace it atomically).
  */
 class BackupRunner(
     private val resolver: ContentResolver,
@@ -28,8 +30,11 @@ class BackupRunner(
         resolver.takePersistableUriPermission(uri, ACCESS)
     }
 
-    fun releaseAccess(location: String) {
-        runCatching { resolver.releasePersistableUriPermission(Uri.parse(location), ACCESS) }
+    /** The app keeps access to no other document: all of it goes when backups stop or the data is erased. */
+    fun releaseAccess() {
+        resolver.persistedUriPermissions.forEach { permission ->
+            runCatching { resolver.releasePersistableUriPermission(permission.uri, ACCESS) }
+        }
     }
 
     suspend fun runIfDue(shared: SharedFactory) {
@@ -42,28 +47,43 @@ class BackupRunner(
     }
 
     private suspend fun backUp(shared: SharedFactory) {
-        val location = shared.backup.state().location ?: return
+        val target = shared.backup.state().location?.let(Uri::parse) ?: return
+        if (!reachable(target)) {
+            shared.backup.reportDestinationLost()
+            return
+        }
         val prepared = shared.backup.prepare() as? PreparedBackup.Ready ?: return
         withContext(NonCancellable + Dispatchers.IO) {
-            val copied = copy(prepared.absolutePath, Uri.parse(location))
-            shared.backup.finished(prepared, copied)
+            shared.backup.copying()
+            val copy = copy(prepared.absolutePath, target)
+            shared.backup.finished(prepared, copy == Copy.DONE)
+            if (copy == Copy.LOST) shared.backup.reportDestinationLost()
         }
     }
+
+    /** Without its permission, no use spending an export. Only a provider's document has one to lose. */
+    private fun reachable(target: Uri): Boolean = target.scheme != ContentResolver.SCHEME_CONTENT ||
+        resolver.persistedUriPermissions.any { it.uri == target && it.isWritePermission }
+
+    private enum class Copy { DONE, LOST, FAILED }
 
     private fun copy(
         path: String,
         target: Uri,
-    ): Boolean = try {
+    ): Copy = try {
         File(path).inputStream().use { input ->
-            val output = resolver.openOutputStream(target, "wt") ?: return false
-            output.use { input.copyTo(it) }
+            resolver.openOutputStream(target, "wt")?.use { input.copyTo(it) } ?: throw FileNotFoundException()
         }
-        true
+        Copy.DONE
     } catch (cancelled: CancellationException) {
         throw cancelled
+    } catch (_: FileNotFoundException) {
+        Copy.LOST
+    } catch (_: SecurityException) {
+        Copy.LOST
     } catch (_: Exception) {
-        // Access revoked, file gone, provider gone, disk full: said in the settings, tried again at the next return.
-        false
+        // The provider gone, the disk full: said in the settings, tried again later.
+        Copy.FAILED
     }
 
     private companion object {

@@ -75,6 +75,11 @@ if [ -n "$MERGED" ]; then
   if grep -q 'datatransport' "$MERGED"; then
     echo "VIOLATION: la télémétrie de Play Billing est revenue dans le manifeste fusionné de la release"; status=1
   fi
+  # La bibliothèque de localisation n'a rien dans le manifeste : la liste des dépendances de la release la voit.
+  SDK_DEPS="$ROOT/androidApp/build/outputs/sdk-dependencies/release/sdkDependencies.txt"
+  if [ -f "$SDK_DEPS" ] && grep -aqE 'datatransport|play-services-location|firebase' "$SDK_DEPS"; then
+    echo "VIOLATION: une bibliothèque exclue de Play Billing est revenue dans la release (ADR-025)"; status=1
+  fi
 else
   echo "INFO: manifeste fusionné de la release absent (assembleRelease non lancé)"
 fi

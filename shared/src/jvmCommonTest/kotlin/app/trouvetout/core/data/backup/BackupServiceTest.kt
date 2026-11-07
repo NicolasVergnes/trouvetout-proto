@@ -12,14 +12,19 @@ import app.trouvetout.core.platform.CoroutineDispatchers
 import app.trouvetout.core.platform.DeviceInfo
 import app.trouvetout.core.platform.createFileStore
 import app.trouvetout.core.platform.testTempDirectory
+import app.trouvetout.core.platform.use
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import java.io.File
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -27,6 +32,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** A9, ADR-025: what the file protects against, the round trip, when it runs. */
+@Suppress("TooManyFunctions") // one behaviour per test
 class BackupServiceTest {
     private object FakeDevice : DeviceInfo {
         override val totalRamBytes: Long = 4L * 1024 * 1024 * 1024
@@ -160,6 +166,7 @@ class BackupServiceTest {
             val target = factory()
             assertIs<BackupRestoreResult.CannotOpen>(target.restoreBytes(file, key), label)
             assertTrue(target.itemRepository.observeActive().first().isEmpty(), label)
+            assertTrue(createFileStore(target.config.dataDirectory).list("imports").isEmpty(), label)
         }
     }
 
@@ -170,6 +177,146 @@ class BackupServiceTest {
         assertIs<BackupRestoreResult.NotABackup>(target.restoreBytes("PK not a backup".encodeToByteArray(), key))
         val other = ByteArray(100).also(Random(1)::nextBytes)
         assertIs<BackupRestoreResult.NotABackup>(target.restoreBytes(other, key))
+    }
+
+    /** A file written from `docs/format-export.md` alone by another program: backups of years ago must still open. */
+    @Test
+    fun should_open_a_frozen_file_written_from_the_published_format() = runTest {
+        val file =
+            (
+                "5454424b0100100000404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f" +
+                    "63ec0973d384bfea19a074c48d126a7c6e9a92d4ff1c3e21e5973da5e16d4aa9e519cc1838543c306f74" +
+                    "90ccd82ad729961289"
+            ).hexToByteArray()
+        val key = RecoveryKey.decode("208H-44RM-2MB1-E60S-38DH-R78Y-3ZY0")
+        assertContentEquals(ByteArray(16) { (0x10 + it).toByte() }, key)
+        val directory = testTempDirectory()
+        val store = createFileStore(directory)
+        store.write("frozen", file)
+        val format = BackupFormat(crypto)
+
+        store.sink("opened").use { sink ->
+            checkNotNull(store.source("frozen")).use { source -> format.decrypt(this, checkNotNull(key), source, sink) }
+        }
+
+        assertEquals("TrouveTout backup format v1, frozen", store.read("opened")?.decodeToString())
+    }
+
+    @Test
+    fun a_cancelled_export_leaves_nothing_plain_behind() = runTest {
+        val source = factory()
+        source.add("passeport")
+        source.backup.enable(source.backup.newRecoveryKey(), "content://chosen")
+        val store = createFileStore(source.config.dataDirectory)
+
+        val job = launch(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
+            cancel()
+            source.backup.prepare()
+        }
+        job.join()
+
+        assertTrue(store.list(BackupService.DIRECTORY).isEmpty(), store.list(BackupService.DIRECTORY).toString())
+        assertTrue(store.list("exports").isEmpty())
+        assertNull(source.backup.state().problem, "leaving the app is no failure")
+    }
+
+    @Test
+    fun what_a_killed_process_left_goes_at_the_next_launch() = runTest {
+        val directory = testTempDirectory()
+        val source = factory(directory)
+        val store = createFileStore(directory)
+        store.write("${BackupService.DIRECTORY}/archive.zip", "journal in the clear".encodeToByteArray())
+
+        source.housekeeping()
+
+        assertTrue(store.list(BackupService.DIRECTORY).isEmpty())
+    }
+
+    @Test
+    fun the_launch_does_not_clear_a_backup_running_now() = runTest {
+        val source = factory()
+        source.add("passeport")
+        source.backup.enable(source.backup.newRecoveryKey(), "content://chosen")
+        val ready = assertIs<PreparedBackup.Ready>(source.backup.prepare())
+
+        source.housekeeping()
+
+        assertTrue(File(ready.absolutePath).isFile)
+        source.backup.finished(ready, succeeded = true)
+    }
+
+    @Test
+    fun a_copy_cut_by_a_killed_process_is_reported_and_tried_again() = runTest {
+        val directory = testTempDirectory()
+        val driver = inMemoryDriverFactory().create()
+        val config = {
+            SharedConfig(directory, FakeDevice, { driver }, FakeImageCodec()).also {
+                it.clock = clock
+                it.backupCrypto = crypto
+                it.dispatchers =
+                    CoroutineDispatchers(Dispatchers.Unconfined, Dispatchers.Unconfined, Dispatchers.Unconfined)
+            }
+        }
+        val before = SharedFactory(config())
+        before.add("passeport")
+        before.backup.enable(before.backup.newRecoveryKey(), "content://chosen")
+        before.backup.finished(assertIs(before.backup.prepare()), succeeded = true)
+        assertNull(before.backup.state().problem)
+        clock.millis += day
+        before.add("tente")
+        assertIs<PreparedBackup.Ready>(before.backup.prepare())
+        before.backup.copying()
+        assertNull(before.backup.state().problem, "running: nothing to say yet")
+
+        // The process dies here; the next one finds the mark.
+        val after = SharedFactory(config())
+        after.warmUp()
+
+        assertEquals(BackupProblem.FAILED, after.backup.state().problem)
+        assertTrue(after.backup.isDue(), "tried again, even with nothing new")
+        assertNotNull(after.backup.state().lastSuccessMillis, "the date is still said, beside the problem")
+    }
+
+    @Test
+    fun a_failed_export_is_said_and_keeps_nothing() = runTest {
+        val source = factory()
+        source.add("passeport")
+        source.backup.enable(source.backup.newRecoveryKey(), "content://chosen")
+        val store = createFileStore(source.config.dataDirectory)
+        // A directory where the encrypted file goes: the write fails.
+        store.write("${BackupService.DIRECTORY}/backup.ttbk/x", ByteArray(1))
+
+        assertFails { source.backup.prepare() }
+
+        assertEquals(BackupProblem.FAILED, source.backup.state().problem)
+        assertFalse(store.exists("${BackupService.DIRECTORY}/archive.zip"))
+    }
+
+    @Test
+    fun a_lost_destination_waits_for_another_file_with_the_same_key() = runTest {
+        val source = factory()
+        source.add("passeport")
+        source.backup.enable(source.backup.newRecoveryKey(), "content://chosen")
+        source.backup.reportDestinationLost()
+        assertEquals(BackupProblem.DESTINATION_LOST, source.backup.state().problem)
+        clock.millis += day
+        assertFalse(source.backup.isDue(), "no export for a file out of reach")
+
+        source.backup.relocate("content://other")
+
+        assertEquals("content://other", source.backup.state().location)
+        assertNull(source.backup.state().problem)
+        assertTrue(source.backup.isDue())
+        assertIs<PreparedBackup.Ready>(source.backup.prepare())
+    }
+
+    @Test
+    fun confirming_the_end_of_a_key_forgives_what_a_key_forgives() {
+        val source = factory()
+        assertTrue(source.backup.confirmsKeyEnd("AAAA-BBBB-1000", "1ooo"))
+        assertTrue(source.backup.confirmsKeyEnd("AAAA-BBBB-1000", " 1000 "))
+        assertFalse(source.backup.confirmsKeyEnd("AAAA-BBBB-1000", "BBBB"))
+        assertFalse(source.backup.confirmsKeyEnd("AAAA-BBBB-1000", ""))
     }
 
     @Test

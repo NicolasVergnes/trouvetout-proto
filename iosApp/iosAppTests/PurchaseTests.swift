@@ -32,26 +32,35 @@ final class PurchaseTests: XCTestCase {
 
     func testNothingIsOwnedBeforeAPurchase() async {
         let owned = await gateway.entitled()
-        XCTAssertFalse(owned)
+        XCTAssertEqual(owned, false)
     }
 
-    func testTheOneTimeUnlockIsOwnedAndSurvivesARestore() async {
+    func testTheOneTimeUnlockIsOwnedAndARefundTakesItBack() async throws {
         let outcome = await gateway.purchase(.lifetime)
         XCTAssertEqual(outcome, .completed)
         let owned = await gateway.entitled()
-        XCTAssertTrue(owned)
+        XCTAssertEqual(owned, true)
+
+        let latest = await Transaction.latest(for: ProductKind.lifetime.rawValue)
+        guard case let .verified(transaction) = latest else {
+            return XCTFail("no verified transaction")
+        }
+        try session?.refundTransaction(identifier: UInt(transaction.id))
+
+        let afterTheRefund = await gateway.entitled()
+        XCTAssertEqual(afterTheRefund, false)
     }
 
-    func testASubscriptionThatEndsLocksAgainAndARefundToo() async throws {
+    func testASubscriptionThatEndsLocksAgain() async throws {
         let outcome = await gateway.purchase(.yearly)
         XCTAssertEqual(outcome, .completed)
         let owned = await gateway.entitled()
-        XCTAssertTrue(owned)
+        XCTAssertEqual(owned, true)
 
         try session?.expireSubscription(productIdentifier: ProductKind.yearly.rawValue)
 
         let afterTheEnd = await gateway.entitled()
-        XCTAssertFalse(afterTheEnd)
+        XCTAssertEqual(afterTheEnd, false)
     }
 
     func testTheCoreFollowsWhatTheStoreSays() async throws {

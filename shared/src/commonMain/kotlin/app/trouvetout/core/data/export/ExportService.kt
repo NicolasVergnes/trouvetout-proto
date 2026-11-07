@@ -50,9 +50,12 @@ public class ExportService internal constructor(
     private val identity: ExportIdentity,
     private val dispatcher: CoroutineDispatcher,
 ) {
-    public suspend fun export(): ExportResult = withContext(dispatcher) {
+    public suspend fun export(): ExportResult =
+        exportTo("$DIRECTORY/$PREFIX${utcTimestamp(clock.now().toEpochMilliseconds())}.zip")
+
+    /** The backups write their archive beside their own files, which each launch clears whatever happened. */
+    internal suspend fun exportTo(relativePath: String): ExportResult = withContext(dispatcher) {
         val now = clock.now().toEpochMilliseconds()
-        val relativePath = "$DIRECTORY/$PREFIX${utcTimestamp(now)}.zip"
         // Full-size photos only: the importer regenerates thumbnails, and every entry counts against ZIP32.
         val photoFiles = photoStore.listFiles().filter { PhotoStore.isValidFileName(it) && !it.endsWith(THUMB_SUFFIX) }
         val counts =

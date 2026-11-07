@@ -39,8 +39,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
-import app.trouvetout.core.capture.CaptureProblem
 import app.trouvetout.android.ui.theme.AppTheme
+import app.trouvetout.core.capture.CaptureProblem
 
 /**
  * Quick capture over whatever was on screen (B5): opened by the widget and the tile, it records one sentence,

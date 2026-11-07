@@ -45,7 +45,7 @@ class BackupTest {
 
     private fun text(id: Int) = context.getString(id)
 
-    private val noCallbacks = BackupCallbacks({}, {}, {}, {}, {}, {}, {}, {}, {})
+    private val noCallbacks = BackupCallbacks({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, { _, _ -> false })
 
     @Test
     fun a_backup_replaces_the_chosen_file_and_leaves_no_copy_behind() = runBlocking {
@@ -72,7 +72,7 @@ class BackupTest {
     }
 
     @Test
-    fun a_destination_that_is_gone_is_reported_and_tried_again() = runBlocking {
+    fun a_destination_that_is_gone_is_reported_and_waits_for_another() = runBlocking {
         val shared = app.readyShared.first()
         shared.itemCommands.create(ItemDraft("backup-probe-2"), null, EventSource.TEXT)
         try {
@@ -81,7 +81,8 @@ class BackupTest {
 
             app.backupRunner.runNow(shared)
 
-            assertEquals(BackupProblem.FAILED, shared.backup.state().problem)
+            assertEquals(BackupProblem.DESTINATION_LOST, shared.backup.state().problem)
+            assertFalse("no export for a file out of reach", shared.backup.isDue())
         } finally {
             shared.backup.disable()
         }
@@ -93,7 +94,13 @@ class BackupTest {
         var confirmed = false
         compose.setContent {
             AppTheme {
-                BackupSection(BackupUiState(newKey = key), noCallbacks.copy(onConfirmKey = { confirmed = true }))
+                BackupSection(
+                    BackupUiState(newKey = key),
+                    noCallbacks.copy(
+                        onConfirmKey = { confirmed = true },
+                        confirmsKeyEnd = app.shared.backup::confirmsKeyEnd,
+                    ),
+                )
             }
         }
         compose.onNodeWithText(key).assertIsDisplayed()

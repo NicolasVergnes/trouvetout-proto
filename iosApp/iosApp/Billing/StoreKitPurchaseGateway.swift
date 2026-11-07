@@ -25,17 +25,31 @@ enum PurchaseOutcome {
     case unavailable
 }
 
+enum RestoreOutcome {
+    case owned
+    case nothing
+    case cancelled
+    case unavailable
+}
+
 /// StoreKit 2 (J4, J5): the only type that talks to the store. Transactions are signed by Apple and checked by
 /// StoreKit on the phone (`VerificationResult`): an unverified one grants nothing. No server (ADR-007).
 struct StoreKitPurchaseGateway {
-    /// Whether a verified purchase or a running subscription exists. StoreKit answers from the phone, offline too.
-    func entitled() async -> Bool {
+    /// Whether a verified purchase or a running subscription exists. StoreKit answers from the phone, offline too. Nil
+    /// when all it has is a transaction that does not check out: no answer, the last one stands.
+    func entitled() async -> Bool? {
+        var unverified = false
         for await result in Transaction.currentEntitlements {
-            if case let .verified(transaction) = result, isActive(transaction) {
-                return true
+            switch result {
+            case let .verified(transaction):
+                if isActive(transaction) {
+                    return true
+                }
+            case .unverified:
+                unverified = true
             }
         }
-        return false
+        return unverified ? nil : false
     }
 
     /// The date Apple signed for the first download of the app (J1): a reinstall does not change it. Nil offline on
@@ -75,15 +89,20 @@ struct StoreKitPurchaseGateway {
         }
     }
 
-    /// J5: asks the store for what this account bought, on this phone or another; may ask to sign in. Nil when it
-    /// could not answer or the user declined.
-    func restore() async -> Bool? {
+    /// J5: asks the store for what this account bought, on this phone or another; may ask to sign in.
+    func restore() async -> RestoreOutcome {
         do {
             try await AppStore.sync()
+        } catch StoreKitError.userCancelled {
+            return .cancelled
         } catch {
-            return nil
+            return .unavailable
         }
-        return await entitled()
+        switch await entitled() {
+        case .none: return .unavailable
+        case .some(true): return .owned
+        case .some(false): return .nothing
+        }
     }
 
     /// Purchases that arrive outside a flow of this app: a renewal, a refund, an approval. Listens for the process.
@@ -98,10 +117,8 @@ struct StoreKitPurchaseGateway {
         }
     }
 
+    /// `currentEntitlements` leaves out what has expired and keeps a billing grace period, whose date may be past.
     private func isActive(_ transaction: Transaction) -> Bool {
-        guard ProductKind(rawValue: transaction.productID) != nil, transaction.revocationDate == nil else {
-            return false
-        }
-        return transaction.expirationDate.map { $0 > Date() } ?? true
+        ProductKind(rawValue: transaction.productID) != nil && transaction.revocationDate == nil
     }
 }

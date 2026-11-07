@@ -37,15 +37,22 @@ internal object RecoveryKey {
         return text.toString().chunked(GROUP).joinToString("-")
     }
 
+    /** Whether [typed] is the last group of [key], read with the same forgiveness as a whole key. */
+    fun confirmsEnd(
+        key: String,
+        typed: String,
+    ): Boolean = normalized(typed) == normalized(key).takeLast(GROUP)
+
+    private fun normalized(text: String): String = text
+        .uppercase()
+        .filterNot { it == '-' || it.isWhitespace() }
+        .replace('O', '0')
+        .replace('I', '1')
+        .replace('L', '1')
+
     /** The key, or null when the text is not one: wrong length, a character out of the alphabet, a typing mistake. */
     fun decode(text: String): ByteArray? {
-        val clean =
-            text
-                .uppercase()
-                .filterNot { it == '-' || it.isWhitespace() }
-                .replace('O', '0')
-                .replace('I', '1')
-                .replace('L', '1')
+        val clean = normalized(text)
         if (clean.length != TEXT_CHARS) return null
         val payload = ByteArray(PAYLOAD_BYTES)
         var buffer = 0

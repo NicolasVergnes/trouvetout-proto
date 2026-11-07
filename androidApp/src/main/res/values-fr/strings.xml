@@ -47,7 +47,7 @@
     <string name="settings_wipe_hint">Effacer toutes les données enregistrées par l\'app sur ce téléphone.</string>
     <string name="settings_wipe">Tout effacer</string>
     <string name="settings_wipe_confirm_title">Tout effacer ?</string>
-    <string name="settings_wipe_confirm_text">Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d\'abord si vous voulez les garder. Cette action est irréversible. Seule la date de début de l\'essai gratuit reste sur ce téléphone. Un fichier de sauvegarde que vous avez choisi reste où il est, illisible sans sa clé.</string>
+    <string name="settings_wipe_confirm_text">Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d\'abord si vous voulez les garder. Cette action est irréversible. La date de début de l\'essai gratuit reste sur ce téléphone. Ce qui est déjà sorti de l\'app n\'est pas effacé : exports, PDF, historique des notifications du téléphone, et le fichier de sauvegarde que vous avez choisi (illisible sans sa clé).</string>
     <string name="settings_wipe_confirm_button">Effacer</string>
     <string name="settings_wipe_done_title">Données effacées</string>
     <string name="settings_wipe_done_text">L\'app repart de zéro.</string>
@@ -300,12 +300,12 @@
     <string name="purchase_unavailable">Le magasin ne répond pas pour le moment. Réessayez plus tard.</string>
     <string name="purchase_pending">Paiement en attente : l\'achat prendra effet dès qu\'il sera confirmé.</string>
     <string name="purchase_restored">Votre achat est restauré.</string>
-    <string name="purchase_nothing_to_restore">Aucun achat trouvé sur ce compte.</string>
+    <string name="purchase_nothing_to_restore">Aucun achat trouvé sur ce compte. Vérifiez le compte Google actif.</string>
     <string name="settings_purchase_section">Achat</string>
 
     <!-- Lot 10 : sauvegarde chiffrée (A9) -->
     <string name="settings_backup_section">Sauvegarde chiffrée</string>
-    <string name="backup_hint">Garde une copie chiffrée de vos objets et photos dans un fichier que vous choisissez, dans Google Drive par exemple. Elle se met à jour quand vous ouvrez l\'app, au plus une fois par jour et seulement après un changement. Seule votre clé de secours l\'ouvre : sans elle, personne ne le peut, pas même nous.</string>
+    <string name="backup_hint">Garde une copie chiffrée de toutes vos données (objets, y compris sensibles, lieux, photos, historique) dans un fichier que vous choisissez. Si ce fichier est dans Google Drive, c\'est ce service qui l\'envoie : il reçoit un fichier illisible, dont il voit la taille et les dates. Elle se met à jour quand vous ouvrez l\'app, au plus une fois par jour et seulement après un changement. Seule votre clé de secours l\'ouvre : sans elle, personne ne le peut, pas même nous.</string>
     <string name="backup_enable">Activer et choisir le fichier</string>
     <string name="backup_disable">Désactiver</string>
     <string name="backup_run_now">Sauvegarder maintenant</string>
@@ -316,7 +316,7 @@
     <string name="backup_too_large">Vos données sont trop volumineuses pour être restaurées depuis un seul fichier : aucune sauvegarde n\'a été écrite. Réduisez le nombre de photos ou utilisez l\'export.</string>
     <string name="backup_done">Sauvegarde écrite.</string>
     <string name="backup_key_title">Votre clé de secours</string>
-    <string name="backup_key_text">Notez cette clé et gardez-la loin de ce téléphone. Elle n\'est affichée qu\'une fois. Sans elle, personne ne peut ouvrir votre sauvegarde sur un nouveau téléphone, pas même nous.</string>
+    <string name="backup_key_text">Notez cette clé et gardez-la loin de ce téléphone. Elle n\'est affichée qu\'une fois. Sans elle, personne ne peut ouvrir votre sauvegarde sur un nouveau téléphone, pas même nous. L\'app en garde une copie dans sa base chiffrée pour les sauvegardes suivantes ; la suppression totale l\'efface.</string>
     <string name="backup_key_confirm_label">Tapez ses quatre derniers caractères</string>
     <string name="backup_key_confirm">Je l\'ai notée</string>
     <string name="backup_restore_text">Saisissez la clé de secours de cette sauvegarde. Son contenu s\'ajoute à ce qui se trouve sur ce téléphone.</string>
@@ -325,4 +325,7 @@
     <string name="backup_bad_key">Ce n\'est pas une clé de secours : vérifiez ce que vous avez tapé.</string>
     <string name="backup_not_a_backup">Ce fichier n\'est pas une sauvegarde.</string>
     <string name="backup_cannot_open">Cette clé n\'ouvre pas cette sauvegarde, ou le fichier est endommagé.</string>
+    <string name="backup_lost">Le fichier choisi a disparu ou l\'app n\'y a plus accès. Choisissez un autre fichier : votre clé reste la même.</string>
+    <string name="backup_choose_other">Choisir un autre fichier</string>
+    <string name="backup_off_hint">Désactiver arrête les sauvegardes et l\'app oublie la clé. Le dernier fichier reste où il est : supprimez-le si vous le souhaitez.</string>
 </resources>

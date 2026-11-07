@@ -40,7 +40,7 @@ class PurchaseViewModel(
 
     init {
         viewModelScope.launch {
-            app.licenseChanges.collect { readStatus() }
+            app.licenseChanges.collect { runCatching { readStatus() } }
         }
         viewModelScope.launch {
             val products = runCatching { app.purchases.products() }.getOrDefault(emptyList())
@@ -56,7 +56,7 @@ class PurchaseViewModel(
             // The store's sheet covers the app for a moment: not a departure for the lock.
             app.expectReturn()
             when (app.purchases.purchase(activity, kind)) {
-                PurchaseOutcome.COMPLETED -> refresh()
+                PurchaseOutcome.COMPLETED -> if (refresh() != true) say(PurchaseMessage.UNAVAILABLE)
                 PurchaseOutcome.PENDING -> say(PurchaseMessage.PENDING)
                 PurchaseOutcome.CANCELLED -> Unit
                 PurchaseOutcome.UNAVAILABLE -> say(PurchaseMessage.UNAVAILABLE)

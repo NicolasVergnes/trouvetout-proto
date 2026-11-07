@@ -30,17 +30,34 @@ enum BackupMessage: Equatable {
     }
 }
 
+/// What the section presents, one at a time.
+enum BackupSheet: Identifiable {
+    case folderPicker
+    case newKey(String)
+    case restoreKey
+
+    var id: String {
+        switch self {
+        case .folderPicker: "picker"
+        case .newKey: "key"
+        case .restoreKey: "restore"
+        }
+    }
+}
+
 /// A9: the steps of the settings section; the rules are in the core's `BackupService`.
 @MainActor
 final class BackupViewModel: ObservableObject {
     @Published private(set) var state: BackupState?
     @Published private(set) var busy = false
     @Published var message: BackupMessage?
-    /// Turning on: the key to show once and the file chosen, until the user confirms.
-    @Published var newKey: String?
+    @Published var sheet: BackupSheet?
+    /// Turning on: the folder chosen, until the key is confirmed.
     private var newLocation: String?
+    /// The picker's answer, handled once its sheet is gone.
+    var pickedFolder: URL?
     /// Restoring: the file chosen, until the user gives its key.
-    @Published var restoreFrom: URL?
+    var restoreFrom: URL?
 
     private let container: AppContainer
 
@@ -53,24 +70,42 @@ final class BackupViewModel: ObservableObject {
         state = try? await container.shared.backup.state()
     }
 
-    /// The picker created the file: the key is drawn, nothing is kept until it is confirmed.
-    func fileChosen(_ url: URL) {
-        guard let location = try? BackupDestination.bookmark(of: url) else {
+    func confirmsKeyEnd(_ key: String, typed: String) -> Bool {
+        container.shared.backup.confirmsKeyEnd(recoveryKey: key, typed: typed)
+    }
+
+    /// The picker's sheet is gone. A lost folder is replaced with the same key; otherwise a key is drawn, and nothing
+    /// is kept until it is confirmed.
+    func folderPickerClosed() {
+        guard let folder = pickedFolder else { return }
+        pickedFolder = nil
+        guard let location = try? BackupDestination.location(inFolder: folder) else {
+            message = .failed
+            return
+        }
+        if state?.problem == .destinationLost {
+            perform { [self] in
+                try await container.shared.backup.relocate(location: location)
+                await write()
+            }
+            return
+        }
+        guard let key = try? container.shared.backup.newRecoveryKey() else {
             message = .failed
             return
         }
         newLocation = location
-        newKey = container.shared.backup.newRecoveryKey()
+        sheet = .newKey(key)
     }
 
     func cancelNewKey() {
-        newKey = nil
         newLocation = nil
+        sheet = nil
     }
 
     /// The user retyped the end of the key: backups start, the first one now.
-    func confirmNewKey() {
-        guard let key = newKey, let location = newLocation else { return }
+    func confirmNewKey(_ key: String) {
+        guard !busy, let location = newLocation else { return }
         cancelNewKey()
         perform { [self] in
             let backup = container.shared.backup
@@ -78,35 +113,47 @@ final class BackupViewModel: ObservableObject {
                 message = .failed
                 return
             }
-            try await write()
+            await write()
         }
     }
 
     func backUpNow() {
-        perform { [self] in try await write() }
+        perform { [self] in await write() }
     }
 
     func disable() {
         perform { [self] in try await container.shared.backup.disable() }
     }
 
-    /// Copies the file (bounded) into the private import directory: the core never reads foreign URLs.
+    func restorePicked(_ url: URL) {
+        restoreFrom = url
+        sheet = .restoreKey
+    }
+
+    /// Copies the file (bounded, coordinated) into the private import directory: the core never reads foreign URLs.
     func restore(recoveryKey: String) {
         guard let picked = restoreFrom else { return }
         restoreFrom = nil
+        sheet = nil
         perform { [self] in
             let shared = container.shared
             let relativePath = "\(SharedFactory.companion.IMPORT_DIRECTORY)/\(UUID().uuidString.lowercased()).ttbk"
             let target = URL(fileURLWithPath: shared.config.dataDirectory).appendingPathComponent(relativePath)
-            try await Self.copyBounded(picked, to: target)
+            try await Task.detached(priority: .userInitiated) {
+                try BackupDestination.copyBounded(
+                    picked,
+                    to: target,
+                    limit: BackupService.companion.MAX_BACKUP_BYTES
+                )
+            }.value
             let result = try await shared.backup.restore(relativePath: relativePath, recoveryKey: recoveryKey)
             message = Self.message(of: result)
         }
     }
 
-    private func write() async throws {
-        await container.runBackup()
-        if try await container.shared.backup.state().problem == nil {
+    /// Only what really happened: the section says the rest, from the state of the backup.
+    private func write() async {
+        if await container.runBackup() == .written {
             message = .written
         }
     }
@@ -128,26 +175,6 @@ final class BackupViewModel: ObservableObject {
         }
     }
 
-    private nonisolated static func copyBounded(_ picked: URL, to target: URL) async throws {
-        try await Task.detached(priority: .userInitiated) {
-            let scoped = picked.startAccessingSecurityScopedResource()
-            defer {
-                if scoped {
-                    picked.stopAccessingSecurityScopedResource()
-                }
-            }
-            let size = try picked.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-            guard Int64(size) <= BackupService.companion.MAX_BACKUP_BYTES else {
-                throw CocoaError(.fileReadTooLarge)
-            }
-            try FileManager.default.createDirectory(
-                at: target.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
-            try FileManager.default.copyItem(at: picked, to: target)
-        }.value
-    }
-
     private func perform(_ work: @escaping @MainActor () async throws -> Void) {
         guard !busy else { return }
         busy = true
@@ -164,10 +191,10 @@ final class BackupViewModel: ObservableObject {
     }
 }
 
-/// « Sauvegarde chiffrée » (A9) in the settings.
+/// « Sauvegarde chiffrée » (A9) in the settings. The presentations are carried by the first row: on a `Section` of a
+/// `Form`, SwiftUI could apply them to each row.
 struct BackupSectionView: View {
     @StateObject private var viewModel: BackupViewModel
-    @State private var choosingFile = false
     @State private var choosingBackup = false
 
     init(container: AppContainer) {
@@ -176,61 +203,91 @@ struct BackupSectionView: View {
 
     var body: some View {
         Section {
-            Text("backup_hint")
-                .font(.footnote)
+            hint
             if let state = viewModel.state, state.location != nil {
-                Text(lastBackup(state))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                if let problem = state.problem {
-                    Text(LocalizedStringKey(problem == .tooLarge ? "backup_too_large" : "backup_failed"))
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
-                Button("backup_run_now") { viewModel.backUpNow() }
-                    .disabled(viewModel.busy)
-                Button("backup_disable") { viewModel.disable() }
-                    .disabled(viewModel.busy)
+                turnedOn(state)
             } else {
-                Button("backup_enable") { choosingFile = true }
+                Button("backup_enable") { viewModel.sheet = .folderPicker }
                     .disabled(viewModel.busy)
             }
             Button("backup_restore") { choosingBackup = true }
                 .disabled(viewModel.busy)
+            if viewModel.busy {
+                ProgressView("settings_busy")
+                    .frame(maxWidth: .infinity)
+            }
         } header: {
             Text("settings_backup_section")
         }
-        .task { await viewModel.refresh() }
-        .sheet(isPresented: $choosingFile) {
-            BackupFilePicker(fileName: BackupService.companion.SUGGESTED_FILE_NAME) { url in
-                choosingFile = false
-                if let url {
-                    viewModel.fileChosen(url)
+    }
+
+    private var hint: some View {
+        Text("backup_hint")
+            .font(.footnote)
+            .task { await viewModel.refresh() }
+            .sheet(item: $viewModel.sheet, onDismiss: { viewModel.folderPickerClosed() }, content: sheet)
+            .fileImporter(isPresented: $choosingBackup, allowedContentTypes: [.data]) { result in
+                if case let .success(url) = result {
+                    viewModel.restorePicked(url)
                 }
             }
-        }
-        .fileImporter(isPresented: $choosingBackup, allowedContentTypes: [.data]) { result in
-            if case let .success(url) = result {
-                viewModel.restoreFrom = url
+            .alert(viewModel.message?.text ?? "", isPresented: messagePresented) {
+                Button("action_ok") { viewModel.message = nil }
             }
+    }
+
+    @ViewBuilder
+    private func turnedOn(_ state: BackupState) -> some View {
+        Text(lastBackup(state))
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        if let problem = state.problem {
+            Text(LocalizedStringKey(problemKey(problem)))
+                .font(.footnote)
+                .foregroundStyle(.red)
         }
-        .sheet(isPresented: newKeyPresented) {
-            if let key = viewModel.newKey {
-                NewKeySheet(
-                    key: key,
-                    onConfirm: { viewModel.confirmNewKey() },
-                    onCancel: { viewModel.cancelNewKey() }
-                )
+        if state.problem == .destinationLost {
+            Button("backup_choose_other") { viewModel.sheet = .folderPicker }
+                .disabled(viewModel.busy)
+        } else {
+            Button("backup_run_now") { viewModel.backUpNow() }
+                .disabled(viewModel.busy)
+        }
+        Text("backup_off_hint")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        Button("backup_disable") { viewModel.disable() }
+            .disabled(viewModel.busy)
+    }
+
+    @ViewBuilder
+    private func sheet(_ sheet: BackupSheet) -> some View {
+        switch sheet {
+        case .folderPicker:
+            BackupFolderPicker { url in
+                viewModel.pickedFolder = url
+                viewModel.sheet = nil
             }
-        }
-        .sheet(isPresented: restorePresented) {
+        case let .newKey(key):
+            NewKeySheet(
+                key: key,
+                confirms: { viewModel.confirmsKeyEnd(key, typed: $0) },
+                onConfirm: { viewModel.confirmNewKey(key) },
+                onCancel: { viewModel.cancelNewKey() }
+            )
+        case .restoreKey:
             RestoreKeySheet(
                 onRestore: { viewModel.restore(recoveryKey: $0) },
-                onCancel: { viewModel.restoreFrom = nil }
+                onCancel: { viewModel.sheet = nil }
             )
         }
-        .alert(viewModel.message?.text ?? "", isPresented: messagePresented) {
-            Button("action_ok") { viewModel.message = nil }
+    }
+
+    private func problemKey(_ problem: BackupProblem) -> String {
+        switch problem {
+        case .tooLarge: "backup_too_large"
+        case .destinationLost: "backup_lost"
+        default: "backup_failed"
         }
     }
 
@@ -242,21 +299,6 @@ struct BackupSectionView: View {
         return String(
             format: NSLocalizedString("backup_last", comment: ""),
             date.formatted(date: .long, time: .shortened)
-        )
-    }
-
-    private var newKeyPresented: Binding<Bool> {
-        Binding(get: { viewModel.newKey != nil }, set: { _ in })
-    }
-
-    private var restorePresented: Binding<Bool> {
-        Binding(
-            get: { viewModel.restoreFrom != nil },
-            set: { presented in
-                if !presented {
-                    viewModel.restoreFrom = nil
-                }
-            }
         )
     }
 
@@ -272,30 +314,36 @@ struct BackupSectionView: View {
     }
 }
 
-/// Shown once and asked back: nobody can open the backup without it. Never in the clipboard; the end typed again makes
-/// sure it was read.
+/// Shown once and asked back: nobody can open the backup without it. Never in the clipboard; hidden as soon as the
+/// scene is no longer active, so that the app switcher's snapshot does not keep it, lock on or off. A screenshot
+/// remains possible on iOS (ADR-025). The end typed again makes sure it was read.
 private struct NewKeySheet: View {
     let key: String
+    let confirms: (String) -> Bool
     let onConfirm: () -> Void
     let onCancel: () -> Void
     @State private var typed = ""
-
-    private var lastGroup: String {
-        key.components(separatedBy: "-").last ?? ""
-    }
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
             Form {
                 Text("backup_key_text")
-                Text(verbatim: key)
-                    .font(.system(.title3, design: .monospaced))
-                    .privacySensitive()
-                TextField("backup_key_confirm_label", text: $typed)
-                    .textInputAutocapitalization(.characters)
-                    .autocorrectionDisabled()
+                if scenePhase == .active {
+                    Text(verbatim: key)
+                        .font(.system(.title3, design: .monospaced))
+                        .speechSpellsOutCharacters()
+                    VStack(alignment: .leading) {
+                        Text("backup_key_confirm_label")
+                            .font(.footnote)
+                        TextField("", text: $typed)
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled()
+                            .accessibilityLabel(Text("backup_key_confirm_label"))
+                    }
+                }
                 Button("backup_key_confirm", action: onConfirm)
-                    .disabled(typed.trimmingCharacters(in: .whitespaces).caseInsensitiveCompare(lastGroup) != .orderedSame)
+                    .disabled(!confirms(typed))
             }
             .navigationTitle("backup_key_title")
             .toolbar {
@@ -312,15 +360,22 @@ private struct RestoreKeySheet: View {
     let onRestore: (String) -> Void
     let onCancel: () -> Void
     @State private var typed = ""
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
             Form {
                 Text("backup_restore_text")
-                TextField("backup_restore_field", text: $typed)
-                    .textInputAutocapitalization(.characters)
-                    .autocorrectionDisabled()
-                    .privacySensitive()
+                if scenePhase == .active {
+                    VStack(alignment: .leading) {
+                        Text("backup_restore_field")
+                            .font(.footnote)
+                        TextField("", text: $typed)
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled()
+                            .accessibilityLabel(Text("backup_restore_field"))
+                    }
+                }
                 Button("backup_restore_action") { onRestore(typed) }
                     .disabled(typed.trimmingCharacters(in: .whitespaces).isEmpty)
             }

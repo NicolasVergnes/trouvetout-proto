@@ -182,3 +182,10 @@ dependencies {
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext.junit)
 }
+
+// What goes to the Play Store must recognise its purchases: without the key, they would be taken, not acknowledged and
+// refunded after three days. `assembleRelease` stays free of it for the CI.
+tasks.matching { it.name == "bundleRelease" }.configureEach {
+    val key = providers.gradleProperty("trouvetout.playLicenseKey")
+    doFirst { check(key.getOrElse("").isNotBlank()) { "trouvetout.playLicenseKey is missing" } }
+}

@@ -298,12 +298,12 @@
     <string name="purchase_unavailable">The store is not answering right now. Please try again later.</string>
     <string name="purchase_pending">Payment pending: the purchase takes effect as soon as it is confirmed.</string>
     <string name="purchase_restored">Your purchase is restored.</string>
-    <string name="purchase_nothing_to_restore">No purchase found on this account.</string>
+    <string name="purchase_nothing_to_restore">No purchase found on this account. Check which Google account is active.</string>
     <string name="settings_purchase_section">Purchase</string>
 
     <!-- Lot 10: encrypted backup (A9) -->
     <string name="settings_backup_section">Encrypted backup</string>
-    <string name="backup_hint">Keeps an encrypted copy of your objects and photos in a file you choose, in Google Drive for example. It is updated when you open the app, at most once a day and only after a change. Only your recovery key opens it: without it nobody can, not even us.</string>
+    <string name="backup_hint">Keeps an encrypted copy of all your data (objects, sensitive ones included, places, photos, history) in a file you choose. If that file is in Google Drive, that service sends it: it receives an unreadable file, and sees its size and dates. It is updated when you open the app, at most once a day and only after a change. Only your recovery key opens it: without it nobody can, not even us.</string>
     <string name="backup_enable">Turn on and choose the file</string>
     <string name="backup_disable">Turn off</string>
     <string name="backup_run_now">Back up now</string>
@@ -314,7 +314,7 @@
     <string name="backup_too_large">Your data is too large to be restored from one file: no backup was written. Keep your photos in check, or use the export.</string>
     <string name="backup_done">Backup written.</string>
     <string name="backup_key_title">Your recovery key</string>
-    <string name="backup_key_text">Write this key down and keep it away from this phone. It is shown only once. Without it, nobody can open your backup on a new phone, not even us.</string>
+    <string name="backup_key_text">Write this key down and keep it away from this phone. It is shown only once. Without it, nobody can open your backup on a new phone, not even us. The app keeps a copy in its encrypted database for the next backups; erasing all data removes it.</string>
     <string name="backup_key_confirm_label">Type its last four characters</string>
     <string name="backup_key_confirm">I wrote it down</string>
     <string name="backup_restore_text">Enter the recovery key of this backup. What it holds is added to what is on this phone.</string>
@@ -323,4 +323,7 @@
     <string name="backup_bad_key">That is not a recovery key: check what you typed.</string>
     <string name="backup_not_a_backup">This file is not a backup.</string>
     <string name="backup_cannot_open">This key does not open this backup, or the file is damaged.</string>
+    <string name="backup_lost">The chosen file is gone or the app lost access to it. Choose another file: your key stays the same.</string>
+    <string name="backup_choose_other">Choose another file</string>
+    <string name="backup_off_hint">Turning off stops the backups and the app forgets the key. The last file stays where it is: delete it if you wish.</string>
 </resources>

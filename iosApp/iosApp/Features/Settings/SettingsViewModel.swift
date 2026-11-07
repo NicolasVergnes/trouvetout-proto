@@ -123,6 +123,7 @@ final class SettingsViewModel: ObservableObject {
                 container.recreateShared()
                 exportURL = nil
             }
+            await container.finishBackup()
             _ = try await container.shared.wipeAllData()
             message = .wiped
         }

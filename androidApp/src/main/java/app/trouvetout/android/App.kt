@@ -30,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -39,6 +40,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.util.Locale
 
@@ -113,6 +116,9 @@ class App : Application() {
     var purchases: PurchaseGateway =
         PlayPurchaseGateway(this, BuildConfig.PLAY_LICENSE_KEY) { refreshPurchases() }
 
+    private val purchaseSync = Mutex()
+    private var purchaseJob: Job? = null
+
     /** Moves when the licence may have changed, so that an open purchase screen reads it again. */
     val licenseChanges = MutableStateFlow(0)
 
@@ -121,33 +127,49 @@ class App : Application() {
      * connection) leaves the last one standing: nobody loses what they bought for being offline.
      */
     fun refreshPurchases() {
-        appScope.launch { syncPurchases() }
+        if (purchaseJob?.isActive == true) return
+        purchaseJob = appScope.launch { syncPurchases() }
     }
 
+    /** One at a time: an older answer of the store never overwrites a newer one. */
     suspend fun syncPurchases() {
-        val factory = readyShared.first()
-        val entitled = runCatching { purchases.entitled() }.getOrNull() ?: return
-        runCatching { factory.licensing.recordPurchased(entitled) }
-        licenseChanges.update { it + 1 }
+        purchaseSync.withLock {
+            val factory = readyShared.first()
+            val entitled = runCatching { purchases.entitled() }.getOrNull() ?: return
+            runCatching { factory.licensing.recordPurchased(entitled) }
+            licenseChanges.update { it + 1 }
+        }
     }
 
     /** The encrypted backup to the file the user chose (A9). */
     val backupRunner: BackupRunner by lazy { BackupRunner(contentResolver) }
     private var backupJob: Job? = null
 
+    /** Moves when a backup ended, so that an open settings screen reads its state again. */
+    val backupChanges = MutableStateFlow(0)
+
     /** A9, at each return to the foreground; a backup never runs behind a closed app (N6). */
     fun startBackupIfDue() {
-        backupJob?.cancel()
-        backupJob =
-            appScope.launch {
-                val factory = readyShared.first()
-                runCatching { backupRunner.runIfDue(factory) }
-                    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
-            }
+        if (backupJob?.isActive == true) return
+        backupJob = launchBackup { backupRunner.runIfDue(it) }
+    }
+
+    /** From the settings; stopped like any other when the app leaves. */
+    suspend fun backUpNow() {
+        backupJob?.join()
+        launchBackup { backupRunner.runNow(it) }.also { backupJob = it }.join()
     }
 
     fun stopBackup() {
         backupJob?.cancel()
+    }
+
+    private fun launchBackup(work: suspend (SharedFactory) -> Unit): Job = appScope.launch {
+        val factory = readyShared.first()
+        // A failure is kept in the state of the backup, for the settings.
+        runCatching { work(factory) }
+            .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+        backupChanges.update { it + 1 }
     }
 
     /** Reminder alarms and notifications (lot 9). */
@@ -204,9 +226,10 @@ class App : Application() {
         // Whatever happens, the spent core is replaced; a failure still reaches the caller, which says so.
         try {
             runCatching { reminderScheduler.clear() }
-            stopBackup()
+            // Nothing written to the chosen file after the user confirmed, and no archive being written while erasing.
+            backupJob?.cancelAndJoin()
             // The access to the chosen file goes too; the file stays where it is, unreadable without its key.
-            runCatching { shared.backup.state().location?.let(backupRunner::releaseAccess) }
+            backupRunner.releaseAccess()
             shared.wipeAllData()
         } finally {
             // Again once the old core is closed: a reconciliation in between cannot leave an alarm behind.
