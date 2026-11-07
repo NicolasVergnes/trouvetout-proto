@@ -16,24 +16,24 @@ final class CryptoKitBackupCipher: NSObject, NativeBackupCipher {
         return Data(bytes)
     }
 
-    func seal(key: Data, nonce: Data, aad: Data, plain: Data) -> Data? {
+    func seal(key: Data, nonce: Data, aad: Data, plainData: Data) -> Data? {
         guard
             let gcmNonce = try? AES.GCM.Nonce(data: nonce),
-            let box = try? AES.GCM.seal(plain, using: SymmetricKey(data: key), nonce: gcmNonce, authenticating: aad)
+            let box = try? AES.GCM.seal(plainData, using: SymmetricKey(data: key), nonce: gcmNonce, authenticating: aad)
         else {
             return nil
         }
         return box.ciphertext + box.tag
     }
 
-    func open(key: Data, nonce: Data, aad: Data, sealed: Data) -> Data? {
+    func open(key: Data, nonce: Data, aad: Data, sealedData: Data) -> Data? {
         guard
-            sealed.count >= Self.tagBytes,
+            sealedData.count >= Self.tagBytes,
             let gcmNonce = try? AES.GCM.Nonce(data: nonce),
             let box = try? AES.GCM.SealedBox(
                 nonce: gcmNonce,
-                ciphertext: sealed.dropLast(Self.tagBytes),
-                tag: sealed.suffix(Self.tagBytes)
+                ciphertext: sealedData.dropLast(Self.tagBytes),
+                tag: sealedData.suffix(Self.tagBytes)
             )
         else {
             return nil

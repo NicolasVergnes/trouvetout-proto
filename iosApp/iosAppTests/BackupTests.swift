@@ -33,10 +33,10 @@ final class BackupTests: XCTestCase {
                 "8cb08e48590dbb3da7b08b1056828838c5f61e6393ba7a0abcc9f662" +
                 "76fc6ece0f4e1768cddf8853bb2d551b"
         )
-        XCTAssertEqual(cipher.seal(key: key, nonce: nonce, aad: aad, plain: plain), sealed)
-        XCTAssertEqual(cipher.open(key: key, nonce: nonce, aad: aad, sealed: sealed), plain)
-        XCTAssertNil(cipher.open(key: key, nonce: nonce, aad: Data(), sealed: sealed), "other additional data")
-        XCTAssertNil(cipher.open(key: key, nonce: nonce, aad: aad, sealed: Data([1, 2])), "shorter than a tag")
+        XCTAssertEqual(cipher.seal(key: key, nonce: nonce, aad: aad, plainData: plain), sealed)
+        XCTAssertEqual(cipher.open(key: key, nonce: nonce, aad: aad, sealedData: sealed), plain)
+        XCTAssertNil(cipher.open(key: key, nonce: nonce, aad: Data(), sealedData: sealed), "other additional data")
+        XCTAssertNil(cipher.open(key: key, nonce: nonce, aad: aad, sealedData: Data([1, 2])), "shorter than a tag")
         XCTAssertEqual(cipher.randomBytes(count: 32)?.count, 32)
     }
 

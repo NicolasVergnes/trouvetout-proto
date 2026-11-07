@@ -18,14 +18,14 @@ public interface NativeBackupCipher {
         key: NSData,
         nonce: NSData,
         aad: NSData,
-        plain: NSData,
+        plainData: NSData,
     ): NSData?
 
     public fun open(
         key: NSData,
         nonce: NSData,
         aad: NSData,
-        sealed: NSData,
+        sealedData: NSData,
     ): NSData?
 }
 
