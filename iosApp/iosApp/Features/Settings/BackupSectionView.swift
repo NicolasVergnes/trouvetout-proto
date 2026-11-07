@@ -218,6 +218,7 @@ struct BackupSectionView: View {
             }
         } header: {
             Text("settings_backup_section")
+                .foregroundStyle(.primary) // the system gray is at the limit of the contrast audit
         }
     }
 

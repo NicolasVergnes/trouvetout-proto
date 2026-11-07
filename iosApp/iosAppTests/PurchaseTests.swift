@@ -24,6 +24,16 @@ final class PurchaseTests: XCTestCase {
         session = nil
     }
 
+    /// The test store applies a refund or an expiry a moment later.
+    private func entitledOnceSettled(expected: Bool) async -> Bool? {
+        var answer = await gateway.entitled()
+        for _ in 0 ..< 50 where answer != expected {
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            answer = await gateway.entitled()
+        }
+        return answer
+    }
+
     func testBothProductsAreOfferedWithTheStorePrice() async {
         let offers = await gateway.offers()
         XCTAssertEqual(offers.map(\.kind), [.lifetime, .yearly])
@@ -47,7 +57,7 @@ final class PurchaseTests: XCTestCase {
         }
         try session?.refundTransaction(identifier: UInt(transaction.id))
 
-        let afterTheRefund = await gateway.entitled()
+        let afterTheRefund = await entitledOnceSettled(expected: false)
         XCTAssertEqual(afterTheRefund, false)
     }
 
@@ -59,7 +69,7 @@ final class PurchaseTests: XCTestCase {
 
         try session?.expireSubscription(productIdentifier: ProductKind.yearly.rawValue)
 
-        let afterTheEnd = await gateway.entitled()
+        let afterTheEnd = await entitledOnceSettled(expected: false)
         XCTAssertEqual(afterTheEnd, false)
     }
 
