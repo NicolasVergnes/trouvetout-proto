@@ -164,8 +164,11 @@ final class AppContainer: ObservableObject {
         if let owned {
             try? await factory.licensing.recordPurchased(purchased: owned)
         }
-        if let firstDownload = await purchases.firstDownloadMillis(), factory === shared {
-            try? await factory.licensing.recordStoreDate(millis: firstDownload)
+        // Apple may be asked, which can take a minute offline: nothing waits for this date.
+        Task { [purchases] in
+            if let firstDownload = await purchases.firstDownloadMillis() {
+                try? await factory.licensing.recordStoreDate(millis: firstDownload)
+            }
         }
     }
 

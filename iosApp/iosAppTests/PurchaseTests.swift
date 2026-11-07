@@ -91,6 +91,7 @@ final class PurchaseTests: XCTestCase {
         XCTAssertTrue(after.canAddItems)
 
         session?.clearTransactions()
+        _ = await entitledOnceSettled(expected: false)
         await container.syncPurchases()
         let cleared = try await container.shared.licensing.status()
         XCTAssertFalse(cleared.purchased, "the store's answer stands, a refund as much as a purchase")
