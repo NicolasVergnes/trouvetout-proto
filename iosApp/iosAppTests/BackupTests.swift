@@ -64,7 +64,7 @@ final class BackupTests: XCTestCase {
         let source = try factory()
         let draft = ItemDraft(name: "passeport", description: nil, tags: [], quantity: nil, unit: nil, sensitive: false)
         _ = try await source.itemCommands.create(draft: draft, location: nil, source: .text, rawInput: nil)
-        let key = source.backup.newRecoveryKey()
+        let key = source.backup.drawRecoveryKey()
         let enabled = try await source.backup.enable(recoveryKey: key, location: "bookmark")
         XCTAssertTrue(enabled.boolValue)
         let prepared = try await source.backup.prepare()
@@ -75,7 +75,7 @@ final class BackupTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: ready.absolutePath), "the private copy is gone")
 
         let target = try factory()
-        let wrong = try await restore(bytes, into: target, key: target.backup.newRecoveryKey())
+        let wrong = try await restore(bytes, into: target, key: target.backup.drawRecoveryKey())
         XCTAssertTrue(wrong is BackupRestoreResultCannotOpen)
         let right = try await restore(bytes, into: target, key: key)
         XCTAssertTrue(right is BackupRestoreResultImported)

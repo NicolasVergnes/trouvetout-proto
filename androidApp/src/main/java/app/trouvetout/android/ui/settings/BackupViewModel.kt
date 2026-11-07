@@ -74,7 +74,7 @@ class BackupViewModel(
     fun fileChosen(uri: Uri) {
         viewModelScope.launch {
             val shared = app.readyShared.first()
-            _state.update { it.copy(newKey = shared.backup.newRecoveryKey(), newLocation = uri) }
+            _state.update { it.copy(newKey = shared.backup.drawRecoveryKey(), newLocation = uri) }
         }
     }
 

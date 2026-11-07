@@ -61,7 +61,7 @@ class BackupServiceTest {
 
     /** A running backup: returns the encrypted bytes and the key. */
     private suspend fun SharedFactory.backUp(): Pair<ByteArray, String> {
-        val key = backup.newRecoveryKey()
+        val key = backup.drawRecoveryKey()
         assertTrue(backup.enable(key, "content://chosen"))
         val ready = assertIs<PreparedBackup.Ready>(backup.prepare())
         val bytes = File(ready.absolutePath).readBytes()
@@ -108,7 +108,7 @@ class BackupServiceTest {
     fun should_leave_no_plain_archive_behind() = runTest {
         val source = factory()
         source.add("passeport")
-        val key = source.backup.newRecoveryKey()
+        val key = source.backup.drawRecoveryKey()
         source.backup.enable(key, "content://chosen")
         val ready = assertIs<PreparedBackup.Ready>(source.backup.prepare())
         val store = createFileStore(source.config.dataDirectory)
@@ -124,7 +124,7 @@ class BackupServiceTest {
         val (bytes, key) = source.backUp()
         val target = factory()
 
-        assertIs<BackupRestoreResult.CannotOpen>(target.restoreBytes(bytes, target.backup.newRecoveryKey()))
+        assertIs<BackupRestoreResult.CannotOpen>(target.restoreBytes(bytes, target.backup.drawRecoveryKey()))
         val mistaken = (if (key[0] == 'A') 'B' else 'A') + key.drop(1)
         assertIs<BackupRestoreResult.BadKey>(target.restoreBytes(bytes, mistaken))
         assertTrue(target.itemRepository.observeActive().first().isEmpty())
@@ -173,7 +173,7 @@ class BackupServiceTest {
     @Test
     fun should_say_when_a_file_is_not_a_backup() = runTest {
         val target = factory()
-        val key = target.backup.newRecoveryKey()
+        val key = target.backup.drawRecoveryKey()
         assertIs<BackupRestoreResult.NotABackup>(target.restoreBytes("PK not a backup".encodeToByteArray(), key))
         val other = ByteArray(100).also(Random(1)::nextBytes)
         assertIs<BackupRestoreResult.NotABackup>(target.restoreBytes(other, key))
@@ -206,7 +206,7 @@ class BackupServiceTest {
     fun a_cancelled_export_leaves_nothing_plain_behind() = runTest {
         val source = factory()
         source.add("passeport")
-        source.backup.enable(source.backup.newRecoveryKey(), "content://chosen")
+        source.backup.enable(source.backup.drawRecoveryKey(), "content://chosen")
         val store = createFileStore(source.config.dataDirectory)
 
         val job = launch(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
@@ -236,7 +236,7 @@ class BackupServiceTest {
     fun the_launch_does_not_clear_a_backup_running_now() = runTest {
         val source = factory()
         source.add("passeport")
-        source.backup.enable(source.backup.newRecoveryKey(), "content://chosen")
+        source.backup.enable(source.backup.drawRecoveryKey(), "content://chosen")
         val ready = assertIs<PreparedBackup.Ready>(source.backup.prepare())
 
         source.housekeeping()
@@ -259,7 +259,7 @@ class BackupServiceTest {
         }
         val before = SharedFactory(config())
         before.add("passeport")
-        before.backup.enable(before.backup.newRecoveryKey(), "content://chosen")
+        before.backup.enable(before.backup.drawRecoveryKey(), "content://chosen")
         before.backup.finished(assertIs(before.backup.prepare()), succeeded = true)
         assertNull(before.backup.state().problem)
         clock.millis += day
@@ -281,7 +281,7 @@ class BackupServiceTest {
     fun a_failed_export_is_said_and_keeps_nothing() = runTest {
         val source = factory()
         source.add("passeport")
-        source.backup.enable(source.backup.newRecoveryKey(), "content://chosen")
+        source.backup.enable(source.backup.drawRecoveryKey(), "content://chosen")
         val store = createFileStore(source.config.dataDirectory)
         // A directory where the encrypted file goes: the write fails.
         store.write("${BackupService.DIRECTORY}/backup.ttbk/x", ByteArray(1))
@@ -296,7 +296,7 @@ class BackupServiceTest {
     fun a_lost_destination_waits_for_another_file_with_the_same_key() = runTest {
         val source = factory()
         source.add("passeport")
-        source.backup.enable(source.backup.newRecoveryKey(), "content://chosen")
+        source.backup.enable(source.backup.drawRecoveryKey(), "content://chosen")
         source.backup.reportDestinationLost()
         assertEquals(BackupProblem.DESTINATION_LOST, source.backup.state().problem)
         clock.millis += day
@@ -324,7 +324,7 @@ class BackupServiceTest {
         val source = factory()
         source.add("passeport")
         assertFalse(source.backup.isDue(), "off")
-        val key = source.backup.newRecoveryKey()
+        val key = source.backup.drawRecoveryKey()
         source.backup.enable(key, "content://chosen")
         assertTrue(source.backup.isDue(), "never done")
 
@@ -354,7 +354,7 @@ class BackupServiceTest {
         clock.millis += day
         val source = factory()
         source.add("passeport")
-        val key = source.backup.newRecoveryKey()
+        val key = source.backup.drawRecoveryKey()
         source.backup.enable(key, "content://chosen")
         source.backup.finished(assertIs(source.backup.prepare()), succeeded = true)
         createFileStore(source.config.dataDirectory).write("imports/export.zip", bytes)
@@ -388,7 +388,7 @@ class BackupServiceTest {
         val directory = testTempDirectory()
         val source = factory(directory)
         source.add("passeport")
-        source.backup.enable(source.backup.newRecoveryKey(), "content://chosen")
+        source.backup.enable(source.backup.drawRecoveryKey(), "content://chosen")
         assertIs<PreparedBackup.Ready>(source.backup.prepare())
 
         val removed = source.wipeAllData()

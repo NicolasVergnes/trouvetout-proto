@@ -91,7 +91,7 @@ public class BackupService internal constructor(
 
     /** A new key to show once; nothing is kept until [enable]. */
     @Throws(Exception::class) // to Swift: an error it can handle, not the end of the process
-    public fun newRecoveryKey(): String =
+    public fun drawRecoveryKey(): String =
         RecoveryKey.encode(checkNotNull(crypto) { "no crypto" }.randomBytes(RecoveryKey.KEY_BYTES))
 
     /** Whether [typed] is the last group of [recoveryKey], with the same forgiveness as reading a key back. */

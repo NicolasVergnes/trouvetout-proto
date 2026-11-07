@@ -54,7 +54,7 @@ class BackupTest {
         val chosen = File(app.cacheDir, "chosen.ttbk")
         chosen.writeText("an older backup, longer than a header but shorter than this one will be")
         try {
-            val key = shared.backup.newRecoveryKey()
+            val key = shared.backup.drawRecoveryKey()
             assertTrue(shared.backup.enable(key, Uri.fromFile(chosen).toString()))
 
             app.backupRunner.runNow(shared)
@@ -77,7 +77,7 @@ class BackupTest {
         shared.itemCommands.create(ItemDraft("backup-probe-2"), null, EventSource.TEXT)
         try {
             val gone = Uri.fromFile(File(app.cacheDir, "no-such-directory/chosen.ttbk"))
-            assertTrue(shared.backup.enable(shared.backup.newRecoveryKey(), gone.toString()))
+            assertTrue(shared.backup.enable(shared.backup.drawRecoveryKey(), gone.toString()))
 
             app.backupRunner.runNow(shared)
 

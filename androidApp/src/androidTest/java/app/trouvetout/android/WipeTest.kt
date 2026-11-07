@@ -29,7 +29,7 @@ class WipeTest {
         val oldKey = keyFile.readBytes()
         File(app.cacheDir, "probe").writeText("cache")
         val trialStart = before.licensing.status().trialEndMillis
-        before.backup.enable(before.backup.newRecoveryKey(), "file:///not-a-document")
+        before.backup.enable(before.backup.drawRecoveryKey(), "file:///not-a-document")
 
         app.wipeAll()
 

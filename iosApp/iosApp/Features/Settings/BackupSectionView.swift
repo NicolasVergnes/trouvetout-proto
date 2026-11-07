@@ -90,7 +90,7 @@ final class BackupViewModel: ObservableObject {
             }
             return
         }
-        guard let key = try? container.shared.backup.newRecoveryKey() else {
+        guard let key = try? container.shared.backup.drawRecoveryKey() else {
             message = .failed
             return
         }
