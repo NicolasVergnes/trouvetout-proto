@@ -166,6 +166,13 @@ final class AppContainer: ObservableObject {
         }
     }
 
+    /// Stops computing vectors and frees the embedding model (background, memory warning); reloaded on demand.
+    func releaseModel() {
+        guard ready else { return }
+        let search = shared.search
+        Task { try? await search.release() }
+    }
+
     /// After a total wipe (H6) the spent factory is replaced by a fresh one over an empty directory.
     func recreateShared() {
         ready = false

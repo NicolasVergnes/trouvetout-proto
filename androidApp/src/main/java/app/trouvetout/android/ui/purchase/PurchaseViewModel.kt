@@ -78,8 +78,7 @@ class PurchaseViewModel(
     fun dismissMessage() = _state.update { it.copy(message = null) }
 
     private suspend fun refresh(): Boolean? {
-        val entitled = app.purchases.entitled()
-        if (entitled != null) app.readyShared.first().licensing.recordPurchased(entitled)
+        val entitled = app.syncPurchases()
         readStatus()
         return entitled
     }

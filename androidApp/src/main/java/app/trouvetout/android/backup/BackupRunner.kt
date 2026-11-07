@@ -54,9 +54,13 @@ class BackupRunner(
         }
         val prepared = shared.backup.prepare() as? PreparedBackup.Ready ?: return
         withContext(NonCancellable + Dispatchers.IO) {
-            shared.backup.copying()
-            val copy = copy(prepared.absolutePath, target)
-            shared.backup.finished(prepared, copy == Copy.DONE)
+            var copy = Copy.FAILED
+            try {
+                shared.backup.copying()
+                copy = copy(prepared.absolutePath, target)
+            } finally {
+                shared.backup.finished(prepared, copy == Copy.DONE)
+            }
             if (copy == Copy.LOST) shared.backup.reportDestinationLost()
         }
     }

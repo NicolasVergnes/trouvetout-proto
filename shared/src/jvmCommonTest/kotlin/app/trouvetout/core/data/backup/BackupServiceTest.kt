@@ -345,6 +345,26 @@ class BackupServiceTest {
     }
 
     @Test
+    fun older_events_merged_by_an_import_count_as_new() = runTest {
+        val other = factory()
+        other.add("tente")
+        val archive = other.exportService.export()
+        val bytes = createFileStore(other.config.dataDirectory).read(archive.relativePath) ?: error("no export")
+
+        clock.millis += day
+        val source = factory()
+        source.add("passeport")
+        val key = source.backup.newRecoveryKey()
+        source.backup.enable(key, "content://chosen")
+        source.backup.finished(assertIs(source.backup.prepare()), succeeded = true)
+        createFileStore(source.config.dataDirectory).write("imports/export.zip", bytes)
+        source.importService.import("imports/export.zip")
+        clock.millis += day
+
+        assertTrue(source.backup.isDue(), "the head of the journal did not move, but it holds more")
+    }
+
+    @Test
     fun should_forget_the_key_when_turned_off() = runTest {
         val source = factory()
         source.add("passeport")

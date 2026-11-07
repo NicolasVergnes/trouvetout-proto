@@ -323,7 +323,8 @@ public class BackupService internal constructor(
         db.metaQueries.remove(MetaKeys.BACKUP_COPYING)
     }
 
-    private fun head(): String? = db.eventQueries.head().executeAsOneOrNull()?.id
+    /** The journal only grows: its size says whether something is new, older events merged by an import included. */
+    private fun head(): String? = db.eventQueries.count().executeAsOne().takeIf { it > 0 }?.toString()
 
     public companion object {
         public const val DIRECTORY: String = "backups"

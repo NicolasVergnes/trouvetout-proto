@@ -31,6 +31,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -117,7 +119,9 @@ class App : Application() {
         PlayPurchaseGateway(this, BuildConfig.PLAY_LICENSE_KEY) { refreshPurchases() }
 
     private val purchaseSync = Mutex()
-    private var purchaseJob: Job? = null
+
+    /** Conflated: asked again during a query, it runs once more after it, so a purchase that just arrived counts. */
+    private val purchaseRequests = Channel<Unit>(Channel.CONFLATED)
 
     /** Moves when the licence may have changed, so that an open purchase screen reads it again. */
     val licenseChanges = MutableStateFlow(0)
@@ -127,18 +131,28 @@ class App : Application() {
      * connection) leaves the last one standing: nobody loses what they bought for being offline.
      */
     fun refreshPurchases() {
-        if (purchaseJob?.isActive == true) return
-        purchaseJob = appScope.launch { syncPurchases() }
+        purchaseRequests.trySend(Unit)
     }
 
-    /** One at a time: an older answer of the store never overwrites a newer one. */
-    suspend fun syncPurchases() {
-        purchaseSync.withLock {
-            val factory = readyShared.first()
-            val entitled = runCatching { purchases.entitled() }.getOrNull() ?: return
+    /**
+     * One at a time: an older answer of the store never overwrites a newer one. Returns what the store said, null when
+     * it could not answer.
+     */
+    suspend fun syncPurchases(): Boolean? = purchaseSync.withLock {
+        val factory = readyShared.first()
+        val entitled =
+            try {
+                purchases.entitled()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                null
+            }
+        if (entitled != null) {
             runCatching { factory.licensing.recordPurchased(entitled) }
             licenseChanges.update { it + 1 }
         }
+        entitled
     }
 
     /** The encrypted backup to the file the user chose (A9). */
@@ -190,6 +204,7 @@ class App : Application() {
         }
         // Whatever woke the process (screen, widget, alarm, restart), the alarms follow the journal: a reminder
         // set, removed, renamed, made sensitive or sent to the bin is handed to the system again.
+        appScope.launch { purchaseRequests.receiveAsFlow().collect { syncPurchases() } }
         ReminderNotifications.ensureChannel(this)
         appScope.launch {
             readyShared.collectLatest { factory ->
