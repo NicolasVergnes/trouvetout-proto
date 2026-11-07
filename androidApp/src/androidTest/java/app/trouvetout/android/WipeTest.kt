@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,10 +28,14 @@ class WipeTest {
         assertTrue(keyFile.isFile)
         val oldKey = keyFile.readBytes()
         File(app.cacheDir, "probe").writeText("cache")
+        val trialStart = before.licensing.status().trialEndMillis
+        before.backup.enable(before.backup.newRecoveryKey(), "file:///not-a-document")
 
         app.wipeAll()
 
         val after = app.readyShared.first { it !== before }
+        assertEquals("the trial does not start again (ADR-025)", trialStart, after.licensing.status().trialEndMillis)
+        assertNull("the recovery key goes with the data", after.backup.state().location)
         assertEquals(0L, after.itemRepository.observeActive().first().size.toLong())
         assertFalse("caches emptied", File(app.cacheDir, "probe").exists())
         assertFalse("display preferences reset", app.uiPrefs.simpleMode.value)

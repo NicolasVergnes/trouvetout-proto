@@ -45,6 +45,9 @@ android {
         buildConfigField("String", "VISION_MODEL_ID", "\"${identity(visionModel)}\"")
         buildConfigField("long", "VISION_MODEL_BYTES", "${visionModel["bytes"]}L")
         buildConfigField("String", "LABELS_ASSET", if (bundleModel) "\"models/labels_fr_en.catalog\"" else "null")
+        // The public key of the Play Console, which is no secret; none given (tests, CI): no purchase is recognised.
+        val playLicenseKey = providers.gradleProperty("trouvetout.playLicenseKey").getOrElse("")
+        buildConfigField("String", "PLAY_LICENSE_KEY", "\"$playLicenseKey\"")
     }
 
     // Stored as is: LiteRT-LM needs the plain file, copied once from the APK on first use.
@@ -155,6 +158,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
+    // Purchases (J5). Out, by ADR-025: the library's telemetry to Google (with the network permission and a background
+    // job it declares) and a location library its code never calls. Calls to the telemetry are guarded in its bytecode.
+    implementation(libs.billing.ktx) {
+        exclude(group = "com.google.android.datatransport")
+        exclude(group = "com.google.android.gms", module = "play-services-location")
+    }
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

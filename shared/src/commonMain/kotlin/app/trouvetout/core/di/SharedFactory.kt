@@ -5,6 +5,7 @@ import app.trouvetout.core.AppInfo
 import app.trouvetout.core.capture.CaptureService
 import app.trouvetout.core.data.DeviceIdentity
 import app.trouvetout.core.data.EventStore
+import app.trouvetout.core.data.backup.BackupService
 import app.trouvetout.core.data.db.DatabaseKeyLostException
 import app.trouvetout.core.data.db.TrouveToutDb
 import app.trouvetout.core.data.db.openDatabase
@@ -192,6 +193,19 @@ public class SharedFactory(
         ImportService(files, eventStore, photoStore, config.dispatchers.io)
     }
 
+    /** The optional encrypted backup (A9, lot 10). */
+    public val backup: BackupService by lazy {
+        BackupService(
+            database,
+            files,
+            exportService,
+            importService,
+            config.backupCrypto,
+            config.clock,
+            config.dispatchers.io,
+        )
+    }
+
     /**
      * Opens the database and settles the device identity off the main thread, so the first capture does not
      * pay the schema creation. Returns false (and logs the failure class, never a path) when the store cannot
@@ -232,6 +246,7 @@ public class SharedFactory(
                 bin.purgeExpired()
                 exportService.purgeOldExports()
                 files.deleteDirectory(IMPORT_DIRECTORY)
+                backup.purge()
             }
         attempt.exceptionOrNull()?.let { failure ->
             if (failure is CancellationException) throw failure
@@ -276,7 +291,13 @@ public class SharedFactory(
 
         /** Everything the core writes lives in these subdirectories of `dataDirectory`. */
         public val DATA_DIRECTORIES: List<String> =
-            listOf(DATABASE_DIRECTORY, PhotoStore.DIRECTORY, ExportService.DIRECTORY, IMPORT_DIRECTORY)
+            listOf(
+                DATABASE_DIRECTORY,
+                PhotoStore.DIRECTORY,
+                ExportService.DIRECTORY,
+                IMPORT_DIRECTORY,
+                BackupService.DIRECTORY,
+            )
         public const val DATABASE_DIRECTORY: String = "db"
         public const val DATABASE_FILE: String = "trouvetout.db"
         public const val IMPORT_DIRECTORY: String = "imports"

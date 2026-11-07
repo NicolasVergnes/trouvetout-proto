@@ -63,7 +63,7 @@ for await result in Transaction.currentEntitlements { if case .verified(let tx) 
 // Restauration
 try await AppStore.sync()
 ```
-- `StoreKitPurchaseGateway: PurchaseGateway` injecté dans `Shared.licensing` ; produit non consommable **ou** abonnement annuel selon la décision finale ; `Transaction.updates` écouté au lancement ; `finish()` après traitement.
+- `StoreKitPurchaseGateway` dans l'app ; le résultat est rapporté au noyau (`licensing.recordPurchased`) ; produit non consommable **et** abonnement annuel (ADR-014) ; `Transaction.updates` écouté au lancement ; `finish()` après traitement.
 
 ## Notifications locales (E2, E6)
 - `UNUserNotificationCenter` ; autorisation demandée au premier rappel ; `UNCalendarNotificationTrigger` ; contenu sans lieu ni objet `sensitive` ; `threadIdentifier` par objet.

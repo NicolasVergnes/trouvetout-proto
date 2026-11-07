@@ -40,6 +40,12 @@ struct SettingsView: View {
                 Button("settings_wipe", role: .destructive) { confirmWipe = true }
                     .disabled(viewModel.busy)
             }
+            BackupSectionView(container: viewModel.container)
+            Section {
+                NavigationLink("purchase_see_options", value: PurchaseRoute())
+            } header: {
+                Text("settings_purchase_section")
+            }
             // Lot 6: what runs the search, and the licences the bundled model and runtime require (Apache 2.0).
             Section {
                 Text("settings_search_text")

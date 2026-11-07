@@ -166,6 +166,28 @@ class LicensingServiceTest {
     }
 
     @Test
+    fun an_export_imported_by_mistake_stops_counting_once_erased() = runTest {
+        val foreign = factory(MemoryStore(), testTempDirectory())
+        assertIs<CaptureOutcome.Recorded>(foreign.say("passeport @ bureau"))
+        val archive = foreign.exportService.export()
+        val bytes = createFileStore(foreign.config.dataDirectory).read(archive.relativePath) ?: error("no export")
+
+        clock.millis = afterTrial
+        val directory = testTempDirectory()
+        val mine = factory(store, directory)
+        mine.licensing.status()
+        val firstLaunch = store.value
+        createFileStore(directory).write("imports/export.zip", bytes)
+        assertIs<ImportResult.Done>(mine.importService.import("imports/export.zip"))
+        assertFalse(mine.licensing.status().canAddItems, "the old journal counts while it is here")
+        assertEquals(firstLaunch, store.value, "and is never stored")
+
+        mine.wipeAllData()
+
+        assertTrue(factory(store, testTempDirectory()).licensing.status().canAddItems)
+    }
+
+    @Test
     fun an_absurd_date_in_a_journal_does_not_end_the_trial() = runTest {
         val factory = factory()
         factory.licensing.status()

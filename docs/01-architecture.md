@@ -200,19 +200,20 @@ Méthode : normalisation (minuscules, accents conservés pour l'affichage, repli
 `tools/eval-photos` (B8) nomme les 205 photos CC BY 2.0 d'Open Images de `corpus/photos-cc.jsonl` (téléchargées et vérifiées par somme, jamais versionnées, crédits dans `corpus/PHOTOS-CREDITS.md`) par le chemin du noyau et bloque sous `PHOTO_FLOORS` ; `--local <dossier>` mesure le critère du lot 7 sur les photos de l'utilisateur, hors dépôt ; il vérifie aussi que les vecteurs texte des deux fichiers sont identiques.
 `tools/eval-search` rejoue `corpus/recherche.jsonl` (question → id de la fiche attendue sur `corpus/fiches-reference.json`) en trois modes (mots-clés, sémantique, hybride) avec le vrai modèle (LiteRT-LM JVM) et sort top-1 / top-3 par langue et par split, puis la latence sur 5 000 objets. Objectif N3 : 80 % / 95 % / < 1 s ; la CI (job `search-eval`) bloque sous le plancher `SearchCorpus.FLOORS`, mesure de clôture du lot 6, qui ne baisse jamais (ADR-021).
 
-## 6. Licence et essai (J1, J4, J5)
+## 6. Licence, essai et sauvegarde (J1, J4, J5, A9, ADR-025)
 
-- `shared/licensing/TrialPolicy` : `trialStart`, `trialEnd = trialStart + 6 mois`, `canAddItems = purchased || now < trialEnd`.
-- Ancrage de `trialStart` :
-  - iOS : `AppTransaction.originalPurchaseDate` (StoreKit 2, signé par Apple, hors ligne) ; repli : date du premier lancement stockée dans le Keychain (survit à la réinstallation).
-  - Android : date du premier lancement stockée dans `EncryptedSharedPreferences` + sauvegardée par Auto Backup (clé/valeur) ; la réinstallation peut remettre à zéro — accepté.
+- `shared/licensing/TrialPolicy` : `trialEnd = trialStart + 6 mois` (en UTC), `canAddItems = purchased || now < trialEnd`.
+- Début de l'essai (`LicensingService`) : le plus ancien de la date du premier lancement et du premier événement du journal, ce dernier relu à chaque fois et jamais enregistré. La date vit dans un `LicenseStore`, hors de la base, et survit à la suppression totale :
+  - iOS : élément du Keychain, complété par `AppTransaction.originalPurchaseDate` (StoreKit 2, signé par Apple).
+  - Android : `no_backup/licensing/trial_start` ; une réinstallation sans import remet l'essai à zéro — accepté.
 - Après l'essai : **seules les créations de fiches sont bloquées** (`ItemCreated`). Recherche, consultation, modification, déplacement, export, import, suppression restent libres. L'écran d'échéance explique, propose l'achat et la restauration, et n'apparaît qu'au moment d'un ajout.
-- Achat : produit non consommable « déblocage » (10 € fixe) **ou** abonnement annuel (2 €/an) — un seul des deux sera retenu avant le lot J ; la couche `PurchaseGateway` (expect/actual : StoreKit 2 / Play Billing) expose `purchased: Flow<Boolean>` et `restore()`. Aucune validation serveur : vérification locale des transactions signées (StoreKit 2 JWS ; Play Billing : signature publique de l'app), acceptable pour ce niveau de prix.
+- Achat : déblocage non consommable (`unlock_lifetime`, 10 €) **et** abonnement annuel (`subscription_yearly`, 2 €/an), ADR-014. Les apps interrogent le magasin à chaque retour au premier plan et rapportent au noyau (`recordPurchased`), qui garde la dernière réponse dans `meta`. Aucune validation serveur : vérification locale des transactions signées (StoreKit 2 JWS ; Play Billing : signature publique de l'app), acceptable pour ce niveau de prix. Play Billing est livré sans sa télémétrie.
+- Sauvegarde (`shared/data/backup`) : un export chiffré, écrit dans un fichier que l'utilisateur choisit avec le sélecteur du système, avec une clé de secours qu'il note. Au premier plan seulement, au plus une fois par jour et après un changement. Format dans `docs/format-export.md`.
 
 ## 7. Sécurité et vie privée (voir `02-securite-rgpd.md`)
 
 - Pas de réseau en usage normal. Aucune dépendance à un SDK analytique, publicitaire ou de crash reporting tiers. Les crashs sont ceux des magasins (opt-in utilisateur côté OS).
-- Fichiers : conteneur privé de l'app, exclus de la photothèque ; sauvegarde système (iCloud/Google) **désactivée** pour la base et les photos sauf si l'utilisateur active A9 (sauvegarde chiffrée par l'app, clé locale).
+- Fichiers : conteneur privé de l'app, exclus de la photothèque ; sauvegarde système (iCloud/Google) **désactivée** pour la base et les photos, toujours ; A9 est une sauvegarde de l'app, chiffrée avec une clé de secours, vers un fichier choisi par l'utilisateur.
 - Chiffrement au repos (P1) : SQLCipher, clé 256 bits générée dans Keychain (accessible `afterFirstUnlockThisDeviceOnly`) / Keystore (StrongBox si disponible).
 - Captures d'écran et sélecteur d'apps : `FLAG_SECURE` optionnel (H3) ; iOS : vue floutée en arrière-plan.
 

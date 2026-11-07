@@ -173,6 +173,10 @@ public class CaptureService internal constructor(
         val place = parse.place?.let { PlaceResolver(snapshot.locations, parse.lang).resolve(it) }
         val detector = DuplicateDetector(snapshot.itemNames)
         val targets = parse.items.map { mention -> ItemTarget(mention, detector.find(mention.name)) }
+        // An object nothing resembles can only be new: no question to ask before saying so.
+        if (parse.intent == Intent.STORE && targets.any { it.matches.isEmpty() } && !canAddItems()) {
+            return@withContext CaptureProposal(parse, place, targets, CaptureProblem.TRIAL_ENDED)
+        }
         if (parse.intent != Intent.REMIND) return@withContext CaptureProposal(parse, place, targets)
         val fireAt = parse.date?.let { DateResolver.resolve(it, clock.now(), timeZone()) }
         CaptureProposal(parse, place, targets, reminderProblem(fireAt), fireAt)

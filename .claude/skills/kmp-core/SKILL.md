@@ -15,7 +15,7 @@ shared/
     capture/  Parser, Intent, rules_fr.kt, rules_en.kt, PlaceResolver
     search/   Searcher, KeywordIndex, SemanticIndex, Fusion, synonyms
     ml/       TextEmbedder, ImageEmbedder, Rephraser (interfaces), ModelSelector, ModelPackManager
-    licensing/ PurchaseGateway (interface), TrialPolicy
+    licensing/ TrialPolicy, LicensingService, LicenseStore (interface)
     platform/ expect : FileSystem, Clock, DeviceInfo (ram), SecureStore, Hasher, ZipIo
     log/      Logger
     di/       SharedModule (Koin) ou SharedFactory
@@ -31,12 +31,13 @@ Package racine : un nom de code neutre (ex. `app.trouvetout.core`), à ne pas co
 | --- | --- | --- |
 | `FileSystem` (répertoires privés non sauvegardés, lecture/écriture atomique) | `Context.noBackupFilesDir` | `Application Support` + `isExcludedFromBackup` |
 | `DeviceInfo.totalRamBytes` | `ActivityManager.getMemoryInfo` | `NSProcessInfo.physicalMemory` |
-| `SecureStore` (clé de base, trialStart) | Keystore + EncryptedSharedPreferences | Keychain |
+| `DatabaseKeyStore`, `LicenseStore` (clé de base, trialStart) | Keystore, fichier `no_backup` | Keychain |
 | `Hasher.sha256` | `MessageDigest` | CommonCrypto |
 | `ZipIo` | `java.util.zip` | `libarchive`/`minizip` via cinterop ou pont Swift (`ZIPFoundation`) |
 | `SpeechRecognizer` | n'est **pas** dans shared : l'UI native transcrit et passe le texte au `Parser` | idem |
 | `TextEmbedder`/`ImageEmbedder` | LiteRT Kotlin | LiteRT Swift (pont) ou cinterop C |
-| `PurchaseGateway` | Play Billing (dans androidApp, injecté) | StoreKit 2 (dans iosApp, injecté) |
+| Achats (rapportés à `LicensingService`) | Play Billing (dans androidApp) | StoreKit 2 (dans iosApp) |
+| `BackupCrypto` | `JavaBackupCrypto` | CryptoKit (`NativeBackupCipher`) |
 
 Préférer **interface commune + implémentation injectée depuis l'app** à `expect/actual` quand l'implémentation dépend d'un SDK d'app (Billing, StoreKit, LiteRT) : cela garde `shared` compilable sans ces SDK en test.
 

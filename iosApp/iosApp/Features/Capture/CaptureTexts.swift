@@ -26,6 +26,7 @@ enum CaptureTexts {
         case .inputTooLong: "capture_problem_too_long"
         case .dateMissing: "capture_problem_date_missing"
         case .datePast: "capture_problem_date_past"
+        case .trialEnded: "capture_problem_trial_ended"
         default: "capture_problem_rejected"
         }
     }

@@ -16,7 +16,8 @@ public data class LicenseStatus(
 /**
  * The trial and the last purchase state (J1, J4, J5, ADR-025). The apps ask the stores and report here; the core
  * decides. The trial starts at the oldest of the stored date and the first event of the journal, so that importing
- * an export after a reinstall does not start it again. The start only ever moves back.
+ * an export after a reinstall does not start it again. What the journal says is read each time and never stored: an
+ * export imported by mistake stops counting once it is erased, and erasing leaves the date of the first launch.
  */
 public class LicensingService internal constructor(
     private val db: TrouveToutDb,
@@ -25,6 +26,7 @@ public class LicensingService internal constructor(
     private val clock: Clock,
     private val io: CoroutineDispatcher,
 ) {
+    @Throws(Exception::class) // to Swift: an error it can handle, not the end of the process
     public suspend fun status(): LicenseStatus = withContext(io) {
         val now = clock.now().toEpochMilliseconds()
         val start = settledStart(now)
@@ -38,11 +40,13 @@ public class LicensingService internal constructor(
      * What the store answered: a purchase or a running subscription, or neither (a subscription ended, a refund). When
      * it could not answer the apps do not call this, and the last answer stands.
      */
+    @Throws(Exception::class)
     public suspend fun recordPurchased(purchased: Boolean) {
         withContext(io) { db.metaQueries.set(MetaKeys.PURCHASED, purchased.toString()) }
     }
 
     /** iOS: the date Apple signed for the first download of the app, which a reinstall does not change. */
+    @Throws(Exception::class)
     public suspend fun recordStoreDate(millis: Long) {
         withContext(io) {
             if (millis < EARLIEST_PLAUSIBLE_MILLIS || millis > clock.now().toEpochMilliseconds()) return@withContext
@@ -52,12 +56,10 @@ public class LicensingService internal constructor(
     }
 
     private fun settledStart(now: Long): Long {
-        val stored = store?.trialStartMillis()
+        val firstLaunch = store?.trialStartMillis() ?: now.also { store?.setTrialStartMillis(it) }
         val oldest = db.eventQueries.oldestAtSince(EARLIEST_PLAUSIBLE_MILLIS).executeAsOne().oldest
-        // A journal imported from the future does not push a first launch forward.
-        val start = listOfNotNull(stored ?: now, oldest).min()
-        if (start != stored) store?.setTrialStartMillis(start)
-        return start
+        // A journal imported from the future does not push the first launch forward.
+        return listOfNotNull(firstLaunch, oldest).min()
     }
 
     private companion object {

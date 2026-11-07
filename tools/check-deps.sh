@@ -71,6 +71,10 @@ if [ -n "$MERGED" ]; then
       echo "VIOLATION: permission '$p' dans le manifeste fusionné de la release"; status=1
     fi
   done < <({ grep -o '<uses-permission[^>]*android:name="[^"]*"' "$MERGED" || true; } | sed 's/.*android:name="//;s/"//')
+  # ADR-025 : Play Billing sans sa télémétrie vers Google, qui déclare un service et un récepteur dans le manifeste.
+  if grep -q 'datatransport' "$MERGED"; then
+    echo "VIOLATION: la télémétrie de Play Billing est revenue dans le manifeste fusionné de la release"; status=1
+  fi
 else
   echo "INFO: manifeste fusionné de la release absent (assembleRelease non lancé)"
 fi

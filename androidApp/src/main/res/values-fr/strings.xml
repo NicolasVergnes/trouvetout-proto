@@ -47,7 +47,7 @@
     <string name="settings_wipe_hint">Effacer toutes les données enregistrées par l\'app sur ce téléphone.</string>
     <string name="settings_wipe">Tout effacer</string>
     <string name="settings_wipe_confirm_title">Tout effacer ?</string>
-    <string name="settings_wipe_confirm_text">Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d\'abord si vous voulez les garder. Cette action est irréversible.</string>
+    <string name="settings_wipe_confirm_text">Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d\'abord si vous voulez les garder. Cette action est irréversible. Seule la date de début de l\'essai gratuit reste sur ce téléphone. Un fichier de sauvegarde que vous avez choisi reste où il est, illisible sans sa clé.</string>
     <string name="settings_wipe_confirm_button">Effacer</string>
     <string name="settings_wipe_done_title">Données effacées</string>
     <string name="settings_wipe_done_text">L\'app repart de zéro.</string>
@@ -284,4 +284,45 @@
         <item quantity="many">%d objets sensibles non imprimés</item>
         <item quantity="other">%d objets sensibles non imprimés</item>
     </plurals>
+
+    <!-- Lot 10 : essai et achats (J1, J4, J5) -->
+    <string name="capture_problem_trial_ended">Ce nouvel objet n\'a pas été enregistré. Vos objets restent à vous : recherche, modification, déplacement, export et suppression continuent de fonctionner. Votre phrase reste dans le champ.</string>
+    <string name="purchase_title">Achat</string>
+    <string name="purchase_ended_title">Votre essai gratuit est terminé</string>
+    <string name="purchase_ended_text">Tout ce que vous avez enregistré reste disponible : recherche, modification, déplacement, export et suppression continuent de fonctionner. Seuls les nouveaux objets attendent un achat.</string>
+    <string name="purchase_running_text">Essai gratuit jusqu\'au %1$s. Tout fonctionne, sans compte.</string>
+    <string name="purchase_done_text">Merci ! L\'app est débloquée.</string>
+    <string name="purchase_lifetime">Débloquer pour toujours, %1$s</string>
+    <string name="purchase_yearly">Abonnement annuel, %1$s par an</string>
+    <string name="purchase_restore">Restaurer un achat</string>
+    <string name="purchase_later">Plus tard</string>
+    <string name="purchase_see_options">Voir les options</string>
+    <string name="purchase_unavailable">Le magasin ne répond pas pour le moment. Réessayez plus tard.</string>
+    <string name="purchase_pending">Paiement en attente : l\'achat prendra effet dès qu\'il sera confirmé.</string>
+    <string name="purchase_restored">Votre achat est restauré.</string>
+    <string name="purchase_nothing_to_restore">Aucun achat trouvé sur ce compte.</string>
+    <string name="settings_purchase_section">Achat</string>
+
+    <!-- Lot 10 : sauvegarde chiffrée (A9) -->
+    <string name="settings_backup_section">Sauvegarde chiffrée</string>
+    <string name="backup_hint">Garde une copie chiffrée de vos objets et photos dans un fichier que vous choisissez, dans Google Drive par exemple. Elle se met à jour quand vous ouvrez l\'app, au plus une fois par jour et seulement après un changement. Seule votre clé de secours l\'ouvre : sans elle, personne ne le peut, pas même nous.</string>
+    <string name="backup_enable">Activer et choisir le fichier</string>
+    <string name="backup_disable">Désactiver</string>
+    <string name="backup_run_now">Sauvegarder maintenant</string>
+    <string name="backup_restore">Restaurer une sauvegarde</string>
+    <string name="backup_last">Dernière sauvegarde : %1$s</string>
+    <string name="backup_never">Aucune sauvegarde pour l\'instant.</string>
+    <string name="backup_failed">La dernière sauvegarde a échoué. L\'app réessaiera plus tard, quand elle sera ouverte.</string>
+    <string name="backup_too_large">Vos données sont trop volumineuses pour être restaurées depuis un seul fichier : aucune sauvegarde n\'a été écrite. Réduisez le nombre de photos ou utilisez l\'export.</string>
+    <string name="backup_done">Sauvegarde écrite.</string>
+    <string name="backup_key_title">Votre clé de secours</string>
+    <string name="backup_key_text">Notez cette clé et gardez-la loin de ce téléphone. Elle n\'est affichée qu\'une fois. Sans elle, personne ne peut ouvrir votre sauvegarde sur un nouveau téléphone, pas même nous.</string>
+    <string name="backup_key_confirm_label">Tapez ses quatre derniers caractères</string>
+    <string name="backup_key_confirm">Je l\'ai notée</string>
+    <string name="backup_restore_text">Saisissez la clé de secours de cette sauvegarde. Son contenu s\'ajoute à ce qui se trouve sur ce téléphone.</string>
+    <string name="backup_restore_field">Clé de secours</string>
+    <string name="backup_restore_action">Restaurer</string>
+    <string name="backup_bad_key">Ce n\'est pas une clé de secours : vérifiez ce que vous avez tapé.</string>
+    <string name="backup_not_a_backup">Ce fichier n\'est pas une sauvegarde.</string>
+    <string name="backup_cannot_open">Cette clé n\'ouvre pas cette sauvegarde, ou le fichier est endommagé.</string>
 </resources>

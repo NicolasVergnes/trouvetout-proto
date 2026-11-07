@@ -49,7 +49,7 @@
     <string name="settings_wipe_hint">Erase every piece of data stored by the app on this phone.</string>
     <string name="settings_wipe">Erase all data</string>
     <string name="settings_wipe_confirm_title">Erase all data?</string>
-    <string name="settings_wipe_confirm_text">Objects, places, photos and history will be deleted from this phone. Export first if you want to keep them. This cannot be undone.</string>
+    <string name="settings_wipe_confirm_text">Objects, places, photos and history will be deleted from this phone. Export first if you want to keep them. This cannot be undone. Only the start date of the free trial stays on this phone. A backup file you chose stays where it is, unreadable without its key.</string>
     <string name="settings_wipe_confirm_button">Erase</string>
     <string name="settings_wipe_done_title">Data erased</string>
     <string name="settings_wipe_done_text">The app starts from scratch.</string>
@@ -282,4 +282,45 @@
         <item quantity="one">%d sensitive object not printed</item>
         <item quantity="other">%d sensitive objects not printed</item>
     </plurals>
+
+    <!-- Lot 10: trial and purchases (J1, J4, J5) -->
+    <string name="capture_problem_trial_ended">This new object was not saved. Your objects stay yours: search, edits, moves, export and deletion go on working. Your sentence stays in the field.</string>
+    <string name="purchase_title">Purchase</string>
+    <string name="purchase_ended_title">Your free trial has ended</string>
+    <string name="purchase_ended_text">Everything you saved stays available: search, edits, moves, export and deletion go on working. Only new objects wait for a purchase.</string>
+    <string name="purchase_running_text">Free trial until %1$s. Everything works, without an account.</string>
+    <string name="purchase_done_text">Thank you! The app is unlocked.</string>
+    <string name="purchase_lifetime">Unlock for good, %1$s</string>
+    <string name="purchase_yearly">Yearly subscription, %1$s a year</string>
+    <string name="purchase_restore">Restore a purchase</string>
+    <string name="purchase_later">Later</string>
+    <string name="purchase_see_options">See the options</string>
+    <string name="purchase_unavailable">The store is not answering right now. Please try again later.</string>
+    <string name="purchase_pending">Payment pending: the purchase takes effect as soon as it is confirmed.</string>
+    <string name="purchase_restored">Your purchase is restored.</string>
+    <string name="purchase_nothing_to_restore">No purchase found on this account.</string>
+    <string name="settings_purchase_section">Purchase</string>
+
+    <!-- Lot 10: encrypted backup (A9) -->
+    <string name="settings_backup_section">Encrypted backup</string>
+    <string name="backup_hint">Keeps an encrypted copy of your objects and photos in a file you choose, in Google Drive for example. It is updated when you open the app, at most once a day and only after a change. Only your recovery key opens it: without it nobody can, not even us.</string>
+    <string name="backup_enable">Turn on and choose the file</string>
+    <string name="backup_disable">Turn off</string>
+    <string name="backup_run_now">Back up now</string>
+    <string name="backup_restore">Restore a backup</string>
+    <string name="backup_last">Last backup: %1$s</string>
+    <string name="backup_never">No backup yet.</string>
+    <string name="backup_failed">The last backup failed. The app will try again later, when it is open.</string>
+    <string name="backup_too_large">Your data is too large to be restored from one file: no backup was written. Keep your photos in check, or use the export.</string>
+    <string name="backup_done">Backup written.</string>
+    <string name="backup_key_title">Your recovery key</string>
+    <string name="backup_key_text">Write this key down and keep it away from this phone. It is shown only once. Without it, nobody can open your backup on a new phone, not even us.</string>
+    <string name="backup_key_confirm_label">Type its last four characters</string>
+    <string name="backup_key_confirm">I wrote it down</string>
+    <string name="backup_restore_text">Enter the recovery key of this backup. What it holds is added to what is on this phone.</string>
+    <string name="backup_restore_field">Recovery key</string>
+    <string name="backup_restore_action">Restore</string>
+    <string name="backup_bad_key">That is not a recovery key: check what you typed.</string>
+    <string name="backup_not_a_backup">This file is not a backup.</string>
+    <string name="backup_cannot_open">This key does not open this backup, or the file is damaged.</string>
 </resources>

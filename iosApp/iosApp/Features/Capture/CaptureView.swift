@@ -15,10 +15,17 @@ struct CaptureView: View {
 
     /// Opens the search screen (lot 6) with a question asked here (C5).
     private let onSearch: (String) -> Void
+    /// J4: the options once the trial has ended.
+    private let onOpenPurchase: () -> Void
 
-    init(container: AppContainer, onSearch: @escaping (String) -> Void = { _ in }) {
+    init(
+        container: AppContainer,
+        onSearch: @escaping (String) -> Void = { _ in },
+        onOpenPurchase: @escaping () -> Void = {}
+    ) {
         _viewModel = StateObject(wrappedValue: CaptureViewModel(container: container))
         self.onSearch = onSearch
+        self.onOpenPurchase = onOpenPurchase
     }
 
     var body: some View {
@@ -49,7 +56,7 @@ struct CaptureView: View {
                             viewModel.dismissCard(token: card.token)
                         }
                 }
-                if let problem = viewModel.problem {
+                if let problem = viewModel.problem, problem != .trialEnded {
                     Text(CaptureTexts.problemKey(problem))
                         .font(.callout)
                         .foregroundStyle(.red)
@@ -74,6 +81,16 @@ struct CaptureView: View {
         } message: {
             Text("voice_rationale_text")
         }
+        // U11: says what stops and what does not, at the moment it matters; the sentence stays in the field.
+        .alert("purchase_ended_title", isPresented: trialEndedPresented) {
+            Button("purchase_see_options") {
+                viewModel.dismissMessages()
+                onOpenPurchase()
+            }
+            Button("purchase_later", role: .cancel) { viewModel.dismissMessages() }
+        } message: {
+            Text("capture_problem_trial_ended")
+        }
         .alert("reminder_permission_title", isPresented: $viewModel.askNotifications) {
             Button("action_continue") { viewModel.grantNotifications() }
             Button("action_not_now", role: .cancel) {}
@@ -96,6 +113,17 @@ struct CaptureView: View {
             onSearch(query)
         }
         .onDisappear { viewModel.stopListening() }
+    }
+
+    private var trialEndedPresented: Binding<Bool> {
+        Binding(
+            get: { viewModel.problem == .trialEnded },
+            set: { presented in
+                if !presented {
+                    viewModel.dismissMessages()
+                }
+            }
+        )
     }
 
     /// I7 « Ranger »: listens when the phone recognises speech on the device, otherwise opens the keyboard.

@@ -3,3 +3,6 @@
 # LiteRT-LM (ADR-021): the native library calls back into these classes by name (JNI) and the AAR ships no
 # consumer rules.
 -keep class com.google.ai.edge.litertlm.** { *; }
+
+# Play Billing without its telemetry (ADR-025): the classes it refers to are left out on purpose.
+-dontwarn com.google.android.datatransport.**

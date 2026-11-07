@@ -3,32 +3,41 @@ package app.trouvetout.android
 import android.app.Application
 import android.content.ComponentCallbacks2
 import androidx.core.content.edit
+import app.trouvetout.android.backup.BackupRunner
+import app.trouvetout.android.billing.PlayPurchaseGateway
+import app.trouvetout.android.billing.PurchaseGateway
 import app.trouvetout.android.notif.ReminderNotifications
 import app.trouvetout.android.notif.ReminderScheduler
 import app.trouvetout.android.ui.common.clearCameraCaptures
 import app.trouvetout.android.ui.settings.ExportSharing
 import app.trouvetout.core.capture.Lang
+import app.trouvetout.core.data.backup.JavaBackupCrypto
 import app.trouvetout.core.data.db.AndroidDatabaseKeys
 import app.trouvetout.core.data.db.AndroidDriverFactory
 import app.trouvetout.core.di.SharedConfig
 import app.trouvetout.core.di.SharedFactory
 import app.trouvetout.core.di.StoreFailure
+import app.trouvetout.core.licensing.FileLicenseStore
 import app.trouvetout.core.log.LogcatLogger
 import app.trouvetout.core.log.NoopLogger
 import app.trouvetout.core.ml.AssetTextModelSource
 import app.trouvetout.core.ml.BundledModelAsset
 import app.trouvetout.core.platform.AndroidDeviceInfo
 import app.trouvetout.core.platform.AndroidImageCodec
+import app.trouvetout.core.platform.createFileStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Locale
@@ -96,6 +105,51 @@ class App : Application() {
      */
     val itemRequest = MutableStateFlow<String?>(null)
 
+    /** The purchase screen a quick capture asks for; process memory, like [searchRequest]. */
+    val purchaseRequest = MutableStateFlow(false)
+
+    /** The store (J5). Swapped by the tests. */
+    @Volatile
+    var purchases: PurchaseGateway =
+        PlayPurchaseGateway(this, BuildConfig.PLAY_LICENSE_KEY) { refreshPurchases() }
+
+    /** Moves when the licence may have changed, so that an open purchase screen reads it again. */
+    val licenseChanges = MutableStateFlow(0)
+
+    /**
+     * Reports what the store says to the core, at each return to the foreground. No answer (no Play Store, no
+     * connection) leaves the last one standing: nobody loses what they bought for being offline.
+     */
+    fun refreshPurchases() {
+        appScope.launch { syncPurchases() }
+    }
+
+    suspend fun syncPurchases() {
+        val factory = readyShared.first()
+        val entitled = runCatching { purchases.entitled() }.getOrNull() ?: return
+        runCatching { factory.licensing.recordPurchased(entitled) }
+        licenseChanges.update { it + 1 }
+    }
+
+    /** The encrypted backup to the file the user chose (A9). */
+    val backupRunner: BackupRunner by lazy { BackupRunner(contentResolver) }
+    private var backupJob: Job? = null
+
+    /** A9, at each return to the foreground; a backup never runs behind a closed app (N6). */
+    fun startBackupIfDue() {
+        backupJob?.cancel()
+        backupJob =
+            appScope.launch {
+                val factory = readyShared.first()
+                runCatching { backupRunner.runIfDue(factory) }
+                    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+            }
+    }
+
+    fun stopBackup() {
+        backupJob?.cancel()
+    }
+
     /** Reminder alarms and notifications (lot 9). */
     val reminderScheduler: ReminderScheduler by lazy { ReminderScheduler(this) }
 
@@ -150,14 +204,20 @@ class App : Application() {
         // Whatever happens, the spent core is replaced; a failure still reaches the caller, which says so.
         try {
             runCatching { reminderScheduler.clear() }
+            stopBackup()
+            // The access to the chosen file goes too; the file stays where it is, unreadable without its key.
+            runCatching { shared.backup.state().location?.let(backupRunner::releaseAccess) }
             shared.wipeAllData()
         } finally {
             // Again once the old core is closed: a reconciliation in between cannot leave an alarm behind.
             runCatching { reminderScheduler.clear() }
             itemRequest.value = null
+            purchaseRequest.value = false
             kotlinx.coroutines.withContext(Dispatchers.IO) { cacheDir.deleteRecursively() }
             uiPrefs.clear()
             recreateShared()
+            // Asked of the store again: the wipe took the last answer.
+            refreshPurchases()
         }
     }
 
@@ -202,6 +262,9 @@ class App : Application() {
                 textModel = bundledModels(this@App)
                 // « 12/03 » in a reminder sentence: month first only where the phone writes dates that way.
                 dayFirstDates = android.text.format.DateFormat.getDateFormatOrder(this@App).firstOrNull() != 'M'
+                // Beside the directories the wipe removes: erasing the data does not start the trial again (ADR-025).
+                licenseStore = FileLicenseStore(createFileStore(dataDirectory.absolutePath))
+                backupCrypto = JavaBackupCrypto()
             },
         )
     }

@@ -23,6 +23,14 @@ public object MetaKeys {
 
     /** J5: the last answer of the store, asked again after a wipe; the start of the trial is not here (ADR-025). */
     public const val PURCHASED: String = "purchased"
+
+    /** A9: the recovery key, the file chosen, the last success and the state of the journal it covered, what failed. */
+    public const val BACKUP_KEY: String = "backup_key"
+    public const val BACKUP_LOCATION: String = "backup_location"
+    public const val BACKUP_LAST_AT: String = "backup_last_at"
+    public const val BACKUP_LAST_TRIED: String = "backup_last_tried"
+    public const val BACKUP_LAST_HEAD: String = "backup_last_head"
+    public const val BACKUP_PROBLEM: String = "backup_problem"
 }
 
 /** Opens (creating or migrating) the SQLite database; implemented per platform, the caller owns the driver. */
