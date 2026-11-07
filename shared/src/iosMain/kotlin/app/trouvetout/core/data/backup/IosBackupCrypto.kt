@@ -2,6 +2,7 @@ package app.trouvetout.core.data.backup
 
 import app.trouvetout.core.platform.toByteArray
 import app.trouvetout.core.platform.toNSData
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.autoreleasepool
 import platform.Foundation.NSData
@@ -32,7 +33,7 @@ public interface NativeBackupCipher {
  * The iOS side of [BackupCrypto]; a refusal of the system fails the backup, it never writes anything weaker. Each block
  * drains its own pool: a backup can be a thousand blocks of 1 MiB with no suspension between them.
  */
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 public class IosBackupCrypto(
     private val native: NativeBackupCipher,
 ) : BackupCrypto {

@@ -99,7 +99,8 @@ final class BackupTests: XCTestCase {
     /// `startAccessing…` answers false outside a picker, which the real location requires: the app's own folder
     /// stands for the chosen one through a bookmark made by hand.
     private func location(of folder: URL, name: String) throws -> String {
-        "\(name)\n\(try folder.bookmarkData().base64EncodedString())"
+        let bookmark = try folder.bookmarkData().base64EncodedString()
+        return "\(name)\n\(bookmark)"
     }
 
     func testTheCopyReplacesTheFileInOneStepAndLeavesNothingBeside() throws {

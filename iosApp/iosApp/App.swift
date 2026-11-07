@@ -102,8 +102,11 @@ final class AppContainer: ObservableObject {
     /// A9, at launch and at each return to the foreground: at most once a day and after a change (the core decides).
     /// No background task: iOS suspends the copy with the app (N6). A copy cut there leaves the previous file intact.
     func backUpIfDue() async {
-        guard ready, (try? await shared.backup.isDue())?.boolValue == true else { return }
-        _ = await runBackup()
+        guard ready else { return }
+        let due = await (try? shared.backup.isDue())?.boolValue ?? false
+        if due {
+            _ = await runBackup()
+        }
     }
 
     /// One at a time: a second call waits and gives the outcome of the one running.

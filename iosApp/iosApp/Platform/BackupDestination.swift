@@ -27,7 +27,8 @@ enum BackupDestination {
             folder.stopAccessingSecurityScopedResource()
         }
         let stamp = Int64(now.timeIntervalSince1970)
-        return "backup-\(stamp).ttbk\(separator)\(try folder.bookmarkData().base64EncodedString())"
+        let bookmark = try folder.bookmarkData().base64EncodedString()
+        return "backup-\(stamp).ttbk\(separator)\(bookmark)"
     }
 
     /// Whether the folder can still be reached; before spending an export on it.
