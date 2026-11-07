@@ -64,7 +64,7 @@ final class BackupTests: XCTestCase {
         let source = try factory()
         let draft = ItemDraft(name: "passeport", description: nil, tags: [], quantity: nil, unit: nil, sensitive: false)
         _ = try await source.itemCommands.create(draft: draft, location: nil, source: .text, rawInput: nil)
-        let key = source.backup.drawRecoveryKey()
+        let key = try source.backup.drawRecoveryKey()
         let enabled = try await source.backup.enable(recoveryKey: key, location: "bookmark")
         XCTAssertTrue(enabled.boolValue)
         let prepared = try await source.backup.prepare()
