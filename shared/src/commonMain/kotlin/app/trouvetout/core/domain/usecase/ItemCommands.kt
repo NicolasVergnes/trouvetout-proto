@@ -11,6 +11,8 @@ import app.trouvetout.core.domain.usecase.CommandContext.Companion.toStored
 /** Item use cases (A1, A4, U5, U6): each one appends events, never touches the projection. */
 public class ItemCommands internal constructor(
     private val ctx: CommandContext,
+    /** J4: whether a new item may be created (the trial is running or something was purchased). */
+    private val canAddItems: suspend () -> Boolean = { true },
 ) {
     /** Creates the item and, when a location is given, stores it there in the same append. */
     public suspend fun create(
@@ -23,6 +25,7 @@ public class ItemCommands internal constructor(
         if (!draft.quantity.isValidQuantity()) return rejected(Rejection.INVALID_QUANTITY)
         val locationRejection = location?.let { ctx.checkLocation(it) }
         if (locationRejection != null) return rejected(locationRejection)
+        if (!canAddItems()) return rejected(Rejection.TRIAL_ENDED)
         val itemId = ctx.newId()
         val created =
             EventPayload.ItemCreated(

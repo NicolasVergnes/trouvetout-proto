@@ -41,7 +41,7 @@ Référence : `docs/02-securite-rgpd.md`. Ce skill est la procédure de vérific
 
 **Droits de l'utilisateur**
 - [ ] Export complet (A7) couvre les nouvelles données ; import (A8) les restaure.
-- [ ] Suppression totale (H6) efface les nouveaux fichiers/clés/notifications.
+- [ ] Suppression totale (H6) efface les nouveaux fichiers/clés/notifications. Seules exceptions, dites avant la confirmation : la date de début de l'essai et le fichier de sauvegarde choisi par l'utilisateur (ADR-025).
 
 **Magasins**
 - [ ] App Privacy (Apple) : « Data Not Collected » reste vrai. Si un pack est téléchargé depuis notre domaine : aucune donnée liée à l'identité ; l'adresse IP transitoire n'est pas conservée (le dire dans la politique).

@@ -40,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
 import app.trouvetout.android.ui.theme.AppTheme
+import app.trouvetout.core.capture.CaptureProblem
 
 /**
  * Quick capture over whatever was on screen (B5): opened by the widget and the tile, it records one sentence,
@@ -51,6 +52,7 @@ fun QuickCaptureRoute(
     onClose: () -> Unit,
     onSearch: (String) -> Unit,
     onOpenApp: (String) -> Unit = {},
+    onOpenPurchase: (String) -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as App
     val locked by app.locked.collectAsStateWithLifecycle(initialValue = true)
@@ -65,7 +67,7 @@ fun QuickCaptureRoute(
     val askingNow by rememberUpdatedState(asking)
     LaunchedEffect(asking, closeAfterAnswer) { if (closeAfterAnswer && !asking) onClose() }
     val callbacks =
-        remember(viewModel, mic, onClose) {
+        remember(viewModel, mic, onClose, onOpenPurchase) {
             CaptureCallbacks(
                 onInputChange = viewModel::onInputChange,
                 onSubmit = viewModel::submit,
@@ -88,6 +90,7 @@ fun QuickCaptureRoute(
                 onOpenPlaces = {},
                 onOpenItem = {},
                 mic = mic,
+                onOpenPurchase = { onOpenPurchase(viewModel.state.value.input) },
             )
         }
     QuickCaptureScreen(
@@ -149,7 +152,7 @@ fun QuickCaptureScreen(
                 VoiceStatus(state, callbacks.mic.onOpenAppSettings)
                 state.card?.let { ConfirmationCardView(it, callbacks) }
                 AskNotificationsAfterReminder(state.card, onAskingNotifications)
-                state.problem?.let { problem ->
+                state.problem?.takeUnless { it == CaptureProblem.TRIAL_ENDED }?.let { problem ->
                     Text(
                         problemText(problem),
                         color = MaterialTheme.colorScheme.error,

@@ -129,6 +129,374 @@
         }
       }
     },
+    "backup_bad_key": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That is not a recovery key: check what you typed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce n'est pas une clé de secours : vérifiez ce que vous avez tapé."
+          }
+        }
+      }
+    },
+    "backup_cannot_open": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This key does not open this backup, or the file is damaged."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette clé n'ouvre pas cette sauvegarde, ou le fichier est endommagé."
+          }
+        }
+      }
+    },
+    "backup_choose_other": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose another folder"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisir un autre dossier"
+          }
+        }
+      }
+    },
+    "backup_disable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactiver"
+          }
+        }
+      }
+    },
+    "backup_done": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup written."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sauvegarde écrite."
+          }
+        }
+      }
+    },
+    "backup_enable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on and choose the folder"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer et choisir le dossier"
+          }
+        }
+      }
+    },
+    "backup_failed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The last backup failed. The app will try again later, when it is open."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La dernière sauvegarde a échoué. L'app réessaiera plus tard, quand elle sera ouverte."
+          }
+        }
+      }
+    },
+    "backup_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keeps an encrypted copy of all your data (objects, sensitive ones included, places, photos, history) in a folder you choose. If that folder is in iCloud Drive, that service sends the file: it receives an unreadable file, and sees its size and dates. It is updated when you open the app, at most once a day and only after a change. Only your recovery key opens it: without it nobody can, not even us."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garde une copie chiffrée de toutes vos données (objets, y compris sensibles, lieux, photos, historique) dans un dossier que vous choisissez. Si ce dossier est dans iCloud Drive, c'est ce service qui envoie le fichier : il reçoit un fichier illisible, dont il voit la taille et les dates. Elle se met à jour quand vous ouvrez l'app, au plus une fois par jour et seulement après un changement. Seule votre clé de secours l'ouvre : sans elle, personne ne le peut, pas même nous."
+          }
+        }
+      }
+    },
+    "backup_key_confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I wrote it down"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je l'ai notée"
+          }
+        }
+      }
+    },
+    "backup_key_confirm_label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type its last four characters"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapez ses quatre derniers caractères"
+          }
+        }
+      }
+    },
+    "backup_key_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write this key down and keep it away from this phone. It is shown only once, and only while the app stays open: note it without leaving. Without it, nobody can open your backup on a new phone, not even us. The app keeps a copy in its encrypted database for the next backups; erasing all data removes it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notez cette clé et gardez-la loin de ce téléphone. Elle n'est affichée qu'une fois, et seulement tant que l'app reste ouverte : notez-la sans en sortir. Sans elle, personne ne peut ouvrir votre sauvegarde sur un nouveau téléphone, pas même nous. L'app en garde une copie dans sa base chiffrée pour les sauvegardes suivantes ; la suppression totale l'efface."
+          }
+        }
+      }
+    },
+    "backup_key_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your recovery key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre clé de secours"
+          }
+        }
+      }
+    },
+    "backup_last": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last backup: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière sauvegarde : %@"
+          }
+        }
+      }
+    },
+    "backup_lost": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The chosen folder is gone or the app lost access to it. Choose another folder: your key stays the same."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le dossier choisi a disparu ou l'app n'y a plus accès. Choisissez un autre dossier : votre clé reste la même."
+          }
+        }
+      }
+    },
+    "backup_never": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No backup yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune sauvegarde pour l'instant."
+          }
+        }
+      }
+    },
+    "backup_not_a_backup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file is not a backup."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce fichier n'est pas une sauvegarde."
+          }
+        }
+      }
+    },
+    "backup_off_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turning off stops the backups and the app forgets the key. The last file stays where it is: delete it if you wish."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactiver arrête les sauvegardes et l'app oublie la clé. Le dernier fichier reste où il est : supprimez-le si vous le souhaitez."
+          }
+        }
+      }
+    },
+    "backup_restore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore a backup"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurer une sauvegarde"
+          }
+        }
+      }
+    },
+    "backup_restore_action": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurer"
+          }
+        }
+      }
+    },
+    "backup_restore_field": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery key"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé de secours"
+          }
+        }
+      }
+    },
+    "backup_restore_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the recovery key of this backup. What it holds is added to what is on this phone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisissez la clé de secours de cette sauvegarde. Son contenu s'ajoute à ce qui se trouve sur ce téléphone."
+          }
+        }
+      }
+    },
+    "backup_run_now": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back up now"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sauvegarder maintenant"
+          }
+        }
+      }
+    },
+    "backup_too_large": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data is too large to be restored from one file: no backup was written. Keep your photos in check, or use the export."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos données sont trop volumineuses pour être restaurées depuis un seul fichier : aucune sauvegarde n'a été écrite. Réduisez le nombre de photos ou utilisez l'export."
+          }
+        }
+      }
+    },
     "batch_active": {
       "localizations": {
         "en": {
@@ -941,6 +1309,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cette phrase est trop longue : quelques mots suffisent."
+          }
+        }
+      }
+    },
+    "capture_problem_trial_ended": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This new object was not saved. Your objects stay yours: search, edits, moves, export and deletion go on working. Your sentence stays in the field."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce nouvel objet n'a pas été enregistré. Vos objets restent à vous : recherche, modification, déplacement, export et suppression continuent de fonctionner. Votre phrase reste dans le champ."
           }
         }
       }
@@ -2257,6 +2641,230 @@
         }
       }
     },
+    "purchase_done_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thank you! The app is unlocked."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merci ! L'app est débloquée."
+          }
+        }
+      }
+    },
+    "purchase_ended_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything you saved stays available: search, edits, moves, export and deletion go on working. Only new objects wait for a purchase."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout ce que vous avez enregistré reste disponible : recherche, modification, déplacement, export et suppression continuent de fonctionner. Seuls les nouveaux objets attendent un achat."
+          }
+        }
+      }
+    },
+    "purchase_ended_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your free trial has ended"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre essai gratuit est terminé"
+          }
+        }
+      }
+    },
+    "purchase_later": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus tard"
+          }
+        }
+      }
+    },
+    "purchase_lifetime": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock for good, %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Débloquer pour toujours, %@"
+          }
+        }
+      }
+    },
+    "purchase_nothing_to_restore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No purchase found on this account. Check which Apple account is active."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun achat trouvé sur ce compte. Vérifiez le compte Apple actif."
+          }
+        }
+      }
+    },
+    "purchase_pending": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payment pending: the purchase takes effect as soon as it is confirmed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paiement en attente : l'achat prendra effet dès qu'il sera confirmé."
+          }
+        }
+      }
+    },
+    "purchase_restore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore a purchase"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurer un achat"
+          }
+        }
+      }
+    },
+    "purchase_restored": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your purchase is restored."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre achat est restauré."
+          }
+        }
+      }
+    },
+    "purchase_running_text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free trial until %@. Everything works, without an account."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essai gratuit jusqu'au %@. Tout fonctionne, sans compte."
+          }
+        }
+      }
+    },
+    "purchase_see_options": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See the options"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir les options"
+          }
+        }
+      }
+    },
+    "purchase_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purchase"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achat"
+          }
+        }
+      }
+    },
+    "purchase_unavailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The store is not answering right now. Please try again later."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le magasin ne répond pas pour le moment. Réessayez plus tard."
+          }
+        }
+      }
+    },
+    "purchase_yearly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yearly subscription, %@ a year"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonnement annuel, %@ par an"
+          }
+        }
+      }
+    },
     "reminder_add": {
       "localizations": {
         "en": {
@@ -3025,6 +3633,22 @@
         }
       }
     },
+    "settings_backup_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encrypted backup"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sauvegarde chiffrée"
+          }
+        }
+      }
+    },
     "settings_busy": {
       "localizations": {
         "en": {
@@ -3633,6 +4257,22 @@
         }
       }
     },
+    "settings_purchase_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purchase"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achat"
+          }
+        }
+      }
+    },
     "settings_search_licences": {
       "localizations": {
         "en": {
@@ -3766,13 +4406,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Objects, places, photos and history will be deleted from this phone. Export first if you want to keep them. This cannot be undone."
+            "value": "Objects, places, photos and history will be deleted from this phone. Export first if you want to keep them. This cannot be undone. The start date of the free trial stays on this phone, in its keychain, even if you uninstall the app. What has already left the app is not erased: exports, PDFs, the phone's notification history, and the backup file in the folder you chose (unreadable without its key)."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d'abord si vous voulez les garder. Cette action est irréversible."
+            "value": "Objets, lieux, photos et historique seront supprimés de ce téléphone. Exportez d'abord si vous voulez les garder. Cette action est irréversible. La date de début de l'essai gratuit reste sur ce téléphone, dans son trousseau, même si vous désinstallez l'application. Ce qui est déjà sorti de l'app n'est pas effacé : exports, PDF, historique des notifications du téléphone, et le fichier de sauvegarde dans le dossier que vous avez choisi (illisible sans sa clé)."
           }
         }
       }

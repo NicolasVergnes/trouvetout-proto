@@ -5,6 +5,7 @@ import app.trouvetout.core.AppInfo
 import app.trouvetout.core.capture.CaptureService
 import app.trouvetout.core.data.DeviceIdentity
 import app.trouvetout.core.data.EventStore
+import app.trouvetout.core.data.backup.BackupService
 import app.trouvetout.core.data.db.DatabaseKeyLostException
 import app.trouvetout.core.data.db.TrouveToutDb
 import app.trouvetout.core.data.db.openDatabase
@@ -26,6 +27,7 @@ import app.trouvetout.core.domain.usecase.ContainerCommands
 import app.trouvetout.core.domain.usecase.ItemCommands
 import app.trouvetout.core.domain.usecase.PlaceCommands
 import app.trouvetout.core.domain.usecase.UndoService
+import app.trouvetout.core.licensing.LicensingService
 import app.trouvetout.core.log.LogLevel
 import app.trouvetout.core.ml.ModelRuntime
 import app.trouvetout.core.ml.ModelSettings
@@ -78,7 +80,12 @@ public class SharedFactory(
     private val commandContext: CommandContext by lazy {
         CommandContext(eventStore, MonotonicUlidGenerator(config.clock, config.random), config.clock, deviceId)
     }
-    public val itemCommands: ItemCommands by lazy { ItemCommands(commandContext) }
+
+    /** The trial and the last purchase state (lot 10). */
+    public val licensing: LicensingService by lazy {
+        LicensingService(database, config.licenseStore, config.clock, config.dispatchers.io)
+    }
+    public val itemCommands: ItemCommands by lazy { ItemCommands(commandContext) { licensing.canAddItems() } }
     public val placeCommands: PlaceCommands by lazy { PlaceCommands(commandContext) }
     public val containerCommands: ContainerCommands by lazy { ContainerCommands(commandContext) }
     public val attachmentCommands: AttachmentCommands by lazy { AttachmentCommands(commandContext, config::timeZone) }
@@ -98,6 +105,7 @@ public class SharedFactory(
             clock = config.clock,
             timeZone = config::timeZone,
             dayFirst = config.dayFirstDates,
+            canAddItems = { licensing.canAddItems() },
         )
     }
 
@@ -185,6 +193,19 @@ public class SharedFactory(
         ImportService(files, eventStore, photoStore, config.dispatchers.io)
     }
 
+    /** The optional encrypted backup (A9, lot 10). */
+    public val backup: BackupService by lazy {
+        BackupService(
+            database,
+            files,
+            exportService,
+            importService,
+            config.backupCrypto,
+            config.clock,
+            config.dispatchers.io,
+        )
+    }
+
     /**
      * Opens the database and settles the device identity off the main thread, so the first capture does not
      * pay the schema creation. Returns false (and logs the failure class, never a path) when the store cannot
@@ -194,7 +215,12 @@ public class SharedFactory(
     public suspend fun warmUp(): Boolean = withContext(config.dispatchers.io) {
         if (wiped) return@withContext false
         // The privacy state is read here, off the main thread, before any screen or lifecycle callback needs it.
-        val attempt = runCatching { deviceId.also { appLock } }
+        val attempt =
+            runCatching {
+                deviceId.also { appLock }
+                // The trial runs from the first launch, not from the first object.
+                licensing.status()
+            }
         attempt.exceptionOrNull()?.let { failure ->
             if (failure is CancellationException) throw failure
             config.logger.log(LogLevel.ERROR, TAG, "storage unavailable: ${failure::class.simpleName}")
@@ -220,6 +246,7 @@ public class SharedFactory(
                 bin.purgeExpired()
                 exportService.purgeOldExports()
                 files.deleteDirectory(IMPORT_DIRECTORY)
+                backup.purge()
             }
         attempt.exceptionOrNull()?.let { failure ->
             if (failure is CancellationException) throw failure
@@ -264,7 +291,13 @@ public class SharedFactory(
 
         /** Everything the core writes lives in these subdirectories of `dataDirectory`. */
         public val DATA_DIRECTORIES: List<String> =
-            listOf(DATABASE_DIRECTORY, PhotoStore.DIRECTORY, ExportService.DIRECTORY, IMPORT_DIRECTORY)
+            listOf(
+                DATABASE_DIRECTORY,
+                PhotoStore.DIRECTORY,
+                ExportService.DIRECTORY,
+                IMPORT_DIRECTORY,
+                BackupService.DIRECTORY,
+            )
         public const val DATABASE_DIRECTORY: String = "db"
         public const val DATABASE_FILE: String = "trouvetout.db"
         public const val IMPORT_DIRECTORY: String = "imports"

@@ -4,6 +4,7 @@ package app.trouvetout.android.ui
 object Routes {
     const val CAPTURE = "capture"
     const val SETTINGS = "settings"
+    const val PURCHASE = "purchase"
     const val PLACES = "places"
     const val PLACE = "place/{id}"
     const val CONTAINER = "container/{id}"

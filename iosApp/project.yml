@@ -93,6 +93,9 @@ targets:
     platform: iOS
     sources:
       - path: iosAppTests
+      # StoreKit's local test store, for `SKTestSession`; no Apple account needed.
+      - path: StoreKit/TrouveTout.storekit
+        buildPhase: resources
     dependencies:
       - target: iosApp
     settings:
@@ -121,6 +124,7 @@ schemes:
         iosAppUITests: [test]
     run:
       config: Debug
+      storeKitConfiguration: StoreKit/TrouveTout.storekit
     test:
       config: Debug
       targets:

@@ -52,6 +52,7 @@ import app.trouvetout.core.data.export.ImportRejection
 fun SettingsRoute(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenPurchase: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as App
@@ -87,6 +88,8 @@ fun SettingsRoute(
         photo = PhotoSettings(photoModel, viewModel::setForceTextOnly, viewModel::setPhotoSearch),
         simpleMode = simpleMode,
         onSimpleMode = app.uiPrefs::setSimpleMode,
+        onOpenPurchase = onOpenPurchase,
+        backup = { BackupRoute() },
         privacy =
             PrivacySettingsUi(
                 state = privacy,
@@ -118,6 +121,8 @@ fun SettingsScreen(
     privacy: PrivacySettingsUi = PrivacySettingsUi(),
     simpleMode: Boolean = false,
     onSimpleMode: (Boolean) -> Unit = {},
+    onOpenPurchase: () -> Unit = {},
+    backup: @Composable () -> Unit = {},
 ) {
     var confirmWipe by remember { mutableStateOf(false) }
     Scaffold(
@@ -165,6 +170,15 @@ fun SettingsScreen(
             if (state.busy) {
                 val busyLabel = stringResource(R.string.settings_busy)
                 CircularProgressIndicator(Modifier.semantics { contentDescription = busyLabel })
+            }
+            backup()
+            Text(
+                stringResource(R.string.settings_purchase_section),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            OutlinedButton(onClick = onOpenPurchase, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.purchase_see_options))
             }
             Text(
                 stringResource(R.string.settings_display_section),

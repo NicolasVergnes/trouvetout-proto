@@ -46,6 +46,13 @@ struct TrouveToutApp: App {
     }
 }
 
+/// What became of a backup, for what the settings say at once; the details are in the state of the backup.
+enum BackupOutcome {
+    case written
+    case failed
+    case notRun
+}
+
 /// Holds the Kotlin core for the lifetime of the process (manual injection, ADR-012).
 @MainActor
 final class AppContainer: ObservableObject {
@@ -67,8 +74,13 @@ final class AppContainer: ObservableObject {
     private let lockFlows = FlowSubscriptions()
     /// Reminder notifications (E2, E6), handed to the system again at each change of the schedule.
     let reminders = ReminderScheduler()
+    /// The store (J4, J5).
+    let purchases = StoreKitPurchaseGateway()
 
     private var memoryWarning: NSObjectProtocol?
+    private var storeUpdates: Task<Void, Never>?
+    private var backupTask: Task<BackupOutcome, Never>?
+    private var purchaseSync = 0
 
     init() {
         let prepared = AppDirectories.prepareDataDirectory()
@@ -81,6 +93,82 @@ final class AppContainer: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.releaseModel() }
+        }
+        storeUpdates = purchases.listen { [weak self] in
+            await self?.syncPurchases()
+        }
+    }
+
+    /// A9, at launch and at each return to the foreground: at most once a day and after a change (the core decides).
+    /// No background task: iOS suspends the copy with the app (N6). A copy cut there leaves the previous file intact.
+    func backUpIfDue() async {
+        guard ready else { return }
+        let due = await (try? shared.backup.isDue())?.boolValue ?? false
+        if due {
+            _ = await runBackup()
+        }
+    }
+
+    /// One at a time: a second call waits and gives the outcome of the one running.
+    func runBackup() async -> BackupOutcome {
+        guard ready else { return .notRun }
+        if let backupTask {
+            return await backupTask.value
+        }
+        let backup = shared.backup
+        let task = Task { await AppContainer.backUp(backup) }
+        backupTask = task
+        let outcome = await task.value
+        backupTask = nil
+        return outcome
+    }
+
+    /// H6: nothing written to the chosen folder after the user confirmed, no archive being written while erasing.
+    func finishBackup() async {
+        _ = await backupTask?.value
+    }
+
+    private nonisolated static func backUp(_ backup: BackupService) async -> BackupOutcome {
+        guard let location = try? await backup.state().location else {
+            return .notRun
+        }
+        guard BackupDestination.reachable(location) else {
+            try? await backup.reportDestinationLost()
+            return .failed
+        }
+        guard let prepared = try? await backup.prepare() else {
+            return .failed // kept by the core for the settings
+        }
+        guard let ready = prepared as? PreparedBackupReady else {
+            return prepared is PreparedBackupTooLarge ? .failed : .notRun
+        }
+        try? await backup.copying()
+        let source = URL(fileURLWithPath: ready.absolutePath)
+        let copied = await Task.detached(priority: .utility) {
+            BackupDestination.write(from: source, to: location)
+        }.value
+        try? await backup.finished(prepared: ready, succeeded: copied)
+        return copied ? .written : .failed
+    }
+
+    /// Reports what the store says to the core: at launch, at each return to the foreground, after a change. Only the
+    /// last call counts: an answer read before a purchase never overwrites the purchase.
+    func syncPurchases() async {
+        guard ready else { return }
+        purchaseSync += 1
+        let call = purchaseSync
+        let factory = shared
+        let owned = await purchases.entitled()
+        // A wipe may have replaced the core meanwhile.
+        guard call == purchaseSync, factory === shared else { return }
+        if let owned {
+            try? await factory.licensing.recordPurchased(purchased: owned)
+        }
+        // Apple may be asked, which can take a minute offline: nothing waits for this date.
+        Task { [purchases] in
+            if let firstDownload = await purchases.firstDownloadMillis() {
+                try? await factory.licensing.recordStoreDate(millis: firstDownload)
+            }
         }
     }
 
@@ -127,6 +215,16 @@ final class AppContainer: ObservableObject {
         config.textModel = LiteRtTextModel()
         // « 12/03 » in a reminder sentence: month first only where the phone writes dates that way.
         config.dayFirstDates = AppContainer.dayFirst()
+        config.backupCrypto = IosBackupCrypto(native: CryptoKitBackupCipher())
+        // Its own Keychain item, which the total wipe leaves: erasing the data does not restart the trial (ADR-025).
+        config.licenseStore = KeychainLicenseStore(
+            item: KeychainDatabaseKey(service: "app.trouvetout.proto.licensing", account: "trial-start")
+        )
+        #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-uiTestTrialEnded") {
+                config.licenseStore = EndedTrialStore()
+            }
+        #endif
         return SharedFactory(config: config)
     }
 
@@ -158,6 +256,10 @@ final class AppContainer: ObservableObject {
             lockEnabled = (factory.privacySettings.state.value as? PrivacyState)?.lockEnabled ?? true
             sensitiveRevealed = false
             ready = true
+            Task {
+                await syncPurchases()
+                await backUpIfDue()
+            }
             lockFlows.cancelAll()
             lockFlows.watch(factory.appLock.locked, scope: factory.uiScope) { [weak self] (value: KotlinBoolean) in
                 self?.locked = value.boolValue
@@ -200,6 +302,11 @@ final class AppContainer: ObservableObject {
         shared.appLock.foregrounded()
         // iOS keeps 50 of our reminders: the next ones are set when the app comes back.
         refreshReminders()
+        // A subscription that ended, a refund, a payment confirmed while away.
+        Task {
+            await syncPurchases()
+            await backUpIfDue()
+        }
     }
 
     /// Hands the reminders to the system again, for what the flow does not tell: time passing, or the answer to the
@@ -247,6 +354,7 @@ final class AppContainer: ObservableObject {
         let spent = shared
         reminders.clear()
         Task {
+            await finishBackup()
             _ = try? await spent.wipeAllData()
             reminders.clear()
             UiPrefs.clear()
@@ -261,6 +369,17 @@ final class AppContainer: ObservableObject {
         }
     }
 }
+
+#if DEBUG
+    /// UI tests of U11: a trial that ended long ago, in memory, leaving the Keychain date to the other tests.
+    private final class EndedTrialStore: NSObject, LicenseStore {
+        func trialStartMillis() -> KotlinLong? {
+            KotlinLong(value: 1_767_225_600_000)
+        }
+
+        func setTrialStartMillis(millis _: Int64) {}
+    }
+#endif
 
 /// H3: what the app switcher snapshot shows while the app lock is on.
 private struct PrivacyCover: View {

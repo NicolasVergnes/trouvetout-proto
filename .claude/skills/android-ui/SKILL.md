@@ -58,11 +58,11 @@ val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
 ## Stockage et clés
 - `context.noBackupFilesDir` pour `db/` et `photos/` ; `allowBackup=false`.
 - Clé de base : `KeyGenParameterSpec` AES/GCM/NoPadding 256, `setIsStrongBoxBacked(true)` avec repli `StrongBoxUnavailableException`, `setUserAuthenticationRequired(false)`.
-- `EncryptedSharedPreferences` pour `trialStart`, `deviceId` ; **ce fichier-là** est inclus dans Auto Backup (clé/valeur) pour survivre à la réinstallation ; rien d'autre.
+- Début de l'essai : `FileLicenseStore`, `no_backup/licensing/trial_start`, hors des répertoires effacés par H6 ; rien dans Auto Backup, `allowBackup` reste à `false` (ADR-025).
 
 ## Play Billing (J5)
-- `BillingClient` avec `enablePendingPurchases` ; au démarrage `queryPurchasesAsync(INAPP)` et `(SUBS)` → `purchased` ; `acknowledgePurchase` obligatoire ; vérification de la signature avec la clé publique de l'app (hors serveur).
-- `PlayPurchaseGateway : PurchaseGateway` injecté dans `shared.licensing`.
+- Play Billing sans sa télémétrie ni sa localisation (exclusions Gradle, ADR-025) ; `BillingClient` avec `enablePendingPurchases` ; au démarrage `queryPurchasesAsync(INAPP)` et `(SUBS)` → `purchased` ; `acknowledgePurchase` obligatoire ; vérification de la signature avec la clé publique de l'app (hors serveur).
+- `PlayPurchaseGateway` dans l'app ; le résultat est rapporté au noyau (`licensing.recordPurchased`), sans interface dans `shared`.
 
 ## Notifications locales (E2, E6)
 - `AlarmManager.setAndAllowWhileIdle` (inexact) + `BroadcastReceiver` ; reprogrammation après `BOOT_COMPLETED` (permission `RECEIVE_BOOT_COMPLETED`, normale).

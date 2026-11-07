@@ -34,9 +34,11 @@ struct ContentView: View {
                         onWipe: container.wipeAfterFailure
                     )
                 } else {
-                    CaptureView(container: container) { query in
-                        path.append(SearchRoute(query: query))
-                    }
+                    CaptureView(
+                        container: container,
+                        onSearch: { query in path.append(SearchRoute(query: query)) },
+                        onOpenPurchase: { path.append(PurchaseRoute()) }
+                    )
                 }
             }
             .navigationDestination(for: BrowseTarget.self) { target in
@@ -47,6 +49,9 @@ struct ContentView: View {
             }
             .navigationDestination(for: SettingsRoute.self) { _ in
                 SettingsView(container: container)
+            }
+            .navigationDestination(for: PurchaseRoute.self) { _ in
+                PurchaseView(container: container)
             }
             .navigationDestination(for: SearchRoute.self) { route in
                 SearchView(container: container, query: route.query)

@@ -38,6 +38,10 @@ LIMIT ? OFFSET ?;
 head:
 SELECT at, device_id, id FROM event ORDER BY at DESC, device_id DESC, id DESC LIMIT 1;
 
+-- Le plus ancien événement depuis une date plausible : le début de l'essai ne recule pas au-delà (ADR-025).
+oldestAtSince:
+SELECT MIN(at) AS oldest FROM event WHERE at >= ?;
+
 -- Les derniers événements de cet appareil (pour l'annulation) : le dernier ajout partage le même instant.
 lastForDevice:
 SELECT id, at, device_id, actor, type, payload, source, raw_input

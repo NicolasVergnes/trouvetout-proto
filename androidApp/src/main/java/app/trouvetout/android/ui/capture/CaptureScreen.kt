@@ -95,6 +95,8 @@ fun CaptureRoute(
     /** A question asked from the quick capture (widget, tile), shown here as a search (C5). */
     searchRequest: String? = null,
     onSearchRequestHandled: () -> Unit = {},
+    /** J4: the options once the trial has ended. */
+    onOpenPurchase: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as App
     val viewModel: CaptureViewModel = viewModel { CaptureViewModel(app) }
@@ -126,7 +128,7 @@ fun CaptureRoute(
         }
     }
     val callbacks =
-        remember(viewModel, mic, onOpenSettings, onOpenPlaces, onOpenItem, onOpenSearch) {
+        remember(viewModel, mic, onOpenSettings, onOpenPlaces, onOpenItem, onOpenSearch, onOpenPurchase) {
             CaptureCallbacks(
                 onInputChange = viewModel::onInputChange,
                 onSubmit = viewModel::submit,
@@ -148,6 +150,10 @@ fun CaptureRoute(
                 onAddPhoto = viewModel::addPhoto,
                 onRemovePhoto = viewModel::removePhoto,
                 onUseName = viewModel::useName,
+                onOpenPurchase = {
+                    viewModel.dismissMessages()
+                    onOpenPurchase()
+                },
             )
         }
     CaptureScreen(
@@ -184,6 +190,7 @@ data class CaptureCallbacks(
     val onAddPhoto: (PhotoAttachment) -> Unit = {},
     val onRemovePhoto: () -> Unit = {},
     val onUseName: (String) -> Unit = {},
+    val onOpenPurchase: () -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -247,7 +254,7 @@ fun CaptureScreen(
             }
             state.card?.let { card -> ConfirmationCardView(card, callbacks) }
             AskNotificationsAfterReminder(state.card)
-            state.problem?.let { problem ->
+            state.problem?.takeUnless { it == CaptureProblem.TRIAL_ENDED }?.let { problem ->
                 Text(
                     problemText(problem),
                     color = MaterialTheme.colorScheme.error,
@@ -274,6 +281,23 @@ internal fun CaptureDialogs(
         }
     }
     if (state.askMicPermission) MicRationaleDialog(callbacks.mic)
+    if (state.problem == CaptureProblem.TRIAL_ENDED) TrialEndedDialog(callbacks)
+}
+
+/** U11: says what stops and what does not, at the moment it matters; the sentence stays in the field. */
+@Composable
+private fun TrialEndedDialog(callbacks: CaptureCallbacks) {
+    AlertDialog(
+        onDismissRequest = callbacks.onDismissMessages,
+        title = { Text(stringResource(R.string.purchase_ended_title)) },
+        text = { Text(problemText(CaptureProblem.TRIAL_ENDED)) },
+        confirmButton = {
+            TextButton(onClick = callbacks.onOpenPurchase) { Text(stringResource(R.string.purchase_see_options)) }
+        },
+        dismissButton = {
+            TextButton(onClick = callbacks.onDismissMessages) { Text(stringResource(R.string.purchase_later)) }
+        },
+    )
 }
 
 /** B10: « Je range… » picks a destination; every sentence without a place then goes there until closed. */
@@ -581,6 +605,7 @@ internal fun problemText(problem: CaptureProblem): String = stringResource(
         CaptureProblem.INPUT_TOO_LONG -> R.string.capture_problem_too_long
         CaptureProblem.DATE_MISSING -> R.string.capture_problem_date_missing
         CaptureProblem.DATE_PAST -> R.string.capture_problem_date_past
+        CaptureProblem.TRIAL_ENDED -> R.string.capture_problem_trial_ended
     },
 )
 

@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val searchRequest by app.searchRequest.collectAsStateWithLifecycle()
             val itemRequest by app.itemRequest.collectAsStateWithLifecycle()
+            val purchaseRequest by app.purchaseRequest.collectAsStateWithLifecycle()
             val failure by app.storeFailure.collectAsStateWithLifecycle()
             // Null until the store opened: nothing of the inventory is drawn before the lock is known.
             val locked by app.locked.collectAsStateWithLifecycle(initialValue = null)
@@ -79,6 +80,8 @@ class MainActivity : ComponentActivity() {
                                         onSearchRequestHandled = { app.searchRequest.value = null },
                                         itemRequest = itemRequest,
                                         onItemRequestHandled = { app.itemRequest.value = null },
+                                        purchaseRequest = purchaseRequest,
+                                        onPurchaseRequestHandled = { app.purchaseRequest.value = false },
                                     )
                                 }
                             }
@@ -96,12 +99,18 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         app.current?.appLock?.foregrounded()
+        // A subscription that ended, a refund, a payment confirmed while away.
+        app.refreshPurchases()
+        app.startBackupIfDue()
     }
 
     override fun onStop() {
         super.onStop()
         // A rotation is not a departure.
-        if (!isChangingConfigurations) app.current?.appLock?.backgrounded()
+        if (!isChangingConfigurations) {
+            app.current?.appLock?.backgrounded()
+            app.stopBackup()
+        }
     }
 
     /** H3: the system prompt; a phone whose screen lock was removed has nothing to ask and opens. */
@@ -134,6 +143,15 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
+        /** Opens the purchase screen above the home screen, with [sentence] kept in its field (U11: quick capture). */
+        fun openPurchase(
+            context: Context,
+            sentence: String,
+        ) {
+            (context.applicationContext as App).purchaseRequest.value = true
+            openCapture(context, sentence)
+        }
+
         /** Opens the home screen on the results of [query] (C5); the query stays in process memory. */
         fun openSearch(
             context: Context,

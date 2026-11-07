@@ -169,24 +169,25 @@ class SettingsViewModel(
     }
 
     private companion object {
-        const val COPY_BUFFER = 64 * 1024
         const val STOP_TIMEOUT_MILLIS = 5_000L
+    }
+}
 
-        /** Copies at most [max] bytes; a larger document is refused before it fills the private storage. */
-        fun copyBounded(
-            input: InputStream,
-            output: OutputStream,
-            max: Long,
-        ) {
-            val buffer = ByteArray(COPY_BUFFER)
-            var total = 0L
-            while (true) {
-                val read = input.read(buffer)
-                if (read < 0) return
-                total += read
-                if (total > max) throw IOException("document too large")
-                output.write(buffer, 0, read)
-            }
-        }
+private const val COPY_BUFFER = 64 * 1024
+
+/** Copies at most [max] bytes; a larger document is refused before it fills the private storage. */
+internal fun copyBounded(
+    input: InputStream,
+    output: OutputStream,
+    max: Long,
+) {
+    val buffer = ByteArray(COPY_BUFFER)
+    var total = 0L
+    while (true) {
+        val read = input.read(buffer)
+        if (read < 0) return
+        total += read
+        if (total > max) throw IOException("document too large")
+        output.write(buffer, 0, read)
     }
 }

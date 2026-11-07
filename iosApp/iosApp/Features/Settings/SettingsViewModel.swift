@@ -22,7 +22,7 @@ final class SettingsViewModel: ObservableObject {
     /// H3 (lot 8): the app lock and its delay.
     @Published private(set) var privacy: PrivacyState?
 
-    private let container: AppContainer
+    let container: AppContainer
 
     init(container: AppContainer) {
         self.container = container
@@ -123,6 +123,7 @@ final class SettingsViewModel: ObservableObject {
                 container.recreateShared()
                 exportURL = nil
             }
+            await container.finishBackup()
             _ = try await container.shared.wipeAllData()
             message = .wiped
         }

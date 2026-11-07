@@ -92,6 +92,9 @@ public enum class CaptureProblem {
 
     /** The reminder's moment has already passed. */
     DATE_PAST,
+
+    /** J4: the sentence creates an item and the trial is over; nothing was written, the host offers the purchase. */
+    TRIAL_ENDED,
 }
 
 /** The user's answer for one target of a proposal: act on [existingId], or null to create a new object. */
@@ -149,8 +152,11 @@ public class CaptureService internal constructor(
     private val timeZone: () -> TimeZone = { TimeZone.currentSystemDefault() },
     /** « 12/03 » is day first unless the host's locale writes the month first (en-US). */
     private val dayFirst: Boolean = true,
+    /** J4: whether a new item may be created. */
+    private val canAddItems: suspend () -> Boolean = { true },
 ) {
     /** [lang] is the UI language, used only when a sentence gives no clue about its own. */
+    @Throws(Exception::class) // to Swift: an error it can handle, not the end of the process
     public suspend fun propose(
         text: String,
         lang: Lang? = null,
@@ -168,6 +174,10 @@ public class CaptureService internal constructor(
         val place = parse.place?.let { PlaceResolver(snapshot.locations, parse.lang).resolve(it) }
         val detector = DuplicateDetector(snapshot.itemNames)
         val targets = parse.items.map { mention -> ItemTarget(mention, detector.find(mention.name)) }
+        // An object nothing resembles can only be new: no question to ask before saying so.
+        if (parse.intent == Intent.STORE && targets.any { it.matches.isEmpty() } && !canAddItems()) {
+            return@withContext CaptureProposal(parse, place, targets, CaptureProblem.TRIAL_ENDED)
+        }
         if (parse.intent != Intent.REMIND) return@withContext CaptureProposal(parse, place, targets)
         val fireAt = parse.date?.let { DateResolver.resolve(it, clock.now(), timeZone()) }
         CaptureProposal(parse, place, targets, reminderProblem(fireAt), fireAt)
@@ -194,6 +204,7 @@ public class CaptureService internal constructor(
      * objects (« marteau, tournevis ») is a store there. Movements and questions are unchanged. When [location]
      * no longer exists the plain proposal is returned (the host then asks, as for any sentence without a place).
      */
+    @Throws(Exception::class)
     public suspend fun proposeIn(
         text: String,
         location: LocationRef,
@@ -220,6 +231,7 @@ public class CaptureService internal constructor(
      * Writes the proposal. [placeChoice] is required when [CaptureProposal.needsPlaceDecision]; [itemChoices] gives,
      * per target, the existing item to act on (null = create for STORE, = ask for movements).
      */
+    @Throws(Exception::class)
     public suspend fun commit(
         proposal: CaptureProposal,
         placeChoice: PlaceChoice? = null,
@@ -241,6 +253,10 @@ public class CaptureService internal constructor(
             }
         val upFront = refusalBeforeWriting(proposal, placeChoice, existingFor)
         if (upFront != null) return@withContext CaptureOutcome.Refused(upFront)
+        // Before any write too, the place included: a sentence that mixes known and new objects is refused whole.
+        if (parse.intent == Intent.STORE && existingFor.any { it == null } && !canAddItems()) {
+            return@withContext CaptureOutcome.Refused(CaptureProblem.TRIAL_ENDED)
+        }
         val writer = Writer(parse, source, proposal.fireAt)
         val location =
             writer.location(proposal, placeChoice)

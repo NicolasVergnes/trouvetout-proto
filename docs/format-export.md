@@ -119,7 +119,7 @@ CREATE TABLE reminder (
   kind TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0);
 
 CREATE TABLE meta (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL);
--- clés : schema_version, device_id, model_variant (puis trial_started_at…)
+-- clés : schema_version, device_id, model_variant (puis purchased…)
 
 -- Version 2 (lot 6, migration additive) : caches de la recherche, recalculables, jamais exportés.
 CREATE TABLE embedding (
@@ -192,3 +192,14 @@ Le droit d'accès et la portabilité sont satisfaits par l'export lui-même ; l'
 ## Réglages de l'appareil (lot 8)
 
 Les réglages de l'appareil — verrouillage et délai (H3), « le clavier n'apprend pas », variante de modèle — sont dans la table `meta` : ils ne sont ni exportés ni restaurés par un import, et la suppression totale les efface. La base elle-même est chiffrée sur le téléphone (SQLCipher, ADR-023) ; l'export, lui, est un ZIP en clair, lisible sans l'app, que l'utilisateur partage où il veut.
+
+## Sauvegarde chiffrée (A9, ADR-025)
+
+Un fichier `.ttbk` contient une archive d'export ci-dessus, chiffrée. Il s'ouvre avec la clé de secours, depuis l'app ou avec ces indications.
+
+- En-tête (41 octets) : `TTBK`, version (1 octet, `1`), taille de bloc (4 octets, gros-boutiste, `1048576`), sel aléatoire (32 octets).
+- Clé de secours : 28 caractères Crockford base 32 (les tirets ne comptent pas ; `O` se lit `0`, `I` et `L` se lisent `1`), soit 16 octets de clé, 1 octet de contrôle (premier octet du SHA-256 de la clé) et 4 bits nuls.
+- Clé du fichier : HKDF-SHA-256 (RFC 5869) de la clé de secours, sel de l'en-tête, info `trouvetout-backup-v1`, 32 octets.
+- Blocs : l'archive coupée en blocs de 1 Mio, le dernier éventuellement plus court, chacun scellé en AES-256-GCM (texte chiffré puis étiquette de 16 octets). Nonce de 12 octets : 3 octets nuls, numéro du bloc à partir de 0 (8 octets, gros-boutiste), `1` pour le dernier bloc et `0` sinon. Données additionnelles : l'en-tête entier.
+
+Altérer, réordonner, tronquer ou prolonger le fichier empêche de l'ouvrir. Comme l'export, la sauvegarde ne contient rien de `meta` : ni la date d'essai, ni l'état d'achat, ni la clé, ni l'emplacement.

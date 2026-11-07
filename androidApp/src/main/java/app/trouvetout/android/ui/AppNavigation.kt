@@ -13,6 +13,7 @@ import app.trouvetout.android.ui.item.ItemRoute
 import app.trouvetout.android.ui.places.BrowseNavigation
 import app.trouvetout.android.ui.places.BrowseRoute
 import app.trouvetout.android.ui.places.BrowseTarget
+import app.trouvetout.android.ui.purchase.PurchaseRoute
 import app.trouvetout.android.ui.search.SearchNavigation
 import app.trouvetout.android.ui.search.SearchRoute
 import app.trouvetout.android.ui.settings.SettingsRoute
@@ -24,7 +25,15 @@ fun AppNavigation(
     onSearchRequestHandled: () -> Unit = {},
     itemRequest: String? = null,
     onItemRequestHandled: () -> Unit = {},
+    purchaseRequest: Boolean = false,
+    onPurchaseRequestHandled: () -> Unit = {},
 ) {
+    LaunchedEffect(purchaseRequest) {
+        if (purchaseRequest) {
+            controller.navigate(Routes.PURCHASE) { launchSingleTop = true }
+            onPurchaseRequestHandled()
+        }
+    }
     // A tapped reminder opens its item sheet (E2); this runs only once the app is unlocked.
     LaunchedEffect(itemRequest) {
         if (itemRequest != null) {
@@ -54,6 +63,7 @@ fun AppNavigation(
                 onOpenPlaces = { controller.navigate(Routes.PLACES) },
                 onOpenItem = { controller.navigate(Routes.item(it)) },
                 onOpenSearch = { controller.navigate(Routes.search(it)) { launchSingleTop = true } },
+                onOpenPurchase = { controller.navigate(Routes.PURCHASE) { launchSingleTop = true } },
                 searchRequest = searchRequest,
                 onSearchRequestHandled = onSearchRequestHandled,
             )
@@ -73,7 +83,13 @@ fun AppNavigation(
                     ),
             )
         }
-        composable(Routes.SETTINGS) { SettingsRoute(onBack = { controller.popBackStack() }) }
+        composable(Routes.SETTINGS) {
+            SettingsRoute(
+                onBack = { controller.popBackStack() },
+                onOpenPurchase = { controller.navigate(Routes.PURCHASE) { launchSingleTop = true } },
+            )
+        }
+        composable(Routes.PURCHASE) { PurchaseRoute(onBack = { controller.popBackStack() }) }
         composable(Routes.PLACES) { BrowseRoute(BrowseTarget.Root, browse) }
         composable(Routes.PLACE) { entry -> BrowseRoute(BrowseTarget.Place(entry.id()), browse) }
         composable(Routes.CONTAINER) { entry -> BrowseRoute(BrowseTarget.Container(entry.id()), browse) }

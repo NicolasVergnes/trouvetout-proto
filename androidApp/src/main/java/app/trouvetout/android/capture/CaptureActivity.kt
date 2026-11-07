@@ -48,6 +48,7 @@ class CaptureActivity : ComponentActivity() {
                         onClose = ::finish,
                         onSearch = ::openSearch,
                         onOpenApp = ::openApp,
+                        onOpenPurchase = ::openPurchase,
                     )
                 }
             }
@@ -72,6 +73,11 @@ class CaptureActivity : ComponentActivity() {
 
     private fun openApp(sentence: String) {
         MainActivity.openCapture(this, sentence)
+        finish()
+    }
+
+    private fun openPurchase(sentence: String) {
+        MainActivity.openPurchase(this, sentence)
         finish()
     }
 
