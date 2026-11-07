@@ -32,7 +32,6 @@ struct SettingsView: View {
                     .disabled(viewModel.busy)
             } header: {
                 Text("settings_data_section")
-                    .foregroundStyle(.primary) // the system gray is at the limit of the contrast audit
             }
             Section {
                 Text("settings_wipe_hint")
@@ -46,7 +45,6 @@ struct SettingsView: View {
                 NavigationLink("purchase_see_options", value: PurchaseRoute())
             } header: {
                 Text("settings_purchase_section")
-                    .foregroundStyle(.primary) // the system gray is at the limit of the contrast audit
             }
             // Lot 6: what runs the search, and the licences the bundled model and runtime require (Apache 2.0).
             Section {
@@ -60,7 +58,6 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             } header: {
                 Text("settings_search_section")
-                    .foregroundStyle(.primary) // the system gray is at the limit of the contrast audit
             }
             Section {
                 Toggle(isOn: $simpleMode) {
@@ -71,7 +68,6 @@ struct SettingsView: View {
                 }
             } header: {
                 Text("settings_display_section")
-                    .foregroundStyle(.primary) // the system gray is at the limit of the contrast audit
             }
             privacySection
             photoSection
@@ -134,7 +130,6 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             } header: {
                 Text("settings_privacy_section")
-                    .foregroundStyle(.primary) // the system gray is at the limit of the contrast audit
             }
         }
     }
@@ -183,7 +178,6 @@ struct SettingsView: View {
                 }
             } header: {
                 Text("settings_photos_section")
-                    .foregroundStyle(.primary) // the system gray is at the limit of the contrast audit
             }
         }
     }

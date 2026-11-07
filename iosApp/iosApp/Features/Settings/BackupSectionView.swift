@@ -218,13 +218,13 @@ struct BackupSectionView: View {
             }
         } header: {
             Text("settings_backup_section")
-                .foregroundStyle(.primary) // the system gray is at the limit of the contrast audit
         }
     }
 
     private var hint: some View {
         Text("backup_hint")
             .font(.footnote)
+            .foregroundStyle(.secondary)
             .task { await viewModel.refresh() }
             .sheet(item: $viewModel.sheet, onDismiss: { viewModel.folderPickerClosed() }, content: sheet)
             .fileImporter(isPresented: $choosingBackup, allowedContentTypes: [.data]) { result in
