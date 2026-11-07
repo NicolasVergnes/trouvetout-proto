@@ -32,6 +32,9 @@ public enum class Rejection {
     UNKNOWN_REMINDER,
     NOTHING_TO_UNDO,
     NOT_UNDOABLE,
+
+    /** J4: the trial is over and nothing was purchased; only creating an item is refused. */
+    TRIAL_ENDED,
 }
 
 public sealed interface CommandResult {

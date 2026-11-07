@@ -20,6 +20,9 @@ public object MetaKeys {
     public const val APP_LOCK: String = "app_lock"
     public const val LOCK_DELAY: String = "lock_delay"
     public const val NO_KEYBOARD_LEARNING: String = "no_keyboard_learning"
+
+    /** J5: the last answer of the store, asked again after a wipe; the start of the trial is not here (ADR-025). */
+    public const val PURCHASED: String = "purchased"
 }
 
 /** Opens (creating or migrating) the SQLite database; implemented per platform, the caller owns the driver. */

@@ -4,6 +4,7 @@ import app.trouvetout.core.AppInfo
 import app.trouvetout.core.capture.Lang
 import app.trouvetout.core.data.db.DatabaseKeyStore
 import app.trouvetout.core.data.db.DriverFactory
+import app.trouvetout.core.licensing.LicenseStore
 import app.trouvetout.core.log.Logger
 import app.trouvetout.core.log.NoopLogger
 import app.trouvetout.core.ml.TextModelSource
@@ -44,6 +45,9 @@ public class SharedConfig(
     public var clock: Clock = Clock.System
     public var dispatchers: CoroutineDispatchers = CoroutineDispatchers()
     public var random: Random = Random.Default
+
+    /** The start of the trial (J1, ADR-025); both apps set it. Null never blocks anything: tools and tests. */
+    public var licenseStore: LicenseStore? = null
 
     /** The embedded model (C2, ADR-021); null keeps the search on keywords only. */
     public var textModel: TextModelSource? = null

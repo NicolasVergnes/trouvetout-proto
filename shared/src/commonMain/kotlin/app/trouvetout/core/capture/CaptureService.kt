@@ -92,6 +92,9 @@ public enum class CaptureProblem {
 
     /** The reminder's moment has already passed. */
     DATE_PAST,
+
+    /** J4: the sentence creates an item and the trial is over; nothing was written, the host offers the purchase. */
+    TRIAL_ENDED,
 }
 
 /** The user's answer for one target of a proposal: act on [existingId], or null to create a new object. */
@@ -149,6 +152,8 @@ public class CaptureService internal constructor(
     private val timeZone: () -> TimeZone = { TimeZone.currentSystemDefault() },
     /** « 12/03 » is day first unless the host's locale writes the month first (en-US). */
     private val dayFirst: Boolean = true,
+    /** J4: whether a new item may be created. */
+    private val canAddItems: suspend () -> Boolean = { true },
 ) {
     /** [lang] is the UI language, used only when a sentence gives no clue about its own. */
     public suspend fun propose(
@@ -241,6 +246,10 @@ public class CaptureService internal constructor(
             }
         val upFront = refusalBeforeWriting(proposal, placeChoice, existingFor)
         if (upFront != null) return@withContext CaptureOutcome.Refused(upFront)
+        // Before any write too, the place included: a sentence that mixes known and new objects is refused whole.
+        if (parse.intent == Intent.STORE && existingFor.any { it == null } && !canAddItems()) {
+            return@withContext CaptureOutcome.Refused(CaptureProblem.TRIAL_ENDED)
+        }
         val writer = Writer(parse, source, proposal.fireAt)
         val location =
             writer.location(proposal, placeChoice)
