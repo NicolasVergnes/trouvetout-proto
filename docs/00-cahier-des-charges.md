@@ -106,7 +106,7 @@ La v1 sert **une personne sur un téléphone**. Le partage au sein du foyer est 
 
 - **A5** Historique par objet (affichage optionnel). **A9** Sauvegarde chiffrée automatique dans un fichier choisi par l'utilisateur (iCloud Drive, Google Drive ou ailleurs), avec une clé de secours qu'il note, optionnelle (ADR-025). **A11** Tags libres avec suggestions. **A12** Quantités (nombre + unité, décrémentable). **A13** Corbeille 30 jours + annulation. **A14** Détection de doublons à la saisie.
 - **B8** Photo d'un objet → nom suggéré (comparaison de la photo à une liste de libellés dans l'espace EmbeddingGemma 2 omnimodal, appareils ≥ 6 Go ; sinon photo seule). **B10** Mode « je range » par lot. **B11** Verbes de mouvement (« je prends X », « je remets X », « X est maintenant dans Y »). **B12** Prêt et retour. **B14** Plusieurs objets par phrase.
-- **C5** Recherche vocale (question → recherche, affirmation → capture). **C10** Recherche par photo (option utilisateur, appareils ≥ 6 Go). **C11** Filtres (lieu, contenant, tag, état, date). **C12** Suggestions de requête. **C13** Réponse générative sur appareils compatibles (voir note). **C16** Vue par contenant imprimable (PDF).
+- **C5** Recherche vocale (question → recherche, affirmation → capture). **C10** Recherche par photo (option utilisateur, appareils ≥ 6 Go). **C11** Filtres (lieu, contenant, tag, état, date). **C12** Suggestions de requête. **C16** Vue par contenant imprimable (PDF).
 - **D2** Modèles de lieux proposés, jamais imposés. **D5** Photo du lieu avec repère. **D6** Renommer / fusionner des lieux sans perdre l'historique. **D7** Objets épinglés (option). **D11** Archivage (option).
 - **E2** Rappel à une date (voix ou fiche), notification locale. **E6** Rappel de vérification des objets critiques (option).
 - **H2** Chiffrement au repos (clé Keychain / Keystore). **H3** Verrouillage biométrique optionnel + masquage dans le sélecteur d'apps. **H4** Objets sensibles exclus des widgets, de l'index système et des notifications.
@@ -114,11 +114,11 @@ La v1 sert **une personne sur un téléphone**. Le partage au sein du foyer est 
 - **J5** Achats via StoreKit 2 / Play Billing, restauration ; nécessaire au modèle d'essai. **J7** Page web statique de présentation + politique de confidentialité + format de données.
 - **N5** Taille : pas de plafond strict, packs de modèles à la demande. **N6** Batterie : pas de traitement en arrière-plan, inférence au premier plan. **N7** 10 000 objets / 20 000 photos / 100 000 événements sans dégradation. **N10** Tests : corpus automatisé, tests d'import/export, tests d'accessibilité.
 
-> Note C13 : la réponse générative implique un petit LLM embarqué (pack optionnel, ex. Qwen3-0.6B ou Gemma 3 1B via LiteRT-LM) alors que l'extraction LLM (B3) est en P3. À traiter en dernier lot P1 ; si le pack s'avère trop lourd, C13 bascule en P2 sans impact sur le reste.
+> Note C13 : la réponse générative (petit LLM embarqué) était prévue en dernier lot P1 avec bascule en P2 si le pack s'avérait trop lourd ; c'est le cas : **C13 est reportée en P2** le 8 novembre 2026 (ADR-026 : latence, mémoire, taille, API Swift en préversion).
 
 ## 8. Reporté (P2 / P3) et supprimé
 
-- **P2** : B9 photo d'un contenant → liste d'objets ; C8 récents et fréquents.
+- **P2** : B9 photo d'un contenant → liste d'objets ; C8 récents et fréquents ; C13 réponse générative (ADR-026).
 - **P3** : B3 extraction par LLM, B13 scan QR, B15 raccourcis d'assistant, B16 code-barres, B17 partage vers l'app, B18 montre ; C14 index système, C15 « pas vu depuis » ; D3 étiquettes QR, D8 collections, D9 plan, D10 NFC ; E1, E3, E4, E5, E7, E8 ; **toute la section F (foyer)** ; G1–G12 ; H5, H7, H8 ; I5, I9 ; J2, J3, J6, J8 ; A15, A16 ; N8.
 - **Supprimé** : C9 (historique dans la fiche en tant qu'écran dédié — couvert par A5 optionnel).
 

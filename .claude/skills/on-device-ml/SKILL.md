@@ -11,7 +11,7 @@ Décision de référence : ADR-003 (`docs/04-decisions.md`) et `docs/01-architec
 ```kotlin
 public interface TextEmbedder  { val modelId: String; val dim: Int; suspend fun embed(texts: List<String>): List<FloatArray> }
 public interface ImageEmbedder { val modelId: String; val dim: Int; suspend fun embed(image: ImageRef): FloatArray }
-public interface Rephraser     { suspend fun rephrase(answer: Answer, locale: Locale): String }   // C13, optionnel
+public interface Rephraser     { suspend fun rephrase(answer: Answer, locale: Locale): String }   // C13, P2 (ADR-026) : ne pas implémenter en v1
 public sealed interface ModelVariant { object TextOnly; object Omnimodal }
 public interface ModelPackManager { fun state(): Flow<PackState>; suspend fun download(variant); suspend fun remove(variant) }
 ```
@@ -51,7 +51,8 @@ Implémentations : `LiteRtTextEmbedder`, `LiteRtImageEmbedder` (Android : LiteRT
 - Vecteurs des photos d'objets : `owner_type='photo'`, `text_hash` = SHA-256, calculés au premier plan après les fiches ; recherche par photo (C10) : photos (image ↔ image) et fiches (image ↔ texte), fusion linéaire (`photoShare`) ; la photo de la question n'est jamais stockée.
 - Évaluation : `./gradlew :tools:evalPhotos` (jeu CC BY, plancher `PHOTO_FLOORS`), `-PevalArgs="--templates"` compare les gabarits, `-PevalArgs="--local <dossier>"` mesure les photos de l'utilisateur (hors dépôt, `labels.csv` = `fichier,clé[,a|b]`).
 
-## Réponse générative (C13, lot 11, optionnel)
+## Réponse générative (C13) — reportée en P2 (ADR-026), ne pas implémenter en v1
+- Conception gardée pour une version ultérieure ; conditions pour rouvrir dans ADR-026 (modèle ≤ 1 milliard multilingue, ≥ 30 jetons/s sur processeur, API Swift stable, lieux cités vérifiés).
 - Pack « LLM » séparé (Qwen3-0.6B ou Gemma 3 1B, format LiteRT-LM) ; `LiteRtRephraser` ; prompt contraint : contexte = top-5 fiches (nom, lieu, date), consigne de ne citer que ces fiches, 60 jetons max, température 0.
 - Jamais sur le chemin critique : la réponse gabarit est affichée d'abord, la reformulation remplace si elle arrive en < 2 s.
 
