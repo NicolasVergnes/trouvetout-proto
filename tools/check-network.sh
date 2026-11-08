@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Vérifie « zéro réseau en usage normal ».
 # Partie statique (toujours) : recherche de clients HTTP hors des emplacements autorisés.
-# Partie dynamique (optionnelle, --android | --ios) : à compléter au lot 0/5 avec un proxy bloquant.
+# Partie dynamique (lot 12, ADR-027), automatisée en CI : Android `NoNetworkTest` (compteurs de trafic de l'uid, API 29),
+# iOS `tools/watch-ios-network.sh` (sockets de l'app sur le simulateur pendant xcodebuild test). --android | --ios
+# rappellent les commandes ; sur un vrai téléphone, la procédure est dans docs/07-recette.md.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 status=0
@@ -57,13 +59,13 @@ fi
 
 case "${1:-}" in
   --android)
-    echo "== Test dynamique Android (nécessite un émulateur/appareil en débogage) =="
-    echo "Procédure : adb shell settings put global http_proxy 127.0.0.1:1 ; lancer les parcours U1/U3/U8 ; adb shell dumpsys netstats detail | grep <uid>."
-    echo "Parcours complet automatisé au lot 12 (tools/check-* en CI) ; la voix est couverte par la garde statique ci-dessus (ADR-020)." ;;
+    echo "== Test dynamique Android =="
+    echo "Automatisé : ./gradlew :androidApp:api29DebugAndroidTest (NoNetworkTest : permission INTERNET refusée, zéro octet"
+    echo "pour l'uid pendant capture, recherche avec le modèle chargé, export/import, magasin). Vrai téléphone : docs/07-recette.md." ;;
   --ios)
     echo "== Test dynamique iOS (simulateur) =="
-    echo "Procédure : lancer mitmproxy en mode blocage ou Network Link Conditioner 100 % perte ; rejouer U1/U3/U8 ; vérifier zéro requête."
-    echo "Parcours complet automatisé au lot 12 ; la voix est couverte par la garde statique ci-dessus (ADR-020)." ;;
+    echo "Automatisé en CI : tools/watch-ios-network.sh start|stop autour de xcodebuild test (aucune socket internet de"
+    echo "l'app ni du widget, LiteRT-LM chargé compris). Vrai iPhone : docs/07-recette.md." ;;
 esac
 
 [ $status -eq 0 ] && echo "OK" || echo "ÉCHEC"
