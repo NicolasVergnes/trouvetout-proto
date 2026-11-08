@@ -1,0 +1,83 @@
+/* TrouveTout — static site (J7). No script, no external font, no tracker. */
+:root {
+  --bg: #fbfaf7;
+  --fg: #1d1b18;
+  --muted: #5b564e;
+  --accent: #1f5e8c;
+  --line: #ddd8cf;
+  --card: #ffffff;
+  --code: #f1eee8;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161514;
+    --fg: #ece9e3;
+    --muted: #b3ada3;
+    --accent: #8cc3ea;
+    --line: #3a3733;
+    --card: #1f1e1c;
+    --code: #262421;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+header, main, footer {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+header .name { font-weight: 700; font-size: 1.15rem; color: var(--fg); text-decoration: none; }
+
+nav { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+
+nav a, a { color: var(--accent); }
+
+nav a[aria-current="page"] { color: var(--fg); text-decoration: none; font-weight: 600; }
+
+main { padding-top: 8px; padding-bottom: 40px; }
+
+h1 { font-size: 1.9rem; line-height: 1.25; margin: 1.2em 0 0.4em; }
+h2 { font-size: 1.3rem; margin: 1.8em 0 0.4em; }
+h3 { font-size: 1.05rem; margin: 1.4em 0 0.3em; }
+
+.lead { font-size: 1.1rem; color: var(--muted); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 12px; margin: 1.2em 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.card h3 { margin-top: 0; }
+.card p { margin: 0; }
+
+.updated { color: var(--muted); font-size: 0.95rem; }
+
+code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.9em; }
+code { background: var(--code); padding: 0.1em 0.3em; border-radius: 4px; }
+pre { background: var(--code); padding: 12px; border-radius: 8px; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+
+.table { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+
+footer { padding-top: 16px; padding-bottom: 32px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.95rem; }

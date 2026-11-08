@@ -1,0 +1,1 @@
+rangement,objets,retrouver,inventaire,maison,cave,garage,carton,clés,papiers,prêt,rappel,privé

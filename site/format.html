@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Format des données — TrouveTout</title>
+<meta name="description" content="Lire ses données TrouveTout sans l'application : export ZIP, journal d'événements, sauvegarde chiffrée.">
+<link rel="stylesheet" href="style.css">
+<link rel="alternate" hreflang="en" href="en/format.html">
+</head>
+<body>
+<header>
+  <a class="name" href="index.html">TrouveTout</a>
+  <nav aria-label="Pages">
+    <a href="index.html">Présentation</a>
+    <a href="confidentialite.html">Confidentialité</a>
+    <a href="format.html" aria-current="page">Format des données</a>
+    <a href="licences.html">Licences</a>
+    <a href="en/format.html" hreflang="en" lang="en">English</a>
+  </nav>
+</header>
+<main>
+<h1>Format des données</h1>
+<p class="lead">Vos données doivent pouvoir se lire sans l'application, aujourd'hui comme dans dix ans. Voici comment
+est fait un export.</p>
+<p class="updated">Format version 1. Un export v1 s'importe dans toutes les versions suivantes : le format n'évolue
+qu'en ajoutant des champs ou des types d'événements, jamais en renommant ni en supprimant. Un lecteur ignore ce qu'il
+ne connaît pas. Document de référence complet, avec le schéma SQLite :
+<a href="https://github.com/NicolasVergnes/trouvetout-proto/blob/main/docs/format-export.md">docs/format-export.md</a>.</p>
+
+<h2>L'export ZIP</h2>
+<p>Réglages → Exporter crée <code>trouvetout-export-AAAAMMJJ-HHMMSS.zip</code> (heure UTC), que vous partagez où vous
+voulez. Il n'est pas chiffré.</p>
+<pre><code>manifest.json     { "formatVersion": 1, "appVersion": "…", "schemaVersion": 1, "exportedAt": &lt;ms UTC&gt;,
+                    "deviceId": "…", "counts": { "events": n, "items": n, "places": n, "containers": n, "photos": n } }
+events.jsonl      le journal complet, un événement JSON par ligne, trié par (at, deviceId, id)
+snapshot.json     l'état courant, lisible d'un coup d'œil : items, places, containers, locations, photos, reminders
+photos/&lt;id&gt;.jpg   les photos, recompressées (côté long ≤ 2048 px), sans leurs métadonnées d'origine</code></pre>
+<p>Pour un coup d'œil, ouvrez <code>snapshot.json</code>. Pour tout l'historique, <code>events.jsonl</code> (JSON
+Lines : un objet par ligne). <code>snapshot.json</code> n'est jamais réimporté : il est recalculé à partir du journal.</p>
+
+<h2>Le journal d'événements</h2>
+<p>Chaque action est un événement immuable, daté et signé par l'appareil ; rien n'est jamais écrasé. L'état courant
+(où est chaque objet) se déduit en rejouant le journal dans l'ordre.</p>
+<div class="table"><table>
+  <thead><tr><th>Champ</th><th>Type</th><th>Sens</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>ULID (26 caractères)</td><td>identifiant unique, trié par date de création</td></tr>
+    <tr><td><code>at</code></td><td>entier</td><td>instant UTC, en millisecondes depuis le 1<sup>er</sup> janvier 1970</td></tr>
+    <tr><td><code>deviceId</code></td><td>ULID</td><td>identité de l'installation, tirée au hasard au premier lancement, jamais transmise ; renouvelée après une suppression totale</td></tr>
+    <tr><td><code>actor</code></td><td>texte</td><td><code>"me"</code> (réservé à un usage futur en foyer)</td></tr>
+    <tr><td><code>type</code></td><td>texte</td><td>le type d'événement (ci-dessous)</td></tr>
+    <tr><td><code>payload</code></td><td>objet</td><td>les champs propres au type</td></tr>
+    <tr><td><code>source</code></td><td>texte</td><td><code>VOICE</code>, <code>TEXT</code>, <code>PHOTO</code>, <code>WIDGET</code>, <code>IMPORT</code> ou <code>SYSTEM</code></td></tr>
+    <tr><td><code>rawInput</code></td><td>texte, optionnel</td><td>la phrase dite ou tapée, telle quelle</td></tr>
+  </tbody>
+</table></div>
+<pre><code>{"id":"01JAXK3Q9S4M7V2R8T1N6P5ZCD","at":1761312000000,"deviceId":"01JAXK0000AB12CD34EF56GH78","actor":"me",
+ "type":"ItemStored","payload":{"type":"ItemStored","itemId":"01JAXK3Q9R…","placeId":"01JAXK2A…"},
+ "source":"VOICE","rawInput":"passeport dans le tiroir du haut de la commode"}</code></pre>
+
+<h3>Types d'événements</h3>
+<div class="table"><table>
+  <thead><tr><th>Type</th><th>Champs</th><th>Effet</th></tr></thead>
+  <tbody>
+    <tr><td><code>ItemCreated</code></td><td><code>itemId</code>, <code>name</code>, <code>description?</code>, <code>tags[]</code>, <code>quantity?</code>, <code>unit?</code>, <code>sensitive</code></td><td>crée la fiche, sans lieu</td></tr>
+    <tr><td><code>ItemUpdated</code></td><td>les champs modifiés</td><td>met à jour la fiche</td></tr>
+    <tr><td><code>ItemStored</code>, <code>ItemMovedTo</code></td><td><code>itemId</code>, <code>placeId?</code> ou <code>containerId?</code></td><td>l'objet est rangé là</td></tr>
+    <tr><td><code>ItemTaken</code></td><td><code>itemId</code></td><td>l'objet est pris ; son dernier lieu est gardé</td></tr>
+    <tr><td><code>ItemReturned</code></td><td><code>itemId</code></td><td>remis à son dernier lieu ; fin d'un prêt</td></tr>
+    <tr><td><code>ItemLent</code></td><td><code>itemId</code>, <code>to</code></td><td>prêté à cette personne</td></tr>
+    <tr><td><code>ItemArchived</code></td><td><code>itemId</code>, <code>archived</code></td><td>archivé ou désarchivé</td></tr>
+    <tr><td><code>ItemDeleted</code>, <code>ItemRestored</code></td><td><code>itemId</code></td><td>mis à la corbeille, ou sorti</td></tr>
+    <tr><td><code>PlaceCreated</code></td><td><code>placeId</code>, <code>name</code>, <code>parentId?</code>, <code>kind</code>, <code>aliases[]</code></td><td>crée un lieu (racine, pièce, meuble, endroit)</td></tr>
+    <tr><td><code>PlaceRenamed</code></td><td><code>placeId</code>, <code>name</code>, <code>aliases[]</code></td><td>renomme</td></tr>
+    <tr><td><code>PlaceMerged</code></td><td><code>placeId</code>, <code>intoPlaceId</code></td><td>tout passe dans le lieu cible</td></tr>
+    <tr><td><code>PlaceDeleted</code></td><td><code>placeId</code></td><td>retire un lieu vide</td></tr>
+    <tr><td><code>ContainerCreated</code></td><td><code>containerId</code>, <code>label</code>, <code>placeId</code>, <code>number?</code></td><td>crée un contenant (carton, bac…)</td></tr>
+    <tr><td><code>ContainerMoved</code></td><td><code>containerId</code>, <code>placeId</code></td><td>déplace le contenant et tout son contenu</td></tr>
+    <tr><td><code>ContainerDeleted</code></td><td><code>containerId</code></td><td>retire un contenant vide</td></tr>
+    <tr><td><code>PhotoAttached</code>, <code>PhotoDetached</code></td><td><code>photoId</code>, propriétaire, fichier, dimensions, SHA-256</td><td>attache ou détache une photo de <code>photos/</code></td></tr>
+    <tr><td><code>ReminderSet</code>, <code>ReminderDone</code></td><td><code>reminderId</code>, <code>itemId</code>, <code>fireAtEpochMillis</code>, <code>kind</code></td><td>programme ou clôt un rappel</td></tr>
+  </tbody>
+</table></div>
+<p>Un lecteur qui rencontre un type inconnu le conserve tel quel et le réécrit dans ses exports : rien ne se perd en
+passant par une version plus ancienne.</p>
+
+<h2>Ce que contient un export</h2>
+<p>Uniquement ce que vous avez saisi ou ce qui en découle : noms, descriptions, étiquettes, lieux et leurs alias,
+contenants, la phrase complète dite ou tapée, les noms des personnes à qui vous avez prêté un objet, les dates de vos
+actions, vos photos ré-encodées et l'identifiant aléatoire de l'installation. Rien ne vient d'un capteur, d'un compte,
+d'un contact ou d'un identifiant du système. Les réglages du téléphone (verrouillage, préférences, date d'essai, état
+d'achat) n'y sont pas.</p>
+
+<h2>Importer</h2>
+<p>Réglages → Importer relit <code>manifest.json</code>, <code>events.jsonl</code> et <code>photos/</code> ; les
+événements déjà connus sont ignorés, si bien qu'importer dans un téléphone qui a déjà des données fusionne les deux.
+Les photos sont ré-encodées, jamais copiées telles quelles. Limites : archive ≤ 1 Gio, journal ≤ 64 Mio, photo ≤ 48 Mio.</p>
+
+<h2>La sauvegarde chiffrée (<code>.ttbk</code>)</h2>
+<p>Un fichier <code>.ttbk</code> contient une archive d'export, chiffrée. Il s'ouvre avec la clé de secours, depuis
+l'application ou avec ces indications :</p>
+<ul>
+  <li>En-tête de 41 octets : <code>TTBK</code>, version (1 octet, <code>1</code>), taille de bloc (4 octets,
+  gros-boutiste, <code>1048576</code>), sel aléatoire (32 octets).</li>
+  <li>Clé de secours : 28 caractères en base 32 de Crockford (tirets ignorés ; <code>O</code> se lit <code>0</code>,
+  <code>I</code> et <code>L</code> se lisent <code>1</code>) : 16 octets de clé, 1 octet de contrôle (premier octet du
+  SHA-256 de la clé), 4 bits nuls.</li>
+  <li>Clé du fichier : HKDF-SHA-256 (RFC 5869) de la clé de secours, avec le sel de l'en-tête et l'info
+  <code>trouvetout-backup-v1</code>, 32 octets.</li>
+  <li>Blocs : l'archive coupée en blocs de 1 Mio, chacun scellé en AES-256-GCM (texte chiffré puis étiquette de
+  16 octets). Nonce de 12 octets : 3 octets nuls, numéro du bloc depuis 0 (8 octets, gros-boutiste), puis
+  <code>1</code> pour le dernier bloc et <code>0</code> sinon. Données additionnelles : l'en-tête entier.</li>
+</ul>
+<p>Altérer, réordonner, tronquer ou prolonger le fichier empêche de l'ouvrir.</p>
+</main>
+<footer>
+  <p>TrouveTout (nom provisoire) — glopglopdev. <a href="licences.html">Licences</a>.</p>
+</footer>
+</body>
+</html>

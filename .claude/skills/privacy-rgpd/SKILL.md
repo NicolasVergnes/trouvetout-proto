@@ -46,7 +46,7 @@ Référence : `docs/02-securite-rgpd.md`. Ce skill est la procédure de vérific
 **Magasins**
 - [ ] App Privacy (Apple) : « Data Not Collected » reste vrai. Si un pack est téléchargé depuis notre domaine : aucune donnée liée à l'identité ; l'adresse IP transitoire n'est pas conservée (le dire dans la politique).
 - [ ] Data safety (Google) : « Aucune donnée collectée ni partagée » ; chiffrement en transit N/A ; suppression des données : via l'app (H6).
-- [ ] Politique de confidentialité (J7) mise à jour si un flux change.
+- [ ] Politique de confidentialité (J7) mise à jour si un flux change : `docs/02-securite-rgpd.md` §5, puis `site/confidentialite.html` et `site/en/privacy.html`, puis `store/` (ADR-027), **avant** la version qui l'introduit. Elle couvre aujourd'hui aussi l'impression (le document sort de l'app), les rappels, la dictée, les photos et le modèle.
 
 ## Textes utilisateur à réutiliser
 - Micro : « Le micro sert uniquement à transcrire votre phrase, sur votre téléphone. Rien n'est enregistré ni envoyé. »

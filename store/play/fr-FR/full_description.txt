@@ -1,0 +1,38 @@
+Où ai-je rangé ça ? TrouveTout répond à cette question.
+
+Dites en deux secondes où vous posez un objet : « passeport dans le tiroir du haut de la commode ». L'objet et le lieu sont reconnus, le lieu est créé s'il est nouveau. Des mois plus tard, demandez « où est le passeport ? » : la réponse tient en une ligne, avec le lieu, la date et la photo.
+
+RETROUVER AVEC VOS MOTS
+• « Le chargeur du Kindle » trouve le « câble USB-C blanc » : fautes, synonymes et approximations compris.
+• La recherche et son modèle d'intelligence artificielle fonctionnent sur le téléphone, même en mode avion.
+• Filtres par lieu, contenant, étiquette, état et date ; recherche par photo sur les téléphones de 6 Go et plus.
+
+RANGER SANS FORMULAIRE
+• À la voix ou au clavier, depuis le widget, la tuile de réglages rapides ou l'application.
+• « Je prends la perceuse », « perceuse remise au garage », « j'ai prêté la tente à Marc » : l'historique suit.
+• Plusieurs objets par phrase, mode « je range » pour vider un carton, quantités, étiquettes, photos.
+• Cartons, bacs et valises se déplacent avec tout leur contenu.
+
+VOS LIEUX, À VOTRE FAÇON
+• Maison, cave, garage, voiture, résidence secondaire : autant de lieux, de pièces et de meubles que vous voulez.
+• Des modèles de lieux sont proposés, jamais imposés ; renommer ou fusionner ne perd rien.
+• Imprimez la liste d'un carton ou d'une étagère.
+
+RAPPELS
+• « Rappelle-moi où est le passeport la veille du 12 mars » : une notification locale à la date voulue.
+• Vérification tous les six mois des objets importants, si vous le souhaitez.
+
+VOS DONNÉES RESTENT À VOUS
+• Aucune donnée collectée, aucun compte, aucune publicité, aucun suivi. L'application n'a pas d'accès réseau propre.
+• Base chiffrée, verrouillage optionnel par empreinte ou code, objets sensibles masqués des widgets et des notifications.
+• Export complet en un fichier lisible sans l'application ; sauvegarde chiffrée optionnelle dans le fichier de votre choix (Google Drive ou ailleurs) ; suppression totale en une action.
+
+ACCESSIBLE
+TalkBack, grandes tailles de texte, thème sombre, mode simplifié à deux boutons.
+
+PRIX
+Six mois d'essai complet, sans compte. Ensuite, seuls les nouveaux ajouts demandent l'achat — une fois, ou un petit abonnement annuel. Tout ce que vous avez enregistré reste consultable, modifiable et exportable, achat ou pas.
+
+Android 10 ou plus récent. Sur Android 10 et 11, la saisie se fait au clavier : la reconnaissance vocale n'y garantit pas de rester sur le téléphone.
+
+Politique de confidentialité : {{PRIVACY_URL}}

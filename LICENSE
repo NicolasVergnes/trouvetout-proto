@@ -1,0 +1,22 @@
+Copyright (c) 2026 glopglopdev. All rights reserved.
+
+The source code, documentation, test corpora and other material in this repository are published so that they can
+be read and reviewed. No licence is granted to copy, modify, distribute, sublicense or sell them, in whole or in
+part, or to build and distribute the application from them, without the prior written permission of the copyright
+holder (glopglopdev@gmail.com).
+
+Third-party components used or bundled by the application (EmbeddingGemma 2, LiteRT-LM, SQLCipher, AndroidX,
+Kotlin and kotlinx libraries, SQLDelight, Google Play Billing, and others) remain under their own licences, listed
+in THIRD_PARTY_NOTICES.md.
+
+---
+
+Copyright (c) 2026 glopglopdev. Tous droits réservés.
+
+Le code source, la documentation, les corpus de test et le reste du contenu de ce dépôt sont publiés pour être lus
+et examinés. Aucune licence n'est accordée pour les copier, les modifier, les distribuer, les sous-licencier ou les
+vendre, en tout ou en partie, ni pour construire et distribuer l'application à partir d'eux, sans l'autorisation
+écrite préalable du titulaire des droits (glopglopdev@gmail.com).
+
+Les composants tiers utilisés ou intégrés par l'application restent sous leurs propres licences, listées dans
+THIRD_PARTY_NOTICES.md.
