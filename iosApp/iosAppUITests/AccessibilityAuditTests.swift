@@ -1,7 +1,8 @@
 import XCTest
 
 /// I6 (lot 8): Xcode's accessibility audit (labels, contrast, hit regions, Dynamic Type, clipped text, traits) on
-/// the main screens of the real app, as the user reaches them: home, settings, places, search.
+/// the main screens of the real app, as the user reaches them: home, settings (every scrolled screen of it since lot
+/// 12), places, search.
 final class AccessibilityAuditTests: XCTestCase {
     /// Every issue fails the test, except two kinds that are not errors, logged with their element:
     /// - « contrast nearly passed », the audit's warning tier (the system tint and secondary text);
@@ -27,6 +28,23 @@ final class AccessibilityAuditTests: XCTestCase {
         }
     }
 
+    /// Lot 12: the audit only sees what is on screen; the settings run over several screens (Vie privée, Photos,
+    /// Achat, Sauvegarde chiffrée at the bottom), each audited after a swipe, then scrolled back to the top.
+    @available(iOS 17.0, *)
+    private func auditScrolled(_ app: XCUIApplication) throws {
+        let list = app.collectionViews.firstMatch
+        guard list.waitForExistence(timeout: 10) else { return }
+        for _ in 0 ..< Self.settingsScreens {
+            list.swipeUp()
+            try audit(app)
+        }
+        for _ in 0 ..< Self.settingsScreens {
+            list.swipeDown()
+        }
+    }
+
+    private static let settingsScreens = 8
+
     override func setUp() {
         // Every audit issue is reported, not only the first one.
         continueAfterFailure = true
@@ -48,6 +66,9 @@ final class AccessibilityAuditTests: XCTestCase {
             link.tap()
             XCTAssertTrue(app.navigationBars.buttons.firstMatch.waitForExistence(timeout: 10), screen)
             try audit(app)
+            if screen == "open_settings" {
+                try auditScrolled(app)
+            }
             app.navigationBars.buttons.element(boundBy: 0).tap()
             XCTAssertTrue(app.textFields.firstMatch.waitForExistence(timeout: 10), "back home from \(screen)")
         }

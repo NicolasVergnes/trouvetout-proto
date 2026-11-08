@@ -152,10 +152,10 @@ struct SettingsView: View {
                 } else {
                     Text("settings_photos_text").font(.footnote)
                     if model.stoppedWhileLoading {
-                        Text("settings_photos_stopped").font(.footnote).foregroundStyle(.red)
+                        Text("settings_photos_stopped").font(.footnote).foregroundStyle(Color.errorText)
                     }
                     if model.loadFailed {
-                        Text("settings_photos_failed").font(.footnote).foregroundStyle(.red)
+                        Text("settings_photos_failed").font(.footnote).foregroundStyle(Color.errorText)
                     }
                     Toggle(isOn: Binding(get: { !model.forceTextOnly }, set: { viewModel.setNamePhotos($0) })) {
                         VStack(alignment: .leading) {

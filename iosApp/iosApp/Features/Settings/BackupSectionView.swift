@@ -245,7 +245,7 @@ struct BackupSectionView: View {
         if let problem = state.problem {
             Text(LocalizedStringKey(problemKey(problem)))
                 .font(.footnote)
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.errorText)
         }
         if state.problem == .destinationLost {
             Button("backup_choose_other") { viewModel.sheet = .folderPicker }

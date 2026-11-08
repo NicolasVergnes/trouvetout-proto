@@ -40,7 +40,7 @@ struct BrowseView: View {
             if let problem = viewModel.problem {
                 Text(problemKey(problem))
                     .font(.callout)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.errorText)
                     .padding(.horizontal, 16)
             }
             Breadcrumb(path: viewModel.place?.path ?? viewModel.container?.path ?? [])

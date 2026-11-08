@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.trouvetout.android.ui.capture.CAPTURE_FIELD_TAG
@@ -24,7 +25,8 @@ import org.junit.runner.RunWith
 
 /**
  * I6 on a real Android 10: the Accessibility Test Framework (touch targets, labels, contrast, duplicate
- * descriptions…) on the main screens of the app as the user reaches them: home, settings, places, search.
+ * descriptions…) on the main screens of the app as the user reaches them: home, settings (every section, scrolled
+ * into view since lot 12), places, search.
  */
 @OptIn(ExperimentalTestApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -48,6 +50,13 @@ class AccessibilityTest {
             timeoutMillis = TIMEOUT,
         )
         compose.onRoot().tryPerformAccessibilityChecks()
+        // Lot 12: the sections further down are checked too, each scrolled into view (ATF sees what is laid out).
+        for (section in SCROLLED_SECTIONS) {
+            val title = hasText(compose.activity.getString(section))
+            compose.waitUntilAtLeastOneExists(title, timeoutMillis = TIMEOUT)
+            compose.onNode(title).performScrollTo()
+            compose.onRoot().tryPerformAccessibilityChecks()
+        }
         back()
 
         compose.waitUntilAtLeastOneExists(hasTestTag(CAPTURE_FIELD_TAG), timeoutMillis = TIMEOUT)
@@ -89,5 +98,15 @@ class AccessibilityTest {
 
     private companion object {
         const val TIMEOUT = 15_000L
+
+        /** The settings sections below the first screen, top to bottom. */
+        val SCROLLED_SECTIONS =
+            listOf(
+                R.string.settings_backup_section,
+                R.string.settings_purchase_section,
+                R.string.settings_display_section,
+                R.string.settings_search_section,
+                R.string.settings_photos_section,
+            )
     }
 }
