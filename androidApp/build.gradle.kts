@@ -8,6 +8,15 @@ plugins {
 /** `-Ptrouvetout.bundleModel=false` builds without the embedding model: keyword search only, lighter installs. */
 val bundleModel = providers.gradleProperty("trouvetout.bundleModel").map(String::toBoolean).getOrElse(true)
 
+/**
+ * Lot 12 (ADR-027): `-Ptrouvetout.modelDelivery=pack` moves the models out of the base module into the install-time
+ * asset pack `:modelPack`, for the App Bundle (Play refuses a base module over 200 MB). `embedded` (default) keeps
+ * them in the APK: debug builds, device tests, sideloading. The paths in the AssetManager are the same either way.
+ */
+val modelDelivery = providers.gradleProperty("trouvetout.modelDelivery").getOrElse("embedded")
+require(modelDelivery in setOf("embedded", "pack")) { "trouvetout.modelDelivery: embedded or pack" }
+val modelsInPack = bundleModel && modelDelivery == "pack"
+
 @Suppress("UNCHECKED_CAST")
 val manifestModels =
     (JsonSlurper().parse(rootProject.file("models/manifest.json")) as Map<String, Any>)["models"]
@@ -20,6 +29,7 @@ fun identity(model: Map<String, Any>): String = "${model["id"]}@${(model["sha256
 
 android {
     namespace = "app.trouvetout.android"
+    if (modelsInPack) assetPacks += ":modelPack"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
@@ -141,7 +151,7 @@ val copyModelAssets =
         outputDirectory.set(layout.buildDirectory.dir("generated/modelAssets"))
     }
 
-if (bundleModel) {
+if (bundleModel && !modelsInPack) {
     androidComponents {
         onVariants { variant ->
             variant.sources.assets?.addGeneratedSourceDirectory(copyModelAssets, CopyModelAssets::outputDirectory)

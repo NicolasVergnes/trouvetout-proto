@@ -45,6 +45,11 @@ jobs:
           tools/check-network.sh
           tools/check-logs.sh
           tools/test-hooks.sh
+      - name: Play App Bundle, models in the install-time asset pack (ADR-027)
+        # The key is a placeholder: this bundle proves the layout and is never uploaded.
+        run: |
+          ./gradlew :androidApp:bundleRelease -Ptrouvetout.modelDelivery=pack -Ptrouvetout.playLicenseKey=ci-not-for-upload
+          tools/check-bundle.sh androidApp/build/outputs/bundle/release/androidApp-release.aab
       - name: Upload debug APK
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -188,8 +193,10 @@ jobs:
       - name: Generate Xcode project
         working-directory: iosApp
         run: xcodegen generate
-      - name: Build and test on simulator
+      - name: Build and test on simulator, watching the app's sockets (N4)
         run: |
+          tools/watch-ios-network.sh start build/ios-network
+          set +e
           xcodebuild test \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
@@ -197,6 +204,10 @@ jobs:
             -resultBundlePath build/ios-tests.xcresult \
             -derivedDataPath build/DerivedData \
             CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER=""
+          tests=$?
+          tools/watch-ios-network.sh stop build/ios-network
+          network=$?
+          exit $(( tests != 0 ? tests : network ))
         # Ad hoc signing (« Sign to Run Locally », no certificate): an unsigned simulator app has no Keychain
         # (errSecMissingEntitlement), and the database key lives there since lot 8 (ADR-023).
       - name: Native libraries make no network call (LiteRT-LM, SQLCipher)
