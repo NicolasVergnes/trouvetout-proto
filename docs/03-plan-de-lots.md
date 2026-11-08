@@ -99,7 +99,7 @@ Statut à tenir à jour dans ce fichier (☐ à faire, ◐ en cours, ☑ termin�
 - Critères : jamais sur le chemin critique ; désactivable ; si latence > 3 s ou mémoire > budget sur les appareils de référence, le lot est reporté sans impact.
 - Décision du 8 nov. 2026 (choix de l'utilisateur, ADR-026) : **reporté sans impact**. Le seul modèle utilisable (Qwen3-0.6B, Apache 2.0, 343 Mo) décode 13 jetons/s sur le processeur d'un Pixel 8a, soit ≈ 5 s pour une phrase (> 3 s), avec plusieurs centaines de Mo en plus de l'embedder ; l'API Swift de LiteRT-LM est en préversion ; la réponse en une ligne (C4) est déjà exacte. Aucun code écrit ; conditions pour rouvrir dans l'ADR.
 
-## Lot 12 — Finition et publication (I10, J7, N10) ☐
+## Lot 12 — Finition et publication (I10, J7, N10) ◐
 - Prise en main sans tutoriel bloquant ; page web statique (présentation, politique de confidentialité, format d'export) ; fiches des magasins « aucune donnée collectée » ; captures ; `tools/check-*` en CI ; tests d'accessibilité automatisés.
 - Critères d'acceptation globaux de `00-cahier-des-charges.md §9`.
 
