@@ -143,6 +143,16 @@ class CaptureViewModel(
             .flatMapLatest { it.itemRepository.observeListed() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
 
+    /** I10: whether the first-steps card shows (the core decides: fresh journal, not dismissed). */
+    val welcome: StateFlow<Boolean> =
+        app.readyShared
+            .flatMapLatest { it.welcome.visible }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
+
+    fun dismissWelcome() {
+        viewModelScope.launch { app.readyShared.first().welcome.dismiss() }
+    }
+
     /** Destinations of the « je range » picker. */
     val places: StateFlow<List<Place>> =
         app.readyShared

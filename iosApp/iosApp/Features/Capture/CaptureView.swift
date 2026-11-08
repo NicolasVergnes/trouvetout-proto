@@ -17,15 +17,19 @@ struct CaptureView: View {
     private let onSearch: (String) -> Void
     /// J4: the options once the trial has ended.
     private let onOpenPurchase: () -> Void
+    /// I10: the place sets (D2), from the first-steps card.
+    private let onOpenPlaces: () -> Void
 
     init(
         container: AppContainer,
         onSearch: @escaping (String) -> Void = { _ in },
-        onOpenPurchase: @escaping () -> Void = {}
+        onOpenPurchase: @escaping () -> Void = {},
+        onOpenPlaces: @escaping () -> Void = {}
     ) {
         _viewModel = StateObject(wrappedValue: CaptureViewModel(container: container))
         self.onSearch = onSearch
         self.onOpenPurchase = onOpenPurchase
+        self.onOpenPlaces = onOpenPlaces
     }
 
     var body: some View {
@@ -59,12 +63,19 @@ struct CaptureView: View {
                 if let problem = viewModel.problem, problem != .trialEnded {
                     Text(CaptureTexts.problemKey(problem))
                         .font(.callout)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.errorText)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
             }
             .padding(.horizontal, 16)
-            if !simpleMode {
+            if viewModel.showWelcome {
+                WelcomeCard(
+                    onDismiss: { viewModel.dismissWelcome() },
+                    onOpenPlaces: simpleMode ? nil : onOpenPlaces
+                )
+                .padding(.horizontal, 16)
+                Spacer()
+            } else if !simpleMode {
                 itemList
             } else {
                 Spacer()

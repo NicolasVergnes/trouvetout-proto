@@ -43,6 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
 import app.trouvetout.android.notif.ReminderNotifications
+import app.trouvetout.android.notif.rememberHibernationAsk
 import app.trouvetout.android.notif.rememberNotificationAsk
 import app.trouvetout.core.domain.model.ReminderKind
 import java.time.Instant
@@ -75,7 +76,10 @@ fun RemindersSection(
         notificationsOn = ReminderNotifications.enabled(context)
         onPauseOrDispose {}
     }
-    val afterAdding = rememberNotificationAsk { granted -> notificationsOn = granted }
+    var notificationAsking by remember { mutableStateOf(false) }
+    val askNotifications =
+        rememberNotificationAsk(onAsking = { notificationAsking = it }) { granted -> notificationsOn = granted }
+    val askHibernation = rememberHibernationAsk(blocked = notificationAsking)
     var picking by rememberSaveable { mutableStateOf(false) }
     val dated = reminders.filter { it.kind == ReminderKind.DATE }
     val check = reminders.filter { it.kind == ReminderKind.CHECK }.minByOrNull { it.fireAt }
@@ -108,7 +112,10 @@ fun RemindersSection(
         OutlinedButton(onClick = { picking = true }, enabled = usable) { Text(stringResource(R.string.reminder_add)) }
         CheckRow(check != null, usable) { on ->
             viewModel.setChecking(on)
-            if (on) afterAdding()
+            if (on) {
+                askNotifications()
+                askHibernation(System.currentTimeMillis() + SIX_MONTHS_MILLIS)
+            }
         }
         if (check != null) {
             val millis = check.fireAt.toEpochMilliseconds()
@@ -145,7 +152,8 @@ fun RemindersSection(
             onPick = { millis ->
                 picking = false
                 viewModel.add(millis)
-                afterAdding()
+                askNotifications()
+                askHibernation(millis)
             },
             onDismiss = { picking = false },
         )
@@ -256,3 +264,6 @@ private fun moment(
 
 /** A reminder without a chosen time rings at 9:00, as in a sentence (ADR-024). */
 private const val DEFAULT_HOUR = 9
+
+/** The verification reminder (E6) comes back every six months: far enough to ask about hibernation. */
+private const val SIX_MONTHS_MILLIS = 182L * 24 * 60 * 60 * 1000

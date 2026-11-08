@@ -33,6 +33,7 @@ import app.trouvetout.core.ml.ModelRuntime
 import app.trouvetout.core.ml.ModelSettings
 import app.trouvetout.core.platform.FileStore
 import app.trouvetout.core.platform.createFileStore
+import app.trouvetout.core.onboarding.WelcomeGuide
 import app.trouvetout.core.privacy.AppLock
 import app.trouvetout.core.privacy.PrivacySettings
 import app.trouvetout.core.reminder.ReminderRepository
@@ -136,6 +137,9 @@ public class SharedFactory(
 
     /** The privacy settings of this device (H3, keyboard learning). */
     public val privacySettings: PrivacySettings by lazy { PrivacySettings(database, config.dispatchers.io) }
+
+    /** I10: whether the first-steps card is offered on the home screen. */
+    public val welcome: WelcomeGuide by lazy { WelcomeGuide(database, config.dispatchers.io) }
 
     /** When to ask for the device owner (H3) and whether sensitive items may be shown (H4); one per process. */
     public val appLock: AppLock by lazy { AppLock(privacySettings, config.clock) }

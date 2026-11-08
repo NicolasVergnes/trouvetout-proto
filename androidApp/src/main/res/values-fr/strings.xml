@@ -14,6 +14,13 @@
     <string name="capture_problem_too_long">Cette phrase est trop longue : quelques mots suffisent.</string>
     <string name="capture_send">Enregistrer</string>
     <string name="capture_empty">Dites où vous posez un objet, par exemple « passeport dans le tiroir du haut ». Une question comme « où sont les clés » cherche.</string>
+    <string name="welcome_title">Pour commencer</string>
+    <string name="welcome_say">Dites ou tapez où vous posez un objet : « passeport dans le tiroir du haut de la commode ». Rien à configurer avant.</string>
+    <string name="welcome_ask">Plus tard, demandez « où est le passeport ? » : la réponse est un lieu, avec la date.</string>
+    <string name="welcome_places">Vous pouvez partir d’un modèle de lieux (maison, appartement…) ou les créer au fil de l’eau : rien n’est imposé.</string>
+    <string name="welcome_private">Tout reste sur ce téléphone : pas de compte, rien n’est envoyé.</string>
+    <string name="welcome_places_action">Voir les modèles de lieux</string>
+    <string name="welcome_dismiss">Compris</string>
     <string name="capture_card_stored">→ %1$s</string>
     <string name="capture_card_no_place">Enregistré, sans lieu pour l\'instant</string>
     <string name="capture_card_taken">Sorti</string>
@@ -264,6 +271,8 @@
     <string name="reminder_checked">Vérifié aujourd\'hui</string>
     <string name="reminder_notifications_off">Les notifications de l\'app sont désactivées : les rappels sont gardés, mais aucune notification ne viendra.</string>
     <string name="reminder_open_settings">Réglages des notifications</string>
+    <string name="hibernation_title">Garder les rappels lointains</string>
+    <string name="hibernation_text">Android peut mettre en pause une application que vous n’ouvrez pas pendant quelques mois : ses rappels ne sonneraient plus. Pour qu’un rappel aussi lointain sonne, laissez l’application active : dans l’écran suivant, désactivez « Suspendre l’activité de l’application si elle n’est pas utilisée ».</string>
     <string name="reminder_permission_title">Autoriser les notifications ?</string>
     <string name="reminder_permission_text">Pour que vos rappels vous parviennent, le téléphone demande si l\'app peut afficher des notifications. Elles nomment l\'objet au plus, jamais son lieu. Sur l\'écran verrouillé, le nom reste visible si votre téléphone est réglé pour afficher tout le contenu des notifications ; sinon, seul « Rappel TrouveTout » apparaît.</string>
     <string name="reminder_time_title">À quelle heure ?</string>

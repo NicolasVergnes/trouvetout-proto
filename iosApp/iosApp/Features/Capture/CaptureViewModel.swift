@@ -14,6 +14,8 @@ final class CaptureViewModel: ObservableObject {
     @Published private(set) var busy = false
     @Published private(set) var problem: CaptureProblem?
     @Published private(set) var items: [ItemView] = []
+    /// I10: the first-steps card (the core decides: fresh journal, not dismissed).
+    @Published private(set) var showWelcome = false
     @Published private(set) var listening = false
     /// The explanation shown before the system prompts (H9).
     @Published private(set) var askMicPermission = false
@@ -69,6 +71,7 @@ final class CaptureViewModel: ObservableObject {
         items = []
         places = []
         containers = []
+        showWelcome = false
         guard let shared else { return }
         let scope = shared.uiScope
         flows.watch(shared.itemRepository.observeListed(), scope: scope) { [weak self] (list: NSArray) in
@@ -83,6 +86,13 @@ final class CaptureViewModel: ObservableObject {
         flows.watch(shared.modelSettings.state, scope: scope) { [weak self] (state: PhotoModelState) in
             self?.photoModel = state
         }
+        flows.watch(shared.welcome.visible, scope: scope) { [weak self] (value: KotlinBoolean) in
+            self?.showWelcome = value.boolValue
+        }
+    }
+
+    func dismissWelcome() {
+        Task { try? await container.shared.welcome.dismiss() }
     }
 
     /// What the user types; programmatic changes to `input` go through `setInput` and never touch the search.
