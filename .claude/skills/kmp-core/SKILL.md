@@ -14,7 +14,7 @@ shared/
     data/     db/ (SQLDelight), projection/, repository/, export/
     capture/  Parser, Intent, rules_fr.kt, rules_en.kt, PlaceResolver
     search/   Searcher, KeywordIndex, SemanticIndex, Fusion, synonyms
-    ml/       TextEmbedder, ImageEmbedder, Rephraser (interfaces), ModelSelector, ModelPackManager
+    ml/       TextEmbedder, ImageEmbedder, (Rephraser : C13, P2, ADR-026), ModelSelector, ModelPackManager
     licensing/ TrialPolicy, LicensingService, LicenseStore (interface)
     platform/ expect : FileSystem, Clock, DeviceInfo (ram), SecureStore, Hasher, ZipIo
     log/      Logger
