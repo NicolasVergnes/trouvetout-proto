@@ -25,7 +25,8 @@ struct WelcomeCard: View {
         .font(.callout)
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+        // The screen's own background with an outline: tinted buttons keep their contrast (a grey card lowered it).
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 1))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("welcome_card")
     }

@@ -12,4 +12,14 @@ extension Color {
                 : UIColor(red: 0.69, green: 0.0, blue: 0.13, alpha: 1)
         }
     )
+
+    /// Explanations under a setting (I6, lot 12): the system secondary label is about 3.5:1 on a grouped cell, under
+    /// the 4.5:1 that footnote text needs. This grey is ≥ 6:1 on the light cells and ≥ 6.5:1 on the dark ones.
+    static let hintText = Color(
+        UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(white: 0.68, alpha: 1)
+                : UIColor(white: 0.36, alpha: 1)
+        }
+    )
 }

@@ -25,7 +25,7 @@ public class WelcomeGuide internal constructor(
     private val db: TrouveToutDb,
     private val io: CoroutineDispatcher,
 ) {
-    /** Dismissed in this process (written by [dismiss]); the stored flag is read on [io], never on the caller's thread. */
+    /** Dismissed in this process ([dismiss]); the stored flag is read on [io], never on the caller's thread. */
     private val dismissedNow = MutableStateFlow(false)
     private val dismissedBefore =
         flow {

@@ -17,7 +17,7 @@ struct SettingsView: View {
             Section {
                 Text("settings_export_hint")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.hintText)
                 if let url = viewModel.exportURL {
                     ShareLink(item: url) {
                         Label("settings_export_share", systemImage: "square.and.arrow.up")
@@ -27,7 +27,7 @@ struct SettingsView: View {
                     .disabled(viewModel.busy)
                 Text("settings_import_hint")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.hintText)
                 Button("settings_import") { importing = true }
                     .disabled(viewModel.busy)
             } header: {
@@ -36,7 +36,7 @@ struct SettingsView: View {
             Section {
                 Text("settings_wipe_hint")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.hintText)
                 Button("settings_wipe", role: .destructive) { confirmWipe = true }
                     .disabled(viewModel.busy)
             }
@@ -46,10 +46,10 @@ struct SettingsView: View {
                     .font(.footnote)
                 Text("settings_search_licences")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.hintText)
                 Text("settings_licences_sqlcipher")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.hintText)
             } header: {
                 Text("settings_search_section")
             }
@@ -57,7 +57,7 @@ struct SettingsView: View {
                 Toggle(isOn: $simpleMode) {
                     VStack(alignment: .leading) {
                         Text("settings_simple_mode")
-                        Text("settings_simple_mode_hint").font(.footnote).foregroundStyle(.secondary)
+                        Text("settings_simple_mode_hint").font(.footnote).foregroundStyle(Color.hintText)
                     }
                 }
             } header: {
@@ -113,7 +113,7 @@ struct SettingsView: View {
                         Text("settings_lock")
                         Text(lockHint)
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.hintText)
                     }
                 }
                 .disabled(!DeviceOwner.available && !privacy.lockEnabled)
@@ -129,7 +129,7 @@ struct SettingsView: View {
                 }
                 Text("settings_keyboard_ios")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.hintText)
             } header: {
                 Text("settings_privacy_section")
             }
@@ -160,7 +160,7 @@ struct SettingsView: View {
                     Toggle(isOn: Binding(get: { !model.forceTextOnly }, set: { viewModel.setNamePhotos($0) })) {
                         VStack(alignment: .leading) {
                             Text("settings_photos_model")
-                            Text("settings_photos_model_hint").font(.footnote).foregroundStyle(.secondary)
+                            Text("settings_photos_model_hint").font(.footnote).foregroundStyle(Color.hintText)
                         }
                     }
                     Toggle(
@@ -172,7 +172,7 @@ struct SettingsView: View {
                         VStack(alignment: .leading) {
                             Text("settings_photos_search")
                             if !model.imagesActive {
-                                Text("settings_photos_search_hint").font(.footnote).foregroundStyle(.secondary)
+                                Text("settings_photos_search_hint").font(.footnote).foregroundStyle(Color.hintText)
                             }
                         }
                     }

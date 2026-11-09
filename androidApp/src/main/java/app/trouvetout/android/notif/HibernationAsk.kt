@@ -23,12 +23,12 @@ import app.trouvetout.android.R
 
 /**
  * Lot 12 (decision of the user, 6 Nov.): Android 12+ may put an app the user has not opened for a few months to
- * sleep (hibernation), which removes its alarms; on Android 10 and 11 the same setting only removes runtime
- * permissions, which reminders do not need there, so nothing is asked; a reminder set far ahead would then never ring. When one is set more than a month
- * ahead and the phone applies those restrictions to the app, this explains it once and offers the system setting.
- * Never blocking: « not now » keeps the reminder as it is. Returns the function to call with the reminder's time.
- * The explanation waits while [blocked] (the notification question is open); [onAsking] tells a screen that closes
- * itself to wait while it shows.
+ * sleep (hibernation), which removes its alarms: a reminder set far ahead would then never ring. When one is set more
+ * than a month ahead, notifications are on and the phone may put the app to sleep, this explains it once and offers
+ * the system setting. On Android 10 and 11 the same setting only removes runtime permissions, which reminders do not
+ * need there: nothing is asked. Never blocking: « not now » keeps the reminder as it is. Returns the function to call
+ * with the reminder's time. The explanation waits while [blocked] (the notification question is open); [onAsking]
+ * tells a screen that closes itself to wait while it shows.
  */
 @Composable
 fun rememberHibernationAsk(

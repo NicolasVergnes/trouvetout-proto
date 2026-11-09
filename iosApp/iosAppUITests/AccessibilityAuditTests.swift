@@ -11,7 +11,7 @@ final class AccessibilityAuditTests: XCTestCase {
     /// - « text clipped » on the system search field of `.searchable` (its placeholder, drawn by UIKit, out of the
     ///   app's hands even for two words).
     @available(iOS 17.0, *)
-    private func audit(_ app: XCUIApplication) throws {
+    private func audit(_ app: XCUIApplication, scrolled: Bool = false) throws {
         try app.performAccessibilityAudit { issue in
             let element = issue.element.map { found in
                 "\(found.elementType.rawValue) «\(found.label)» id=\(found.identifier)"
@@ -21,7 +21,11 @@ final class AccessibilityAuditTests: XCTestCase {
                 issue.compactDescription.localizedCaseInsensitiveContains("partially") &&
                 issue.element?.elementType == .button
             let systemSearch = issue.auditType == .textClipped && issue.element?.elementType == .searchField
-            let ignored = warning || partial || systemSearch
+            // Mid-scroll, rows cut by the edges of the screen read as clipped or unscaled, often without an element
+            // the audit can name: logged, not failed (lot 12; the first screen of each view stays strict). Contrast
+            // always fails.
+            let midScroll = scrolled && (issue.auditType == .textClipped || issue.auditType == .dynamicType)
+            let ignored = warning || partial || systemSearch || midScroll
             let tag = ignored ? " (not an error)" : ""
             print("AUDIT ISSUE\(tag): \(issue.compactDescription) — element: \(element)")
             return ignored
@@ -39,7 +43,7 @@ final class AccessibilityAuditTests: XCTestCase {
         }
         for _ in 0 ..< Self.settingsScreens {
             list.swipeUp()
-            try audit(app)
+            try audit(app, scrolled: true)
         }
     }
 
