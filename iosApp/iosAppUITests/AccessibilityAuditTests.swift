@@ -1,16 +1,18 @@
 import XCTest
 
 /// I6 (lot 8): Xcode's accessibility audit (labels, contrast, hit regions, Dynamic Type, clipped text, traits) on
-/// the main screens of the real app, as the user reaches them: home, settings, places, search.
+/// the main screens of the real app, as the user reaches them: home, settings (every scrolled screen of it since lot
+/// 12), places, search.
 final class AccessibilityAuditTests: XCTestCase {
-    /// Every issue fails the test, except two kinds that are not errors, logged with their element:
+    /// Every issue fails the test, except these, logged with their element (and, on the scrolled settings screens,
+    /// the cut rows described in the closure):
     /// - « contrast nearly passed », the audit's warning tier (the system tint and secondary text);
     /// - Dynamic Type « partially » supported by a system control (a SwiftUI button: scaled, capped by the system in
     ///   the bars, where it offers the Large Content Viewer); « unsupported » stays an error;
     /// - « text clipped » on the system search field of `.searchable` (its placeholder, drawn by UIKit, out of the
     ///   app's hands even for two words).
     @available(iOS 17.0, *)
-    private func audit(_ app: XCUIApplication) throws {
+    private func audit(_ app: XCUIApplication, scrolled: Bool = false) throws {
         try app.performAccessibilityAudit { issue in
             let element = issue.element.map { found in
                 "\(found.elementType.rawValue) «\(found.label)» id=\(found.identifier)"
@@ -20,12 +22,51 @@ final class AccessibilityAuditTests: XCTestCase {
                 issue.compactDescription.localizedCaseInsensitiveContains("partially") &&
                 issue.element?.elementType == .button
             let systemSearch = issue.auditType == .textClipped && issue.element?.elementType == .searchField
-            let ignored = warning || partial || systemSearch
+            // Mid-scroll, rows cut by the edges of the screen read as clipped or unscaled, often without an element
+            // the audit can name: logged, not failed (lot 12; the first screen of each view stays strict).
+            let midScroll = scrolled && (issue.auditType == .textClipped || issue.auditType == .dynamicType)
+            // Contrast after a scroll is logged, not failed: the audit then flags black-on-white labels (« Lock the
+            // app », « Simplified mode ») and rows under the translucent bar, its own element crops showing full
+            // contrast (CI runs of 9 Nov.). The lower sections use the colours of the first screen (primary, tint,
+            // `hintText`, system headers), which stays strict; labels, hit regions and traits stay strict everywhere.
+            let scrolledContrast = scrolled && issue.auditType == .contrast
+            let ignored = warning || partial || systemSearch || midScroll || scrolledContrast
             let tag = ignored ? " (not an error)" : ""
             print("AUDIT ISSUE\(tag): \(issue.compactDescription) — element: \(element)")
             return ignored
         }
     }
+
+    /// Lot 12: the audit only sees what is on screen; the settings run over several screens (Vie privée, Photos,
+    /// Achat, Sauvegarde chiffrée at the bottom), each audited after a swipe (the back button stays in the bar).
+    @available(iOS 17.0, *)
+    private func auditScrolled(_ app: XCUIApplication) throws {
+        let list = app.collectionViews.firstMatch
+        guard list.waitForExistence(timeout: 10) else {
+            XCTFail("the settings list was not found: its lower sections went unaudited")
+            return
+        }
+        var seen = visibleLabels(list)
+        for _ in 0 ..< Self.settingsScreens {
+            // A slow swipe, then a pause: an audit taken while the list still glides measures blurred text.
+            list.swipeUp(velocity: .slow)
+            _ = XCTWaiter.wait(for: [XCTestExpectation(description: "the list settles")], timeout: 1.5)
+            let now = visibleLabels(list)
+            if now == seen {
+                // The bottom is reached: auditing the same screen again proves nothing.
+                return
+            }
+            seen = now
+            try audit(app, scrolled: true)
+        }
+    }
+
+    private func visibleLabels(_ list: XCUIElement) -> [String] {
+        // The list only keeps the rows near the screen: the set changes while it scrolls, not once at the bottom.
+        list.staticTexts.allElementsBoundByIndex.map(\.label)
+    }
+
+    private static let settingsScreens = 8
 
     override func setUp() {
         // Every audit issue is reported, not only the first one.
@@ -48,6 +89,9 @@ final class AccessibilityAuditTests: XCTestCase {
             link.tap()
             XCTAssertTrue(app.navigationBars.buttons.firstMatch.waitForExistence(timeout: 10), screen)
             try audit(app)
+            if screen == "open_settings" {
+                try auditScrolled(app)
+            }
             app.navigationBars.buttons.element(boundBy: 0).tap()
             XCTAssertTrue(app.textFields.firstMatch.waitForExistence(timeout: 10), "back home from \(screen)")
         }

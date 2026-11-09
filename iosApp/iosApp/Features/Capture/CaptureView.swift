@@ -17,15 +17,19 @@ struct CaptureView: View {
     private let onSearch: (String) -> Void
     /// J4: the options once the trial has ended.
     private let onOpenPurchase: () -> Void
+    /// I10: the place sets (D2), from the first-steps card.
+    private let onOpenPlaces: () -> Void
 
     init(
         container: AppContainer,
         onSearch: @escaping (String) -> Void = { _ in },
-        onOpenPurchase: @escaping () -> Void = {}
+        onOpenPurchase: @escaping () -> Void = {},
+        onOpenPlaces: @escaping () -> Void = {}
     ) {
         _viewModel = StateObject(wrappedValue: CaptureViewModel(container: container))
         self.onSearch = onSearch
         self.onOpenPurchase = onOpenPurchase
+        self.onOpenPlaces = onOpenPlaces
     }
 
     var body: some View {
@@ -59,16 +63,12 @@ struct CaptureView: View {
                 if let problem = viewModel.problem, problem != .trialEnded {
                     Text(CaptureTexts.problemKey(problem))
                         .font(.callout)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.errorText)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
             }
             .padding(.horizontal, 16)
-            if !simpleMode {
-                itemList
-            } else {
-                Spacer()
-            }
+            lowerPart
         }
         .sheet(isPresented: pendingPresented) {
             if let pending = viewModel.pending {
@@ -240,6 +240,39 @@ struct CaptureView: View {
         }
     }
 
+    private var pendingPresented: Binding<Bool> {
+        Binding(
+            get: { viewModel.pending != nil },
+            set: { presented in
+                if !presented {
+                    viewModel.dismissDecision()
+                }
+            }
+        )
+    }
+}
+
+// MARK: - Below the field: the first steps (I10), or the objects
+
+extension CaptureView {
+    @ViewBuilder
+    private var lowerPart: some View {
+        if viewModel.showWelcome {
+            // Scrolls at the largest text sizes instead of squeezing the card (I6).
+            ScrollView {
+                WelcomeCard(
+                    onDismiss: { viewModel.dismissWelcome() },
+                    onOpenPlaces: simpleMode ? nil : onOpenPlaces
+                )
+                .padding(.horizontal, 16)
+            }
+        } else if !simpleMode {
+            itemList
+        } else {
+            Spacer()
+        }
+    }
+
     @ViewBuilder
     private var itemList: some View {
         if viewModel.items.isEmpty {
@@ -263,53 +296,6 @@ struct CaptureView: View {
                 }
             }
             .listStyle(.plain)
-        }
-    }
-
-    private var pendingPresented: Binding<Bool> {
-        Binding(
-            get: { viewModel.pending != nil },
-            set: { presented in
-                if !presented {
-                    viewModel.dismissDecision()
-                }
-            }
-        )
-    }
-}
-
-/// « J'écoute… » while the microphone is open, otherwise why it is not (with the way out).
-private struct VoiceStatusView: View {
-    let listening: Bool
-    let notice: VoiceNotice?
-    let onOpenSettings: () -> Void
-
-    var body: some View {
-        if listening {
-            Text("capture_listening")
-                .font(.callout)
-                .foregroundStyle(.tint)
-                .accessibilityAddTraits(.updatesFrequently)
-        } else if let notice {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(key(notice))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                if notice == .permissionDenied {
-                    Button("action_phone_settings", action: onOpenSettings)
-                        .frame(minHeight: 44)
-                }
-            }
-        }
-    }
-
-    private func key(_ notice: VoiceNotice) -> LocalizedStringKey {
-        switch notice {
-        case .notOnDevice: "voice_not_on_device"
-        case .noRecognizer: "voice_no_recognizer"
-        case .noMatch: "voice_no_match"
-        case .permissionDenied: "voice_permission_denied"
-        case .failed: "voice_failed"
         }
     }
 }

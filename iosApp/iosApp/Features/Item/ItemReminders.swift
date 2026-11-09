@@ -135,7 +135,7 @@ struct RemindersSection: View {
     var body: some View {
         Section("reminders_title") {
             if model.failed {
-                Text("capture_problem_rejected").font(.callout).foregroundStyle(.red)
+                Text("capture_problem_rejected").font(.callout).foregroundStyle(Color.errorText)
             }
             ForEach(model.dated, id: \.id) { reminder in
                 HStack {
@@ -252,7 +252,7 @@ private struct MomentPickerSheet: View {
                 )
                 .datePickerStyle(.graphical)
                 if date <= Date() {
-                    Text("reminder_in_past").foregroundStyle(.red)
+                    Text("reminder_in_past").foregroundStyle(Color.errorText)
                 }
             }
             .toolbar {

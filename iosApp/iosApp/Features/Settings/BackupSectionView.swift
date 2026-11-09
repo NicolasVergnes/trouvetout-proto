@@ -224,7 +224,7 @@ struct BackupSectionView: View {
     private var hint: some View {
         Text("backup_hint")
             .font(.footnote)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.hintText)
             .task { await viewModel.refresh() }
             .sheet(item: $viewModel.sheet, onDismiss: { viewModel.folderPickerClosed() }, content: sheet)
             .fileImporter(isPresented: $choosingBackup, allowedContentTypes: [.data]) { result in
@@ -241,11 +241,11 @@ struct BackupSectionView: View {
     private func turnedOn(_ state: BackupState) -> some View {
         Text(lastBackup(state))
             .font(.footnote)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.hintText)
         if let problem = state.problem {
             Text(LocalizedStringKey(problemKey(problem)))
                 .font(.footnote)
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.errorText)
         }
         if state.problem == .destinationLost {
             Button("backup_choose_other") { viewModel.sheet = .folderPicker }
@@ -256,7 +256,7 @@ struct BackupSectionView: View {
         }
         Text("backup_off_hint")
             .font(.footnote)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.hintText)
         Button("backup_disable") { viewModel.disable() }
             .disabled(viewModel.busy)
     }

@@ -67,6 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.trouvetout.android.App
 import app.trouvetout.android.R
+import app.trouvetout.android.notif.rememberHibernationAsk
 import app.trouvetout.android.notif.rememberNotificationAsk
 import app.trouvetout.android.ui.common.LocationPickerDialog
 import app.trouvetout.android.ui.common.PhotoAttachment
@@ -105,6 +106,7 @@ fun CaptureRoute(
     val places by viewModel.places.collectAsStateWithLifecycle()
     val containers by viewModel.containers.collectAsStateWithLifecycle()
     val photoModel by viewModel.photoModel.collectAsStateWithLifecycle()
+    val showWelcome by viewModel.welcome.collectAsStateWithLifecycle()
     val simpleMode by app.uiPrefs.simpleMode.collectAsStateWithLifecycle()
     // A sentence the locked quick capture handed over (it would have asked a question): back in the field.
     val draft by app.captureDraft.collectAsStateWithLifecycle()
@@ -154,6 +156,7 @@ fun CaptureRoute(
                     viewModel.dismissMessages()
                     onOpenPurchase()
                 },
+                onDismissWelcome = viewModel::dismissWelcome,
             )
         }
     CaptureScreen(
@@ -165,6 +168,7 @@ fun CaptureRoute(
         containers = containers,
         photoModel = photoModel,
         simpleMode = simpleMode,
+        showWelcome = showWelcome,
     )
 }
 
@@ -191,6 +195,8 @@ data class CaptureCallbacks(
     val onRemovePhoto: () -> Unit = {},
     val onUseName: (String) -> Unit = {},
     val onOpenPurchase: () -> Unit = {},
+    /** I10: the first-steps card is dismissed for good. */
+    val onDismissWelcome: () -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -205,6 +211,8 @@ fun CaptureScreen(
     photoModel: PhotoModelState? = null,
     /** I7: two large buttons and the field; no batch, no photo row, no list. */
     simpleMode: Boolean = false,
+    /** I10: the first-steps card, while nothing was ever recorded and it was not dismissed. */
+    showWelcome: Boolean = false,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -262,7 +270,16 @@ fun CaptureScreen(
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
-            if (!simpleMode) ItemList(items, callbacks)
+            if (showWelcome) {
+                // Scrolls at the largest text sizes instead of cutting its buttons off (I6).
+                WelcomeCard(
+                    onDismiss = callbacks.onDismissWelcome,
+                    onOpenPlaces = callbacks.onOpenPlaces.takeUnless { simpleMode },
+                    modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                )
+            } else if (!simpleMode) {
+                ItemList(items, callbacks)
+            }
         }
     }
     CaptureDialogs(state, callbacks)
@@ -661,6 +678,15 @@ internal fun AskNotificationsAfterReminder(
     card: ConfirmationCard?,
     onAsking: (Boolean) -> Unit = {},
 ) {
-    val ask = rememberNotificationAsk(onAsking)
-    LaunchedEffect(card?.token) { if (card?.intent == Intent.REMIND) ask() }
+    var notificationAsking by remember { mutableStateOf(false) }
+    var hibernationAsking by remember { mutableStateOf(false) }
+    LaunchedEffect(notificationAsking, hibernationAsking) { onAsking(notificationAsking || hibernationAsking) }
+    val ask = rememberNotificationAsk(onAsking = { notificationAsking = it })
+    val askHibernation = rememberHibernationAsk(blocked = notificationAsking, onAsking = { hibernationAsking = it })
+    LaunchedEffect(card?.token) {
+        if (card?.intent == Intent.REMIND) {
+            ask()
+            card.fireAtMillis?.let(askHibernation)
+        }
+    }
 }

@@ -38,6 +38,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>To unlock the app and show sensitive objects, when you turn on the app lock. Face ID data never leaves the iPhone and the app never sees it.</string>
 	<key>NSMicrophoneUsageDescription</key>

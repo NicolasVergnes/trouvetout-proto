@@ -14,6 +14,13 @@
     <string name="capture_problem_too_long">That sentence is too long: a few words are enough.</string>
     <string name="capture_send">Record</string>
     <string name="capture_empty">Say where you put something, for example "passport in the top drawer". A question like "where are the keys" searches.</string>
+    <string name="welcome_title">First steps</string>
+    <string name="welcome_say">Say or type where you put something: "passport in the top drawer of the dresser". Nothing to set up first.</string>
+    <string name="welcome_ask">Later, ask "where is the passport?": the answer is a place, with the date.</string>
+    <string name="welcome_places">You can start from a set of places (house, flat…), or create them as you go: nothing is imposed.</string>
+    <string name="welcome_private">Everything stays on this phone: no account, none of your objects is sent.</string>
+    <string name="welcome_places_action">See the place sets</string>
+    <string name="welcome_dismiss">Got it</string>
     <string name="capture_card_stored">→ %1$s</string>
     <string name="capture_card_no_place">Recorded, no place yet</string>
     <string name="capture_card_taken">Taken out</string>
@@ -263,6 +270,8 @@
     <string name="reminder_checked">Checked today</string>
     <string name="reminder_notifications_off">Notifications are off for this app: the reminders are kept, but no notification will come.</string>
     <string name="reminder_open_settings">Notification settings</string>
+    <string name="hibernation_title">Keep far reminders ringing</string>
+    <string name="hibernation_text">Android may pause an app you have not opened for a few months, and its reminders would then stay silent. So that a reminder this far ahead rings, let the app stay active: in the next screen, turn off the setting that pauses the app when it is unused.</string>
     <string name="reminder_permission_title">Allow notifications?</string>
     <string name="reminder_permission_text">So that your reminders can reach you, the phone asks whether this app may show notifications. They name the object at most, never its place. On the lock screen, the name stays visible if your phone is set to show all notification content; otherwise only “TrouveTout reminder” appears.</string>
     <string name="reminder_time_title">At what time?</string>

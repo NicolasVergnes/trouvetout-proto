@@ -20,14 +20,14 @@ disable-model-invocation: true
 - [ ] Textes de l'écran d'échéance FR/EN sans pression commerciale (« Vos données restent à vous »).
 
 ## Packs de modèles
-- [ ] `models/manifest.json` : sommes SHA-256 des fichiers publiés ; licence Gemma Terms affichée dans « À propos » ; tailles annoncées dans l'UI exactes.
-- [ ] Play Asset Delivery / ODR configurés, ou domaine HTTPS de téléchargement opérationnel et déclaré dans la politique de confidentialité.
+- [ ] `models/manifest.json` : sommes SHA-256 des fichiers publiés ; licences Apache 2.0 d'EmbeddingGemma 2 et de LiteRT-LM affichées dans les réglages et sur `site/licences.html` (avec la `THIRD_PARTY_NOTICE.txt` de LiteRT-LM recopiée dans `site/notices/` à chaque version) ; tailles annoncées dans l'UI exactes.
+- [ ] Google Play : modèles dans le pack d'assets *install-time* (`bundleRelease -Ptrouvetout.modelDelivery=pack`, `tools/check-bundle.sh` vert, ADR-027) ; iOS : modèles dans le bundle de l'app (aucun téléchargement).
 - [ ] Appareil 4 Go : variante texte seul choisie ; appareil ≥ 6 Go : omnimodal proposé, pas imposé.
 
 ## Fiches des magasins
 - [ ] Apple « App Privacy » : Data Not Collected. Google « Data safety » : aucune donnée collectée/partagée ; « Les utilisateurs peuvent demander la suppression » → via l'app.
-- [ ] Politique de confidentialité (J7) en ligne FR/EN, URL dans les deux fiches ; page de présentation avec le format d'export.
-- [ ] Permissions déclarées = micro, caméra, notifications (+ INTERNET uniquement si téléchargement hors magasin) ; justifications prêtes pour la revue Apple (micro/parole : capture locale).
+- [ ] Politique de confidentialité (J7) en ligne FR/EN (`site/`, hébergée par l'éditeur, ADR-027), URL à la place de `{{PRIVACY_URL}}` dans `store/` ; page de présentation avec le format d'export.
+- [ ] Permissions déclarées = Android : `RECORD_AUDIO`, `POST_NOTIFICATIONS`, `USE_BIOMETRIC`, `RECEIVE_BOOT_COMPLETED`, `BILLING` (jamais `INTERNET`) ; iOS : micro, reconnaissance vocale, caméra, Face ID, notifications ; justifications dans `store/play/data-safety.md` et `store/appstore/review-notes.md`.
 - [ ] Captures d'écran FR/EN sur les tailles requises ; aucune donnée réelle dans les captures.
 - [ ] Classification d'âge, catégorie « Productivité »/« Utilitaires », mots-clés.
 
@@ -38,4 +38,4 @@ disable-model-invocation: true
 
 ## Après publication
 - [ ] Installer depuis les magasins sur un appareil vierge : prise en main, U1, U3, U8 en conditions réelles, mode avion.
-- [ ] Surveiller les rapports de plantage des magasins (seule source de diagnostics) ; `SECURITY.md` et adresse de contact actifs.
+- [ ] Surveiller les rapports de plantage des magasins (seule source de diagnostics) ; `SECURITY.md` et l'adresse glopglopdev@gmail.com actifs.

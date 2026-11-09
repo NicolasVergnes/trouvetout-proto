@@ -4736,6 +4736,118 @@
           }
         }
       }
+    },
+    "welcome_ask": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later, ask “where is the passport?”: the answer is a place, with the date."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus tard, demandez « où est le passeport ? » : la réponse est un lieu, avec la date."
+          }
+        }
+      }
+    },
+    "welcome_dismiss": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got it"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compris"
+          }
+        }
+      }
+    },
+    "welcome_places": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can start from a set of places (house, flat…), or create them as you go: nothing is imposed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous pouvez partir d’un modèle de lieux (maison, appartement…) ou les créer au fil de l’eau : rien n’est imposé."
+          }
+        }
+      }
+    },
+    "welcome_places_action": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See the place sets"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir les modèles de lieux"
+          }
+        }
+      }
+    },
+    "welcome_private": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything stays on this phone: no account, none of your objects is sent."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout reste sur ce téléphone : pas de compte, aucun de vos objets n’est envoyé."
+          }
+        }
+      }
+    },
+    "welcome_say": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Say or type where you put something: “passport in the top drawer of the dresser”. Nothing to set up first."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dites ou tapez où vous posez un objet : « passeport dans le tiroir du haut de la commode ». Rien à configurer avant."
+          }
+        }
+      }
+    },
+    "welcome_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First steps"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour commencer"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

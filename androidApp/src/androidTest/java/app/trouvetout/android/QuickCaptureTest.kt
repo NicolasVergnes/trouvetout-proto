@@ -1,6 +1,7 @@
 package app.trouvetout.android
 
 import android.os.Build
+import android.os.SystemClock
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
@@ -14,6 +15,10 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.trouvetout.android.capture.CaptureActivity
 import app.trouvetout.android.ui.capture.CAPTURE_FIELD_TAG
+import app.trouvetout.core.domain.model.EventSource
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -53,6 +58,32 @@ class QuickCaptureTest {
         }
     }
 
+    /**
+     * N1 outside the recent reference phones (< 5 s with the text fallback, §6 N): on the API 29 emulator a typed
+     * sentence to a known place is confirmed within that budget. The 3 s of the recent phones is measured on them.
+     */
+    @Test
+    fun a_typed_capture_to_a_known_place_is_confirmed_within_the_N1_budget() = runBlocking {
+        val stamp = System.currentTimeMillis() % 100_000
+        val place = "cellar-$stamp"
+        app.readyShared.first().placeCommands.create(place, source = EventSource.TEXT)
+        ActivityScenario.launch<CaptureActivity>(CaptureActivity.intent(app, CaptureActivity.MODE_TEXT)).use {
+            compose.waitUntilAtLeastOneExists(hasTestTag(CAPTURE_FIELD_TAG), timeoutMillis = TIMEOUT)
+            compose.onNode(hasTestTag(CAPTURE_FIELD_TAG)).performTextInput("drill-$stamp @ $place")
+            val start = SystemClock.elapsedRealtime()
+            compose.onNode(hasContentDescription(app.getString(R.string.capture_send))).performClick()
+            val confirmed =
+                runCatching {
+                    compose.waitUntilAtLeastOneExists(
+                        hasText(app.getString(R.string.capture_card_stored, place)),
+                        timeoutMillis = N1_BUDGET,
+                    )
+                }.isSuccess
+            val elapsed = SystemClock.elapsedRealtime() - start
+            assertTrue("N1: confirmation after $elapsed ms (budget $N1_BUDGET ms)", confirmed && elapsed < N1_BUDGET)
+        }
+    }
+
     @Test
     fun voice_on_android_10_and_11_falls_back_to_text_with_a_reason() {
         assumeTrue(Build.VERSION.SDK_INT < Build.VERSION_CODES.S)
@@ -71,5 +102,6 @@ class QuickCaptureTest {
 
     private companion object {
         const val TIMEOUT = 15_000L
+        const val N1_BUDGET = 5_000L
     }
 }

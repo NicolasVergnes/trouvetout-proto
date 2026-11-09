@@ -29,7 +29,7 @@ struct ItemSheetView: View {
             if let problem = viewModel.problem {
                 Text(problemKey(problem))
                     .font(.callout)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.errorText)
             }
             if let view = viewModel.item, masked(view) {
                 MaskedRow { Task { _ = await app.revealSensitive() } }

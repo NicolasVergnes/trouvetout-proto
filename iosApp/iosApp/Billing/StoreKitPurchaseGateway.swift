@@ -55,7 +55,9 @@ struct StoreKitPurchaseGateway {
     /// The date Apple signed for the first download of the app (J1): a reinstall does not change it. Nil offline on
     /// a phone that never asked, or when the signature does not check out; the Keychain date then stands.
     func firstDownloadMillis() async -> Int64? {
-        guard let result = try? await AppTransaction.shared, case let .verified(app) = result else {
+        guard !Self.hostingUnitTests,
+              let result = try? await AppTransaction.shared, case let .verified(app) = result
+        else {
             return nil
         }
         return Int64(app.originalPurchaseDate.timeIntervalSince1970 * 1000)
@@ -116,6 +118,11 @@ struct StoreKitPurchaseGateway {
             }
         }
     }
+
+    /// The app launched as the host of the unit tests (lot 12): its launch asked Apple for the first download date
+    /// while the tests drove StoreKit's local test store, and the first test purchase waited behind it (4 s, then
+    /// 58 s, then never on the CI). Apple is not asked there; UI tests launch the app normally and still ask.
+    private static let hostingUnitTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 
     /// `currentEntitlements` leaves out what has expired and keeps a billing grace period, whose date may be past.
     private func isActive(_ transaction: Transaction) -> Bool {

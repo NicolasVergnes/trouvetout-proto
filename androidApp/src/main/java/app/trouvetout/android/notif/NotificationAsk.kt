@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -40,7 +41,8 @@ fun rememberNotificationAsk(
             onResult(granted)
         }
     val asking = explain || requesting
-    LaunchedEffect(asking) { onAsking(asking) }
+    val currentOnAsking by rememberUpdatedState(onAsking)
+    LaunchedEffect(asking) { currentOnAsking(asking) }
     if (explain) {
         AlertDialog(
             onDismissRequest = {
@@ -72,6 +74,10 @@ fun rememberNotificationAsk(
     }
     return {
         val needed = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !ReminderNotifications.enabled(context)
-        if (needed && !declined) explain = true
+        if (needed && !declined) {
+            explain = true
+            // At once, not one frame later: a question that waits for this one (hibernation) must not show with it.
+            currentOnAsking(true)
+        }
     }
 }

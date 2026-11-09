@@ -89,3 +89,6 @@ iosApp/iosApp.xcodeproj/
 
 # Gradle dependency verification: dry-run output, merged into verification-metadata.xml then discarded
 gradle/verification-metadata.dryrun.xml
+
+# Lot 12: the asset pack copies the verified models here at build time (ADR-027).
+modelPack/src/main/assets/

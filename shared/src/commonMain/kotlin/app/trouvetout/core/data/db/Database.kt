@@ -34,6 +34,9 @@ public object MetaKeys {
 
     /** Set while the destination is being written: still there later, the copy was cut and the file may be damaged. */
     public const val BACKUP_COPYING: String = "backup_copying"
+
+    /** I10: the first-steps card was dismissed (lot 12). */
+    public const val WELCOME_DISMISSED: String = "welcome_dismissed"
 }
 
 /** Opens (creating or migrating) the SQLite database; implemented per platform, the caller owns the driver. */

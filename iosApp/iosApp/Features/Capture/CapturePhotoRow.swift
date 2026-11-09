@@ -37,7 +37,7 @@ struct CapturePhotoRow: View {
             if let notice = viewModel.photoNotice {
                 Text(noticeKey(notice))
                     .font(.callout)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.errorText)
                     .accessibilityAddTraits(.updatesFrequently)
             }
         }

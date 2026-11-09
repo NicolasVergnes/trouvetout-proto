@@ -22,6 +22,10 @@ SELECT COUNT(*) FROM event WHERE id = ?;
 count:
 SELECT COUNT(*) FROM event;
 
+-- I10 (lot 12): whether anything was ever recorded, without counting the journal.
+hasAny:
+SELECT EXISTS(SELECT 1 FROM event);
+
 allOrdered:
 SELECT id, at, device_id, actor, type, payload, source, raw_input
 FROM event

@@ -37,7 +37,8 @@ struct ContentView: View {
                     CaptureView(
                         container: container,
                         onSearch: { query in path.append(SearchRoute(query: query)) },
-                        onOpenPurchase: { path.append(PurchaseRoute()) }
+                        onOpenPurchase: { path.append(PurchaseRoute()) },
+                        onOpenPlaces: { path.append(BrowseTarget.root) }
                     )
                 }
             }

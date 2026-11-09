@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data format — TrouveTout</title>
+<meta name="description" content="Reading your TrouveTout data without the app: ZIP export, event journal, encrypted backup.">
+<link rel="stylesheet" href="../style.css">
+<link rel="alternate" hreflang="fr" href="../format.html">
+</head>
+<body>
+<header>
+  <a class="name" href="index.html">TrouveTout</a>
+  <nav aria-label="Pages">
+    <a href="index.html">About</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="format.html" aria-current="page">Data format</a>
+    <a href="../licences.html">Licences</a>
+    <a href="../format.html" hreflang="fr" lang="fr">Français</a>
+  </nav>
+</header>
+<main>
+<h1>Data format</h1>
+<p class="lead">Your data must be readable without the app, today as in ten years. This is how an export is made.</p>
+<p class="updated">Format version 1. A v1 export imports into every later version: the format only grows by adding
+fields or event types, never by renaming or removing. A reader ignores what it does not know. The full reference, with
+the SQLite schema, is in French:
+<a href="https://github.com/NicolasVergnes/trouvetout-proto/blob/main/docs/format-export.md">docs/format-export.md</a>;
+the event table is on the <a href="../format.html">French page</a>.</p>
+
+<h2>The ZIP export</h2>
+<p>Settings → Export creates <code>trouvetout-export-YYYYMMDD-HHMMSS.zip</code> (UTC), which you share wherever you
+like. It is not encrypted.</p>
+<pre><code>manifest.json     { "formatVersion": 1, "appVersion": "…", "schemaVersion": 1, "exportedAt": &lt;ms UTC&gt;,
+                    "deviceId": "…", "counts": { "events": n, "items": n, "places": n, "containers": n, "photos": n } }
+events.jsonl      the full journal, one JSON event per line, sorted by (at, deviceId, id)
+snapshot.json     the current state at a glance: items, places, containers, locations, photos, reminders
+photos/&lt;id&gt;.jpg   the photos, recompressed (long side ≤ 2048 px), without their original metadata</code></pre>
+<p>For a quick look, open <code>snapshot.json</code>. For the whole history, <code>events.jsonl</code> (JSON Lines: one
+object per line). <code>snapshot.json</code> is never imported back: it is recomputed from the journal.</p>
+
+<h2>The event journal</h2>
+<p>Every action is an immutable event, dated and signed by the device; nothing is ever overwritten. Each line has
+<code>id</code> (ULID), <code>at</code> (UTC milliseconds), <code>deviceId</code> (random identity of the installation,
+never sent, renewed after a total wipe; like any ULID, its first 10 characters give the date of the first launch), <code>actor</code> (<code>"me"</code>), <code>type</code>,
+<code>payload</code> (the fields of that type), <code>source</code> (<code>VOICE</code>, <code>TEXT</code>,
+<code>PHOTO</code>, <code>WIDGET</code>, <code>IMPORT</code>, <code>SYSTEM</code>) and <code>rawInput</code> (the
+sentence said or typed, as is). Event types cover objects (created, updated, stored, moved, taken, returned, lent,
+archived, deleted, restored), places (created, renamed, merged, deleted), containers (created, moved with their
+contents, deleted), photos (attached, detached) and reminders (set, done).</p>
+
+<h2>What an export contains</h2>
+<p>Everything, sensitive objects included, and only what you entered or what follows from it: names, descriptions, tags, places and their aliases, containers, the
+full sentence said or typed, the names of people you lent things to, the dates of your actions, your re-encoded photos
+and the installation's random identifier (which dates your first launch). Nothing comes from a sensor, an account, a contact or a system identifier.
+Phone settings (lock, preferences, trial date, purchase state) are not in it.</p>
+
+<h2>The encrypted backup (<code>.ttbk</code>)</h2>
+<ul>
+  <li>41-byte header: <code>TTBK</code>, version (1 byte, <code>1</code>), block size (4 bytes, big-endian,
+  <code>1048576</code>), random salt (32 bytes).</li>
+  <li>Recovery key: 28 Crockford base-32 characters (dashes ignored; <code>O</code> reads <code>0</code>,
+  <code>I</code> and <code>L</code> read <code>1</code>): 16 key bytes, 1 check byte (first byte of the key's
+  SHA-256), 4 zero bits.</li>
+  <li>File key: HKDF-SHA-256 (RFC 5869) of the recovery key, header salt, info <code>trouvetout-backup-v1</code>,
+  32 bytes.</li>
+  <li>Blocks: the archive cut into 1 MiB blocks, each sealed with AES-256-GCM (ciphertext then 16-byte tag). 12-byte
+  nonce: 3 zero bytes, block number from 0 (8 bytes, big-endian), then <code>1</code> for the last block and
+  <code>0</code> otherwise. Additional data: the whole header.</li>
+</ul>
+<p>Altering, reordering, truncating or extending the file makes it impossible to open.</p>
+</main>
+<footer>
+  <p>TrouveTout (working name) — glopglopdev. <a href="../licences.html">Licences</a>.</p>
+</footer>
+</body>
+</html>

@@ -3,16 +3,18 @@
 Application mobile « où ai-je rangé ça ? » : on déclare en deux secondes (voix, photo, texte) où l'on pose un objet, on le retrouve des mois plus tard avec ses propres mots. **100 % local, sans compte ni serveur**, iOS 16+ et Android 10+.
 
 ## État
-Dossier de démarrage préparé le 24 octobre 2026 : documentation, décisions, plan de lots et configuration Claude Code.
-Le lot 0 (fondations) a mis en place le monorepo Kotlin Multiplatform (`shared`, `androidApp`, `iosApp`, `tools`), la CI
-GitHub Actions (Linux pour shared/Android, macOS pour iOS) et les scripts de contrôle. Statut détaillé : `docs/03-plan-de-lots.md`.
+Lots 0 à 10 et 12 terminés côté dépôt ; le lot 11 (réponse générative) est reporté en P2 (ADR-026). La publication
+attend les comptes des magasins, les vérifications sur les quatre téléphones de référence et le nom définitif
+(`docs/07-recette.md`). Statut détaillé : `docs/03-plan-de-lots.md` ; versions : `CHANGELOG.md`.
 Dépôt : <https://github.com/NicolasVergnes/trouvetout-proto> (public, voir ADR-013).
 
 ## Construire
 - Prérequis : JDK 17, Android SDK (plateforme 37, build-tools 36) ; iOS : macOS + Xcode 16 + `brew install xcodegen swiftlint swiftformat`.
 - Android / shared : `./gradlew :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :androidApp:assembleRelease :tools:build ktlintCheck detekt`
 - iOS : `cd iosApp && xcodegen generate && xcodebuild test -project iosApp.xcodeproj -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone 16'`
-- Contrôles : `tools/check-deps.sh`, `tools/check-network.sh` ; corpus : `./gradlew :tools:evalParser :tools:evalSearch`
+- Contrôles : `tools/check-deps.sh`, `tools/check-network.sh`, `tools/check-logs.sh`, `tools/check-native-network.sh` ; corpus : `./gradlew :tools:evalParser :tools:evalSearch :tools:evalPhotos`
+- App Bundle pour Google Play (modèles dans un pack d'assets *install-time*, ADR-027) : `./gradlew :androidApp:bundleRelease -Ptrouvetout.modelDelivery=pack -Ptrouvetout.playLicenseKey=…`
+- Site (politique de confidentialité, format d'export) : dossier `site/`, statique, à publier tel quel (`site/README.md`) ; fiches des magasins : `store/`.
 
 ## Lire dans l'ordre
 1. `docs/00-cahier-des-charges.md` — périmètre v1 (P0 + P1), décisions, critères d'acceptation
@@ -39,4 +41,6 @@ Plugins et commandes Claude Code recommandés (à installer par le développeur)
 Kotlin Multiplatform (SQLDelight, kotlinx, LiteRT) · Jetpack Compose · SwiftUI · EmbeddingGemma 2 embarqué (variante selon la RAM) · StoreKit 2 / Play Billing.
 
 ## Licence et nom
-Nom définitif, licence du code et identifiants publics à décider avant publication (voir ADR-010).
+Tous droits réservés (`LICENSE`) ; composants tiers : `THIRD_PARTY_NOTICES.md` ; failles : `SECURITY.md`
+(glopglopdev@gmail.com). « TrouveTout » reste un nom de prototype : le nom définitif et les identifiants publics
+sont à choisir avant de créer l'application dans les consoles (ADR-010).

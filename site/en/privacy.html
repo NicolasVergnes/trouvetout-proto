@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy — TrouveTout</title>
+<meta name="description" content="TrouveTout privacy policy: the app collects no data.">
+<link rel="stylesheet" href="../style.css">
+<link rel="alternate" hreflang="fr" href="../confidentialite.html">
+</head>
+<body>
+<header>
+  <a class="name" href="index.html">TrouveTout</a>
+  <nav aria-label="Pages">
+    <a href="index.html">About</a>
+    <a href="privacy.html" aria-current="page">Privacy</a>
+    <a href="format.html">Data format</a>
+    <a href="../licences.html">Licences</a>
+    <a href="../confidentialite.html" hreflang="fr" lang="fr">Français</a>
+  </nav>
+</header>
+<main>
+<h1>Privacy policy</h1>
+<p class="updated">Updated 8 November 2026. Publisher: glopglopdev — <a href="mailto:glopglopdev@gmail.com">glopglopdev@gmail.com</a>.</p>
+
+<p class="lead"><strong>The app collects no data.</strong> Your objects, places and photos stay on your phone. There is
+no account, no server, no advertising, no analytics, no tracking of any kind.</p>
+
+<p>We have no way to see what you record: the app sends us nothing, and what you enter stays under your sole control,
+on your device. If you write to us, we receive your address and your message, used only to answer you. Apple and Google
+give us sales statistics and, if you agreed to it on your phone, crash reports; none of your objects is in them. Search, including its
+artificial-intelligence model, runs entirely on your phone; the model ships with the app and downloads nothing. On
+Android, the app has no network access of its own.</p>
+
+<h2>The only exchanges that go through your phone</h2>
+<p>Besides what you export or print yourself, two exchanges go through your phone:</p>
+<ol>
+  <li><strong>The app store.</strong> To know whether you bought the app, it asks the store (App Store or Google Play)
+  when it opens, even if you bought nothing. This exchange and purchases are handled by Apple or Google under their
+  own terms; none of your objects is part of it.</li>
+  <li><strong>The encrypted backup, if you turn it on.</strong> It is written to a file you choose, for instance in
+  your iCloud Drive or Google Drive. The service hosting the file receives an unreadable file, of which it sees the
+  size and dates.</li>
+</ol>
+
+<h2>What the app keeps on your phone</h2>
+<h3>Your objects, places and sentences</h3>
+<p>Everything you enter is stored in an encrypted database (SQLCipher), in the app's private storage, excluded from
+Apple's and Google's automatic backups. Every action is kept in a dated history, used to undo and to find where an
+object was. The sentence you said or typed is kept as is in that history and in your exports, including the sentence
+of a reminder.</p>
+
+<h3>Microphone and dictation</h3>
+<p>Speech recognition happens on the phone only: the app refuses any recognition that would go through a server. On
+Android 10 and 11 phones, where that guarantee does not exist, you type instead. Sound is never recorded; only the
+recognised sentence is kept, like a typed one. The microphone is asked for at first use, after an explanation.</p>
+<p>The microphone key of your keyboard belongs to the keyboard, not to the app: depending on the keyboard, it may go
+through a server. On Android, a setting stops the keyboard from learning what you type in the app; iPhone offers no
+such setting.</p>
+
+<h3>Photos and the search model</h3>
+<p>Photos you attach are re-encoded: their metadata (GPS position, camera, capture date) are removed. They stay in the
+app's private storage, and the app never puts them in your gallery; on Android, pictures are taken through the phone's
+Camera app, some of which keep their own copy. Photos are not encrypted by the app: they are protected by its private
+storage and by your phone's encryption. The photo
+of a photo search and the photo of a pending capture are never kept (on Android, the temporary file handed back by the
+Camera app is deleted as soon as it is read). For search, the app computes numerical fingerprints of your entries and
+photos on the phone; they are a cache, never exported, and erased by the total wipe. The app also counts, on the phone,
+the entries opened from search to rank them better; this counter is neither exported nor sent.</p>
+
+<h3>Lock and sensitive objects</h3>
+<p>The optional lock uses your phone's own authentication (fingerprint, face or passcode); the app has no password of
+its own and never sees your biometric data. An object marked sensitive appears in no widget, notification,
+suggestion or thumbnail.</p>
+
+<h3>Reminders</h3>
+<p>Reminders are local notifications scheduled on your phone; nothing goes through a server. A notification names the
+object at most, never its place; for a sensitive object it stays generic. On the lock screen your phone decides: the
+name stays visible if it is set to show everything. Your phone may keep that text (notification history, connected
+watch, an app allowed to read notifications); the total wipe does not erase those copies. On Android, after a restart
+or an update, the app opens briefly in the background to put your reminders back in place; nothing is sent.</p>
+
+<h3>Widgets, tile, Siri and Shortcuts</h3>
+<p>The widget, the quick-settings tile, the Action button and Shortcuts open the capture; they show no object.</p>
+
+<h3>Free trial</h3>
+<p>The app keeps the start date of your free trial on the phone, even after the total wipe of your data, and on iPhone
+even after it is uninstalled (in the keychain). It is only a date, sent to no one.</p>
+
+<h2>Encrypted backup</h2>
+<p>The backup contains all your data, sensitive objects included. It is encrypted before being written, with a
+recovery key that you write down: without it nobody can open it, not even us. The app keeps a copy of that key in its
+encrypted database to write the next backups; the total wipe erases it. The total wipe does not erase the backup file
+itself.</p>
+
+<h2>Export and printing</h2>
+<p>Export creates a ZIP file readable without the app (<a href="format.html">data format</a>), which you share wherever
+you like; it is not encrypted and holds everything, sensitive objects included. The app keeps a copy for one day at
+most in its private storage, then deletes it (so does the total wipe). If you print a place or a container, the document goes to the printer or printing
+service you choose, handled by your phone. Once printed or saved as PDF, it is outside the app and the total wipe does
+not reach it. Sensitive objects appear in it only if you revealed them.</p>
+
+<h2>Permissions</h2>
+<div class="table"><table>
+  <thead><tr><th>Permission</th><th>Why</th><th>When</th></tr></thead>
+  <tbody>
+    <tr><td>Microphone, speech recognition</td><td>Dictating a sentence, recognised on the phone</td><td>First tap on the microphone</td></tr>
+    <tr><td>Camera (iPhone)</td><td>Photographing an object or a place; searching with a photo</td><td>First photo</td></tr>
+    <tr><td>Notifications</td><td>Reminders</td><td>After the first reminder</td></tr>
+    <tr><td>Biometrics / Face ID</td><td>The optional lock</td><td>When you turn it on</td></tr>
+    <tr><td>Phone start-up (Android)</td><td>Putting reminders back after a restart</td><td>Automatic, nothing is sent</td></tr>
+    <tr><td>Billing (Android)</td><td>Buying and restoring the purchase through Google Play</td><td>On the purchase screen</td></tr>
+  </tbody>
+</table></div>
+<p>The app works without any of these permissions; it never asks for location, contacts or local-network access.</p>
+
+<h2>Your rights</h2>
+<p>Your data is in your hands: export gives you a complete, readable copy (access, portability); the total wipe, in
+the settings, erases in one action the database, its key, photos, caches, preferences and scheduled reminders
+(erasure). What remains is the trial start date and the backup file you chose, unreadable without your key; the
+confirmation text says so. Whatever already left the app (exports, printed documents, the phone's notification
+history) is yours to delete if you wish.</p>
+
+<h2>This site</h2>
+<p>This site uses no cookie, script or tracker; its host keeps technical logs (IP address, page requested) under its own
+terms.</p>
+
+<h2>Changes and contact</h2>
+<p>Should a new network exchange ever appear, this page would be updated before the version that introduces it.
+Questions: <a href="mailto:glopglopdev@gmail.com">glopglopdev@gmail.com</a>.</p>
+</main>
+<footer>
+  <p>TrouveTout (working name) — glopglopdev. <a href="../licences.html">Licences</a>.</p>
+</footer>
+</body>
+</html>

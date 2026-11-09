@@ -326,6 +326,11 @@ class UiPrefs(
         simpleModeState.value = value
     }
 
+    /** Lot 12: the hibernation exemption was explained once (far reminders, Android 12+). */
+    var hibernationExplained: Boolean
+        get() = prefs.getBoolean(KEY_HIBERNATION_EXPLAINED, false)
+        set(value) = prefs.edit { putBoolean(KEY_HIBERNATION_EXPLAINED, value) }
+
     /** H6: display preferences go with the data. */
     fun clear() {
         prefs.edit { clear() }
@@ -335,6 +340,7 @@ class UiPrefs(
     private companion object {
         const val KEY_SHOW_HISTORY = "show_history"
         const val KEY_SIMPLE_MODE = "simple_mode"
+        const val KEY_HIBERNATION_EXPLAINED = "hibernation_explained"
     }
 }
 

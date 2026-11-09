@@ -1,0 +1,38 @@
+Where did I put it? TrouveTout answers that question.
+
+Say in two seconds where you put something: “passport in the top drawer of the dresser”. The object and the place are recognised, and the place is created if it is new. Months later, ask “where is the passport?”: the answer fits on one line, with the place, the date and the photo.
+
+FIND IT IN YOUR OWN WORDS
+• “The Kindle charger” finds the “white USB-C cable”: typos, synonyms and approximations are fine.
+• Search and its artificial-intelligence model run on the phone, even in airplane mode.
+• Filters by place, container, tag, state and date; photo search on phones with 6 GB or more.
+
+PUT AWAY WITHOUT A FORM
+• By voice or keyboard, from the home or lock screen widget, the Action button, Siri and Shortcuts.
+• “I'm taking the drill”, “drill back in the garage”, “I lent the tent to Mark”: the history follows.
+• Several objects per sentence, a “putting away” mode to empty a box, quantities, tags, photos.
+• Boxes, bins and suitcases move with everything inside.
+
+YOUR PLACES, YOUR WAY
+• Home, cellar, garage, car, second home: as many places, rooms and furniture as you like.
+• Place sets are suggested, never imposed; renaming or merging loses nothing.
+• Print the list of a box or a shelf.
+
+REMINDERS
+• “Remind me where the passport is the day before 12 March”: a local notification on that date.
+• A check every six months for important objects, if you wish.
+
+YOUR DATA STAYS YOURS
+• No data collected, no account, no advertising, no tracking.
+• Encrypted database, optional Face ID, Touch ID or passcode lock, sensitive objects hidden from widgets and notifications.
+• Full export in one file readable without the app; optional encrypted backup to a file of your choice (iCloud Drive or elsewhere); total wipe in one action.
+
+ACCESSIBLE
+VoiceOver, large text sizes, dark theme, a simplified two-button mode.
+
+PRICE
+Six months of full trial, no account. After that, only new additions need the purchase — once, or a small yearly subscription. Everything you recorded stays viewable, editable and exportable, purchase or not.
+
+iOS 16 or later. Speech recognition happens on the iPhone; where it is not available for your language, you type instead.
+
+Privacy policy: {{PRIVACY_URL}}
