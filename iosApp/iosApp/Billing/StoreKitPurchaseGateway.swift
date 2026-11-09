@@ -56,7 +56,8 @@ struct StoreKitPurchaseGateway {
     /// a phone that never asked, or when the signature does not check out; the Keychain date then stands.
     func firstDownloadMillis() async -> Int64? {
         guard !Self.hostingUnitTests,
-              let result = try? await AppTransaction.shared, case let .verified(app) = result else {
+              let result = try? await AppTransaction.shared, case let .verified(app) = result
+        else {
             return nil
         }
         return Int64(app.originalPurchaseDate.timeIntervalSince1970 * 1000)
