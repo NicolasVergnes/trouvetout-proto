@@ -38,7 +38,7 @@ public class WelcomeGuide internal constructor(
         combine(dismissedBefore, dismissedNow) { before, now -> before || now }
             .flatMapLatest { dismissed ->
                 // Once dismissed, the journal is no longer watched.
-                if (dismissed) flowOf(false) else db.eventQueries.hasAny().asFlow().mapToOne(io).map { it == 0L }
+                if (dismissed) flowOf(false) else db.eventQueries.hasAny().asFlow().mapToOne(io).map { any -> !any }
             }.distinctUntilChanged()
 
     @Throws(Exception::class) // to Swift: an error it can handle
