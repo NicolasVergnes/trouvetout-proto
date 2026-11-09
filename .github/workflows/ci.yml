@@ -203,11 +203,14 @@ jobs:
             -destination "id=$IOS_SIMULATOR_DEVICE" \
             -resultBundlePath build/ios-tests.xcresult \
             -derivedDataPath build/DerivedData \
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 600 \
             CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER=""
           tests=$?
           tools/watch-ios-network.sh stop build/ios-network
           network=$?
           exit $(( tests != 0 ? tests : network ))
+        # A test stuck on the StoreKit test session (lot 12, once) fails after 10 min instead of using up the job.
         # Ad hoc signing (« Sign to Run Locally », no certificate): an unsigned simulator app has no Keychain
         # (errSecMissingEntitlement), and the database key lives there since lot 8 (ADR-023).
       - name: Native libraries make no network call (LiteRT-LM, SQLCipher)
