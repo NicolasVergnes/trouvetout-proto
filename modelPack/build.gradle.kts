@@ -36,8 +36,9 @@ val syncModels =
         into(layout.projectDirectory.dir("src/main/assets"))
     }
 
+// Every task of the pack reads its assets; the help, report and lint tasks do not need the 550 MB copy.
+val withoutModels =
+    listOf("clean", "ktlint", "detekt", "help", "dependencies", "tasks", "projects", "properties", "prepareKotlin")
 tasks.configureEach {
-    if (name != syncModels.name && !name.startsWith("clean") && !name.startsWith("ktlint") && !name.startsWith("detekt")) {
-        dependsOn(syncModels)
-    }
+    if (name != syncModels.name && withoutModels.none { name.startsWith(it) }) dependsOn(syncModels)
 }

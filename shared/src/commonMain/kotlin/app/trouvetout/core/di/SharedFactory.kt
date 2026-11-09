@@ -31,9 +31,9 @@ import app.trouvetout.core.licensing.LicensingService
 import app.trouvetout.core.log.LogLevel
 import app.trouvetout.core.ml.ModelRuntime
 import app.trouvetout.core.ml.ModelSettings
+import app.trouvetout.core.onboarding.WelcomeGuide
 import app.trouvetout.core.platform.FileStore
 import app.trouvetout.core.platform.createFileStore
-import app.trouvetout.core.onboarding.WelcomeGuide
 import app.trouvetout.core.privacy.AppLock
 import app.trouvetout.core.privacy.PrivacySettings
 import app.trouvetout.core.reminder.ReminderRepository

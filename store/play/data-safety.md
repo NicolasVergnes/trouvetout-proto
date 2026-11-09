@@ -33,6 +33,9 @@ formulaire évolue, et toute réponse « oui » doit être justifiée ici avant 
 | `RECEIVE_BOOT_COMPLETED` | Remettre les rappels en place après un redémarrage | Automatique, aucun envoi |
 | `com.android.vending.BILLING` | Achat et restauration via Google Play | Écran d'achat |
 
+S'y ajoute `app.trouvetout.proto.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, permission propre à l'app déclarée par
+`androidx.core` (signature, sans accès à quoi que ce soit hors de l'app ; tolérée par `tools/check-deps.sh`).
+
 Aucune permission de localisation, de contacts, de stockage partagé, d'appareil photo (la prise de vue passe par
 l'application Appareil photo du téléphone) ni de réseau. Aucune alarme exacte.
 

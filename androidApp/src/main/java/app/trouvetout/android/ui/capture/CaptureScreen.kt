@@ -271,9 +271,11 @@ fun CaptureScreen(
                 )
             }
             if (showWelcome) {
+                // Scrolls at the largest text sizes instead of cutting its buttons off (I6).
                 WelcomeCard(
                     onDismiss = callbacks.onDismissWelcome,
                     onOpenPlaces = callbacks.onOpenPlaces.takeUnless { simpleMode },
+                    modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                 )
             } else if (!simpleMode) {
                 ItemList(items, callbacks)

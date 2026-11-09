@@ -4806,13 +4806,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Everything stays on this phone: no account, nothing is sent."
+            "value": "Everything stays on this phone: no account, none of your objects is sent."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tout reste sur ce téléphone : pas de compte, rien n’est envoyé."
+            "value": "Tout reste sur ce téléphone : pas de compte, aucun de vos objets n’est envoyé."
           }
         }
       }

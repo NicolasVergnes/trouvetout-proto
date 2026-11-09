@@ -58,9 +58,12 @@ class QuickCaptureTest {
         }
     }
 
-    /** N1 on the slowest reference device class: a typed sentence to a known place is recorded in under 3 s. */
+    /**
+     * N1 outside the recent reference phones (< 5 s with the text fallback, §6 N): on the API 29 emulator a typed
+     * sentence to a known place is confirmed within that budget. The 3 s of the recent phones is measured on them.
+     */
     @Test
-    fun a_typed_capture_to_a_known_place_is_confirmed_in_under_3_seconds_N1() = runBlocking {
+    fun a_typed_capture_to_a_known_place_is_confirmed_within_the_N1_budget() = runBlocking {
         val stamp = System.currentTimeMillis() % 100_000
         val place = "cellar-$stamp"
         app.readyShared.first().placeCommands.create(place, source = EventSource.TEXT)
@@ -96,6 +99,6 @@ class QuickCaptureTest {
 
     private companion object {
         const val TIMEOUT = 15_000L
-        const val N1_BUDGET = 3_000L
+        const val N1_BUDGET = 5_000L
     }
 }

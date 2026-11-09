@@ -6,8 +6,8 @@ Réponse : **Données non collectées** (*Data Not Collected*).
 à un tiers d'y accéder au-delà du temps nécessaire pour traiter la demande en temps réel. TrouveTout :
 
 - n'a ni serveur, ni compte, ni SDK d'analyse, de publicité ou de rapport de plantage ;
-- fait tourner la recherche et son modèle (EmbeddingGemma 2, LiteRT-LM) sur l'iPhone ; l'absence de toute socket réseau
-  de l'app pendant les tests est vérifiée en CI (`tools/watch-ios-network.sh`, ADR-027) ;
+- fait tourner la recherche et son modèle (EmbeddingGemma 2, LiteRT-LM) sur l'iPhone ; aucune socket réseau de l'app
+  n'est observée pendant les tests en CI (relevé toutes les 0,5 s sur simulateur, `tools/watch-ios-network.sh`, ADR-027) ;
 - reconnaît la parole sur l'iPhone uniquement (`requiresOnDeviceRecognition = true`), sans enregistrer le son ;
 - n'envoie rien à l'éditeur : la sauvegarde chiffrée A9 est écrite dans un dossier que l'utilisateur choisit
   (iCloud Drive ou autre), chiffrée avec une clé que lui seul détient ; l'export passe par la feuille de partage ;

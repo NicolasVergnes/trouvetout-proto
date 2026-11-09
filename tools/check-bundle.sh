@@ -31,5 +31,14 @@ for expected in \
   fi
 done
 
+# The pack is delivered with the app (install-time) and the base module still asks for no network (protobuf
+# manifests: the strings are stored as is).
+if ! unzip -p "$AAB" models/manifest/AndroidManifest.xml | LC_ALL=C grep -a -q "install-time"; then
+  echo "VIOLATION: the models pack is not install-time"; status=1
+fi
+if unzip -p "$AAB" base/manifest/AndroidManifest.xml | LC_ALL=C grep -a -q "android.permission.INTERNET"; then
+  echo "VIOLATION: the base module asks for INTERNET"; status=1
+fi
+
 if [ $status -eq 0 ]; then echo "OK: models in the install-time pack, base module within the limit"; else echo "FAILURE"; fi
 exit $status

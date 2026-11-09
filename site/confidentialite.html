@@ -26,9 +26,10 @@
 <p class="lead"><strong>L'application ne collecte aucune donnée.</strong> Vos objets, lieux et photos restent sur votre
 téléphone. Il n'y a pas de compte, pas de serveur, pas de publicité, pas de mesure d'audience, aucun outil de suivi.</p>
 
-<p>Nous n'avons aucun moyen de voir ce que vous enregistrez : aucune de vos données ne nous parvient. L'éditeur ne
-traite donc aucune donnée personnelle vous concernant ; ce que vous saisissez reste sous votre seul contrôle, sur votre
-appareil. La recherche, y compris son modèle d'intelligence artificielle, fonctionne entièrement sur votre téléphone ;
+<p>Nous n'avons aucun moyen de voir ce que vous enregistrez : l'application ne nous transmet rien, et ce que vous
+saisissez reste sous votre seul contrôle, sur votre appareil. Si vous nous écrivez, nous recevons votre adresse et
+votre message, utilisés seulement pour vous répondre. Apple et Google nous fournissent des statistiques de ventes et,
+si vous l'avez accepté sur votre téléphone, des rapports de plantage ; aucun de vos objets n'y figure. La recherche, y compris son modèle d'intelligence artificielle, fonctionne entièrement sur votre téléphone ;
 le modèle est fourni avec l'application et ne télécharge rien. L'application n'a pas d'accès réseau propre sur
 Android.</p>
 
@@ -55,11 +56,16 @@ telle quelle dans cet historique et dans vos exports, y compris la phrase d'un r
 passerait par un serveur. Sur les téléphones Android 10 et 11, où cette garantie n'existe pas, la saisie se fait au
 clavier. Le son n'est jamais enregistré ; seule la phrase reconnue est gardée, comme une phrase tapée. Le micro n'est
 demandé qu'au premier usage, après une explication.</p>
+<p>La touche micro de votre clavier appartient au clavier, pas à l'application : selon le clavier, elle peut passer par
+un serveur. Sur Android, un réglage empêche le clavier d'apprendre ce que vous tapez dans l'application ; l'iPhone
+n'offre pas ce réglage.</p>
 
 <h3>Photos et modèle de recherche</h3>
 <p>Les photos que vous attachez sont ré-encodées : leurs métadonnées (position GPS, appareil, date de prise de vue)
-disparaissent. Elles restent dans l'espace privé de l'application, jamais dans votre galerie ; sur Android, la prise de
-vue passe par l'application Appareil photo du téléphone. La photo d'une recherche par photo et celle d'une capture en
+disparaissent. Elles restent dans l'espace privé de l'application, qui ne les met jamais dans votre galerie ; sur
+Android, la prise de vue passe par l'application Appareil photo du téléphone, dont certaines gardent leur propre copie.
+Les photos ne sont pas chiffrées par l'application : elles sont protégées par son espace privé et par le chiffrement de
+votre téléphone. La photo d'une recherche par photo et celle d'une capture en
 attente ne sont jamais conservées (sur Android, le fichier temporaire que remet l'Appareil photo est effacé dès sa
 lecture). Pour la recherche, l'application calcule sur le téléphone des empreintes
 numériques de vos fiches et de vos photos ; elles servent de cache, ne sont jamais exportées et sont effacées par la
@@ -76,8 +82,8 @@ les widgets, ni dans les notifications, ni dans les suggestions, ni en miniature
 notification nomme l'objet au plus, jamais son lieu ; pour un objet sensible, elle reste générique. Sur l'écran
 verrouillé, votre téléphone décide : le nom reste visible s'il est réglé pour tout afficher. Votre téléphone peut
 conserver ce texte (historique des notifications, montre connectée, application autorisée à lire les notifications) ;
-la suppression totale n'efface pas ces copies. Après un redémarrage ou une mise à jour, l'application s'ouvre un
-instant en arrière-plan pour remettre vos rappels en place ; rien n'est envoyé.</p>
+la suppression totale n'efface pas ces copies. Sur Android, après un redémarrage ou une mise à jour, l'application
+s'ouvre un instant en arrière-plan pour remettre vos rappels en place ; rien n'est envoyé.</p>
 
 <h3>Widgets, tuile, Siri et Raccourcis</h3>
 <p>Le widget, la tuile de réglages rapides, le bouton Action et les Raccourcis ouvrent la saisie ; ils n'affichent
@@ -96,7 +102,8 @@ n'efface pas le fichier de sauvegarde lui-même.</p>
 
 <h2>Export et impression</h2>
 <p>L'export crée un fichier ZIP lisible sans l'application (<a href="format.html">format des données</a>), que vous
-partagez où vous voulez ; il n'est pas chiffré. Si vous imprimez un lieu ou un contenant, le document part vers
+partagez où vous voulez ; il n'est pas chiffré et contient tout, objets sensibles compris. L'application en garde une
+copie au plus un jour dans son espace privé, puis l'efface (la suppression totale aussi). Si vous imprimez un lieu ou un contenant, le document part vers
 l'imprimante ou le service d'impression que vous choisissez, gérés par votre téléphone. Une fois imprimé ou enregistré
 en PDF, il est hors de l'application et la suppression totale ne l'atteint pas. Les objets sensibles n'y figurent que
 si vous les avez affichés.</p>
@@ -122,6 +129,10 @@ suppression totale, dans les réglages, efface en une action la base, sa clé, l
 et les rappels programmés (effacement). Restent la date de début de l'essai et le fichier de sauvegarde que vous avez
 choisi, illisible sans votre clé ; le texte de confirmation le dit. Ce qui est déjà sorti de l'application (exports,
 documents imprimés, historique des notifications du téléphone) est à supprimer par vous si vous le souhaitez.</p>
+
+<h2>Ce site</h2>
+<p>Ce site n'utilise ni cookie, ni script, ni traceur ; son hébergeur garde des journaux techniques (adresse IP, page
+demandée) selon ses propres règles.</p>
 
 <h2>Changements et contact</h2>
 <p>Si un jour un échange réseau nouveau apparaissait, cette page serait mise à jour avant la version qui l'introduit.

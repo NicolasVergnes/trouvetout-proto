@@ -5,10 +5,15 @@ import app.cash.sqldelight.coroutines.mapToOne
 import app.trouvetout.core.data.db.MetaKeys
 import app.trouvetout.core.data.db.TrouveToutDb
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 /**
@@ -20,19 +25,25 @@ public class WelcomeGuide internal constructor(
     private val db: TrouveToutDb,
     private val io: CoroutineDispatcher,
 ) {
-    private val dismissed =
-        MutableStateFlow(
-            db.metaQueries.get(MetaKeys.WELCOME_DISMISSED).executeAsOneOrNull()?.toBooleanStrictOrNull() ?: false,
-        )
+    /** Dismissed in this process (written by [dismiss]); the stored flag is read on [io], never on the caller's thread. */
+    private val dismissedNow = MutableStateFlow(false)
+    private val dismissedBefore =
+        flow {
+            emit(withContext(io) { db.metaQueries.get(MetaKeys.WELCOME_DISMISSED).executeAsOneOrNull() == "true" })
+        }
 
     /** True while the card is offered: an empty journal (no action yet, deleted ones included) and no dismissal. */
+    @OptIn(ExperimentalCoroutinesApi::class)
     public val visible: Flow<Boolean> =
-        combine(dismissed, db.eventQueries.count().asFlow().mapToOne(io)) { gone, events -> !gone && events == 0L }
-            .distinctUntilChanged()
+        combine(dismissedBefore, dismissedNow) { before, now -> before || now }
+            .flatMapLatest { dismissed ->
+                // Once dismissed, the journal is no longer watched.
+                if (dismissed) flowOf(false) else db.eventQueries.hasAny().asFlow().mapToOne(io).map { it == 0L }
+            }.distinctUntilChanged()
 
     @Throws(Exception::class) // to Swift: an error it can handle
     public suspend fun dismiss() {
         withContext(io) { db.metaQueries.set(MetaKeys.WELCOME_DISMISSED, true.toString()) }
-        dismissed.value = true
+        dismissedNow.value = true
     }
 }

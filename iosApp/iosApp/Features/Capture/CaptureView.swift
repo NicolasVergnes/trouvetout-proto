@@ -68,18 +68,7 @@ struct CaptureView: View {
                 }
             }
             .padding(.horizontal, 16)
-            if viewModel.showWelcome {
-                WelcomeCard(
-                    onDismiss: { viewModel.dismissWelcome() },
-                    onOpenPlaces: simpleMode ? nil : onOpenPlaces
-                )
-                .padding(.horizontal, 16)
-                Spacer()
-            } else if !simpleMode {
-                itemList
-            } else {
-                Spacer()
-            }
+            lowerPart
         }
         .sheet(isPresented: pendingPresented) {
             if let pending = viewModel.pending {
@@ -251,6 +240,39 @@ struct CaptureView: View {
         }
     }
 
+    private var pendingPresented: Binding<Bool> {
+        Binding(
+            get: { viewModel.pending != nil },
+            set: { presented in
+                if !presented {
+                    viewModel.dismissDecision()
+                }
+            }
+        )
+    }
+}
+
+// MARK: - Below the field: the first steps (I10), or the objects
+
+extension CaptureView {
+    @ViewBuilder
+    private var lowerPart: some View {
+        if viewModel.showWelcome {
+            // Scrolls at the largest text sizes instead of squeezing the card (I6).
+            ScrollView {
+                WelcomeCard(
+                    onDismiss: { viewModel.dismissWelcome() },
+                    onOpenPlaces: simpleMode ? nil : onOpenPlaces
+                )
+                .padding(.horizontal, 16)
+            }
+        } else if !simpleMode {
+            itemList
+        } else {
+            Spacer()
+        }
+    }
+
     @ViewBuilder
     private var itemList: some View {
         if viewModel.items.isEmpty {
@@ -274,53 +296,6 @@ struct CaptureView: View {
                 }
             }
             .listStyle(.plain)
-        }
-    }
-
-    private var pendingPresented: Binding<Bool> {
-        Binding(
-            get: { viewModel.pending != nil },
-            set: { presented in
-                if !presented {
-                    viewModel.dismissDecision()
-                }
-            }
-        )
-    }
-}
-
-/// « J'écoute… » while the microphone is open, otherwise why it is not (with the way out).
-private struct VoiceStatusView: View {
-    let listening: Bool
-    let notice: VoiceNotice?
-    let onOpenSettings: () -> Void
-
-    var body: some View {
-        if listening {
-            Text("capture_listening")
-                .font(.callout)
-                .foregroundStyle(.tint)
-                .accessibilityAddTraits(.updatesFrequently)
-        } else if let notice {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(key(notice))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                if notice == .permissionDenied {
-                    Button("action_phone_settings", action: onOpenSettings)
-                        .frame(minHeight: 44)
-                }
-            }
-        }
-    }
-
-    private func key(_ notice: VoiceNotice) -> LocalizedStringKey {
-        switch notice {
-        case .notOnDevice: "voice_not_on_device"
-        case .noRecognizer: "voice_no_recognizer"
-        case .noMatch: "voice_no_match"
-        case .permissionDenied: "voice_permission_denied"
-        case .failed: "voice_failed"
         }
     }
 }

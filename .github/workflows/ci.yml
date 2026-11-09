@@ -48,7 +48,7 @@ jobs:
       - name: Play App Bundle, models in the install-time asset pack (ADR-027)
         # The key is a placeholder: this bundle proves the layout and is never uploaded.
         run: |
-          ./gradlew :androidApp:bundleRelease -Ptrouvetout.modelDelivery=pack -Ptrouvetout.playLicenseKey=ci-not-for-upload
+          ./gradlew :androidApp:bundleRelease -Ptrouvetout.modelDelivery=pack -Ptrouvetout.ciBundle=true -Ptrouvetout.playLicenseKey=ci-not-for-upload
           tools/check-bundle.sh androidApp/build/outputs/bundle/release/androidApp-release.aab
       - name: Upload debug APK
         if: success()

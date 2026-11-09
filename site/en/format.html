@@ -42,7 +42,7 @@ object per line). <code>snapshot.json</code> is never imported back: it is recom
 <h2>The event journal</h2>
 <p>Every action is an immutable event, dated and signed by the device; nothing is ever overwritten. Each line has
 <code>id</code> (ULID), <code>at</code> (UTC milliseconds), <code>deviceId</code> (random identity of the installation,
-never sent, renewed after a total wipe), <code>actor</code> (<code>"me"</code>), <code>type</code>,
+never sent, renewed after a total wipe; like any ULID, its first 10 characters give the date of the first launch), <code>actor</code> (<code>"me"</code>), <code>type</code>,
 <code>payload</code> (the fields of that type), <code>source</code> (<code>VOICE</code>, <code>TEXT</code>,
 <code>PHOTO</code>, <code>WIDGET</code>, <code>IMPORT</code>, <code>SYSTEM</code>) and <code>rawInput</code> (the
 sentence said or typed, as is). Event types cover objects (created, updated, stored, moved, taken, returned, lent,
@@ -50,9 +50,9 @@ archived, deleted, restored), places (created, renamed, merged, deleted), contai
 contents, deleted), photos (attached, detached) and reminders (set, done).</p>
 
 <h2>What an export contains</h2>
-<p>Only what you entered or what follows from it: names, descriptions, tags, places and their aliases, containers, the
+<p>Everything, sensitive objects included, and only what you entered or what follows from it: names, descriptions, tags, places and their aliases, containers, the
 full sentence said or typed, the names of people you lent things to, the dates of your actions, your re-encoded photos
-and the installation's random identifier. Nothing comes from a sensor, an account, a contact or a system identifier.
+and the installation's random identifier (which dates your first launch). Nothing comes from a sensor, an account, a contact or a system identifier.
 Phone settings (lock, preferences, trial date, purchase state) are not in it.</p>
 
 <h2>The encrypted backup (<code>.ttbk</code>)</h2>

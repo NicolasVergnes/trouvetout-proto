@@ -29,17 +29,17 @@ final class AccessibilityAuditTests: XCTestCase {
     }
 
     /// Lot 12: the audit only sees what is on screen; the settings run over several screens (Vie privée, Photos,
-    /// Achat, Sauvegarde chiffrée at the bottom), each audited after a swipe, then scrolled back to the top.
+    /// Achat, Sauvegarde chiffrée at the bottom), each audited after a swipe (the back button stays in the bar).
     @available(iOS 17.0, *)
     private func auditScrolled(_ app: XCUIApplication) throws {
         let list = app.collectionViews.firstMatch
-        guard list.waitForExistence(timeout: 10) else { return }
+        guard list.waitForExistence(timeout: 10) else {
+            XCTFail("the settings list was not found: its lower sections went unaudited")
+            return
+        }
         for _ in 0 ..< Self.settingsScreens {
             list.swipeUp()
             try audit(app)
-        }
-        for _ in 0 ..< Self.settingsScreens {
-            list.swipeDown()
         }
     }
 

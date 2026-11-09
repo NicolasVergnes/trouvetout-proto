@@ -194,8 +194,31 @@ dependencies {
 }
 
 // What goes to the Play Store must recognise its purchases: without the key, they would be taken, not acknowledged and
-// refunded after three days. `assembleRelease` stays free of it for the CI.
+// refunded after three days. The key must decode as the console's RSA public key (X.509, base64); only the CI layout
+// check (ADR-027) passes `-Ptrouvetout.ciBundle=true` with a placeholder, for a bundle that is never uploaded.
+// `assembleRelease` stays free of it for the CI.
 tasks.matching { it.name == "bundleRelease" }.configureEach {
     val key = providers.gradleProperty("trouvetout.playLicenseKey")
-    doFirst { check(key.getOrElse("").isNotBlank()) { "trouvetout.playLicenseKey is missing" } }
+    val ciBundle = providers.gradleProperty("trouvetout.ciBundle").map(String::toBoolean).getOrElse(false)
+    doFirst {
+        val value = key.getOrElse("")
+        check(value.isNotBlank()) { "trouvetout.playLicenseKey is missing" }
+        if (!ciBundle) {
+            val decoded =
+                runCatching {
+                    java.security.KeyFactory.getInstance("RSA").generatePublic(
+                        java.security.spec.X509EncodedKeySpec(java.util.Base64.getDecoder().decode(value)),
+                    )
+                }
+            check(decoded.isSuccess) { "trouvetout.playLicenseKey is not the console's RSA public key" }
+        }
+    }
+}
+
+// In pack mode the models are in the asset pack, which only an App Bundle carries: an APK built so would silently run
+// on keywords alone.
+if (modelsInPack) {
+    tasks.matching { it.name.startsWith("assemble") }.configureEach {
+        doFirst { error("-Ptrouvetout.modelDelivery=pack builds the App Bundle only (bundleRelease)") }
+    }
 }

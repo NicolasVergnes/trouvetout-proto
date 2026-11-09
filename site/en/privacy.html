@@ -26,8 +26,9 @@
 <p class="lead"><strong>The app collects no data.</strong> Your objects, places and photos stay on your phone. There is
 no account, no server, no advertising, no analytics, no tracking of any kind.</p>
 
-<p>We have no way to see what you record: none of your data ever reaches us. The publisher therefore processes no
-personal data about you; what you enter stays under your sole control, on your device. Search, including its
+<p>We have no way to see what you record: the app sends us nothing, and what you enter stays under your sole control,
+on your device. If you write to us, we receive your address and your message, used only to answer you. Apple and Google
+give us sales statistics and, if you agreed to it on your phone, crash reports; none of your objects is in them. Search, including its
 artificial-intelligence model, runs entirely on your phone; the model ships with the app and downloads nothing. On
 Android, the app has no network access of its own.</p>
 
@@ -53,10 +54,15 @@ of a reminder.</p>
 <p>Speech recognition happens on the phone only: the app refuses any recognition that would go through a server. On
 Android 10 and 11 phones, where that guarantee does not exist, you type instead. Sound is never recorded; only the
 recognised sentence is kept, like a typed one. The microphone is asked for at first use, after an explanation.</p>
+<p>The microphone key of your keyboard belongs to the keyboard, not to the app: depending on the keyboard, it may go
+through a server. On Android, a setting stops the keyboard from learning what you type in the app; iPhone offers no
+such setting.</p>
 
 <h3>Photos and the search model</h3>
 <p>Photos you attach are re-encoded: their metadata (GPS position, camera, capture date) are removed. They stay in the
-app's private storage, never in your gallery; on Android, pictures are taken through the phone's Camera app. The photo
+app's private storage, and the app never puts them in your gallery; on Android, pictures are taken through the phone's
+Camera app, some of which keep their own copy. Photos are not encrypted by the app: they are protected by its private
+storage and by your phone's encryption. The photo
 of a photo search and the photo of a pending capture are never kept (on Android, the temporary file handed back by the
 Camera app is deleted as soon as it is read). For search, the app computes numerical fingerprints of your entries and
 photos on the phone; they are a cache, never exported, and erased by the total wipe. The app also counts, on the phone,
@@ -71,8 +77,8 @@ suggestion or thumbnail.</p>
 <p>Reminders are local notifications scheduled on your phone; nothing goes through a server. A notification names the
 object at most, never its place; for a sensitive object it stays generic. On the lock screen your phone decides: the
 name stays visible if it is set to show everything. Your phone may keep that text (notification history, connected
-watch, an app allowed to read notifications); the total wipe does not erase those copies. After a restart or an
-update, the app opens briefly in the background to put your reminders back in place; nothing is sent.</p>
+watch, an app allowed to read notifications); the total wipe does not erase those copies. On Android, after a restart
+or an update, the app opens briefly in the background to put your reminders back in place; nothing is sent.</p>
 
 <h3>Widgets, tile, Siri and Shortcuts</h3>
 <p>The widget, the quick-settings tile, the Action button and Shortcuts open the capture; they show no object.</p>
@@ -89,7 +95,8 @@ itself.</p>
 
 <h2>Export and printing</h2>
 <p>Export creates a ZIP file readable without the app (<a href="format.html">data format</a>), which you share wherever
-you like; it is not encrypted. If you print a place or a container, the document goes to the printer or printing
+you like; it is not encrypted and holds everything, sensitive objects included. The app keeps a copy for one day at
+most in its private storage, then deletes it (so does the total wipe). If you print a place or a container, the document goes to the printer or printing
 service you choose, handled by your phone. Once printed or saved as PDF, it is outside the app and the total wipe does
 not reach it. Sensitive objects appear in it only if you revealed them.</p>
 
@@ -113,6 +120,10 @@ the settings, erases in one action the database, its key, photos, caches, prefer
 (erasure). What remains is the trial start date and the backup file you chose, unreadable without your key; the
 confirmation text says so. Whatever already left the app (exports, printed documents, the phone's notification
 history) is yours to delete if you wish.</p>
+
+<h2>This site</h2>
+<p>This site uses no cookie, script or tracker; its host keeps technical logs (IP address, page requested) under its own
+terms.</p>
 
 <h2>Changes and contact</h2>
 <p>Should a new network exchange ever appear, this page would be updated before the version that introduces it.

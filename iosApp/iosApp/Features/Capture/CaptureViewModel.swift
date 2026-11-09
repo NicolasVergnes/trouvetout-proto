@@ -91,10 +91,6 @@ final class CaptureViewModel: ObservableObject {
         }
     }
 
-    func dismissWelcome() {
-        Task { try? await container.shared.welcome.dismiss() }
-    }
-
     /// What the user types; programmatic changes to `input` go through `setInput` and never touch the search.
     func typed(_ text: String) {
         input = text
@@ -286,11 +282,6 @@ final class CaptureViewModel: ObservableObject {
         if parse.intent == .remind {
             askNotificationsIfNeeded()
         }
-    }
-
-    /// The UI language at the time of the call.
-    func uiLang() -> Lang {
-        Locale.current.language.languageCode?.identifier == "fr" ? .fr : .en
     }
 
     private func perform(_ work: @escaping @MainActor () async throws -> Void) {

@@ -150,7 +150,8 @@ class CaptureViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
 
     fun dismissWelcome() {
-        viewModelScope.launch { app.readyShared.first().welcome.dismiss() }
+        // A failed write only leaves the card on screen, to be dismissed again.
+        viewModelScope.launch { runCatching { app.readyShared.first().welcome.dismiss() } }
     }
 
     /** Destinations of the « je range » picker. */

@@ -47,7 +47,7 @@ Lines : un objet par ligne). <code>snapshot.json</code> n'est jamais réimporté
   <tbody>
     <tr><td><code>id</code></td><td>ULID (26 caractères)</td><td>identifiant unique, trié par date de création</td></tr>
     <tr><td><code>at</code></td><td>entier</td><td>instant UTC, en millisecondes depuis le 1<sup>er</sup> janvier 1970</td></tr>
-    <tr><td><code>deviceId</code></td><td>ULID</td><td>identité de l'installation, tirée au hasard au premier lancement, jamais transmise ; renouvelée après une suppression totale</td></tr>
+    <tr><td><code>deviceId</code></td><td>ULID</td><td>identité de l'installation, tirée au hasard au premier lancement, jamais transmise ; comme tout ULID, ses 10 premiers caractères donnent la date de ce lancement ; renouvelée après une suppression totale</td></tr>
     <tr><td><code>actor</code></td><td>texte</td><td><code>"me"</code> (réservé à un usage futur en foyer)</td></tr>
     <tr><td><code>type</code></td><td>texte</td><td>le type d'événement (ci-dessous)</td></tr>
     <tr><td><code>payload</code></td><td>objet</td><td>les champs propres au type</td></tr>
@@ -86,9 +86,9 @@ Lines : un objet par ligne). <code>snapshot.json</code> n'est jamais réimporté
 passant par une version plus ancienne.</p>
 
 <h2>Ce que contient un export</h2>
-<p>Uniquement ce que vous avez saisi ou ce qui en découle : noms, descriptions, étiquettes, lieux et leurs alias,
+<p>Tout, objets sensibles compris, et uniquement ce que vous avez saisi ou ce qui en découle : noms, descriptions, étiquettes, lieux et leurs alias,
 contenants, la phrase complète dite ou tapée, les noms des personnes à qui vous avez prêté un objet, les dates de vos
-actions, vos photos ré-encodées et l'identifiant aléatoire de l'installation. Rien ne vient d'un capteur, d'un compte,
+actions, vos photos ré-encodées et l'identifiant aléatoire de l'installation (qui date votre premier lancement). Rien ne vient d'un capteur, d'un compte,
 d'un contact ou d'un identifiant du système. Les réglages du téléphone (verrouillage, préférences, date d'essai, état
 d'achat) n'y sont pas.</p>
 
