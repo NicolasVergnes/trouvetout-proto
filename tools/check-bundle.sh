@@ -33,10 +33,13 @@ done
 
 # The pack is delivered with the app (install-time) and the base module still asks for no network (protobuf
 # manifests: the strings are stored as is).
-if ! unzip -p "$AAB" models/manifest/AndroidManifest.xml | LC_ALL=C grep -a -q "install-time"; then
+# Read whole first: `grep -q` stopping early would make `unzip` fail with SIGPIPE under pipefail.
+pack_manifest=$(unzip -p "$AAB" models/manifest/AndroidManifest.xml | LC_ALL=C tr -c '[:print:]' ' ')
+base_manifest=$(unzip -p "$AAB" base/manifest/AndroidManifest.xml | LC_ALL=C tr -c '[:print:]' ' ')
+if ! printf '%s' "$pack_manifest" | grep -F "install-time" >/dev/null; then
   echo "VIOLATION: the models pack is not install-time"; status=1
 fi
-if unzip -p "$AAB" base/manifest/AndroidManifest.xml | LC_ALL=C grep -a -q "android.permission.INTERNET"; then
+if printf '%s' "$base_manifest" | grep -F "android.permission.INTERNET" >/dev/null; then
   echo "VIOLATION: the base module asks for INTERNET"; status=1
 fi
 

@@ -326,7 +326,7 @@ class UiPrefs(
         simpleModeState.value = value
     }
 
-    /** Lot 12: the hibernation exemption was explained once (far reminders, Android 11+). */
+    /** Lot 12: the hibernation exemption was explained once (far reminders, Android 12+). */
     var hibernationExplained: Boolean
         get() = prefs.getBoolean(KEY_HIBERNATION_EXPLAINED, false)
         set(value) = prefs.edit { putBoolean(KEY_HIBERNATION_EXPLAINED, value) }

@@ -72,12 +72,15 @@ class QuickCaptureTest {
             compose.onNode(hasTestTag(CAPTURE_FIELD_TAG)).performTextInput("drill-$stamp @ $place")
             val start = SystemClock.elapsedRealtime()
             compose.onNode(hasContentDescription(app.getString(R.string.capture_send))).performClick()
-            compose.waitUntilAtLeastOneExists(
-                hasText(app.getString(R.string.capture_card_stored, place)),
-                timeoutMillis = N1_BUDGET,
-            )
+            val confirmed =
+                runCatching {
+                    compose.waitUntilAtLeastOneExists(
+                        hasText(app.getString(R.string.capture_card_stored, place)),
+                        timeoutMillis = N1_BUDGET,
+                    )
+                }.isSuccess
             val elapsed = SystemClock.elapsedRealtime() - start
-            assertTrue("N1: $elapsed ms", elapsed < N1_BUDGET)
+            assertTrue("N1: confirmation after $elapsed ms (budget $N1_BUDGET ms)", confirmed && elapsed < N1_BUDGET)
         }
     }
 

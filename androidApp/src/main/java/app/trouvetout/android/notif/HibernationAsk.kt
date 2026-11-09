@@ -38,7 +38,10 @@ fun rememberHibernationAsk(
     val context = LocalContext.current
     val app = context.applicationContext as App
     var explain by rememberSaveable { mutableStateOf(false) }
-    val showing = explain && !blocked
+    // Without notifications no reminder can show, asleep or not: nothing to ask (asked again at the next far one).
+    val notificationsOn = ReminderNotifications.enabled(context)
+    val showing = explain && !blocked && notificationsOn
+    LaunchedEffect(explain, blocked, notificationsOn) { if (explain && !blocked && !notificationsOn) explain = false }
     val currentOnAsking by rememberUpdatedState(onAsking)
     LaunchedEffect(showing) { currentOnAsking(showing) }
     val answered = {
@@ -47,7 +50,8 @@ fun rememberHibernationAsk(
     }
     if (showing) {
         AlertDialog(
-            onDismissRequest = answered,
+            // A tap beside the dialog is not an answer: it comes back with the next far reminder.
+            onDismissRequest = { explain = false },
             title = { Text(stringResource(R.string.hibernation_title)) },
             text = { Text(stringResource(R.string.hibernation_text)) },
             confirmButton = {
