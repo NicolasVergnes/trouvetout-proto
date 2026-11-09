@@ -1,4 +1,7 @@
 import groovy.json.JsonSlurper
+import java.security.KeyFactory
+import java.security.spec.X509EncodedKeySpec
+import java.util.Base64
 
 plugins {
     alias(libs.plugins.android.application)
@@ -206,9 +209,7 @@ tasks.matching { it.name == "bundleRelease" }.configureEach {
         if (!ciBundle) {
             val decoded =
                 runCatching {
-                    java.security.KeyFactory.getInstance("RSA").generatePublic(
-                        java.security.spec.X509EncodedKeySpec(java.util.Base64.getDecoder().decode(value)),
-                    )
+                    KeyFactory.getInstance("RSA").generatePublic(X509EncodedKeySpec(Base64.getDecoder().decode(value)))
                 }
             check(decoded.isSuccess) { "trouvetout.playLicenseKey is not the console's RSA public key" }
         }
