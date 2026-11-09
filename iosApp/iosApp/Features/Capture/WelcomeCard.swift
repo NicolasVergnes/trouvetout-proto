@@ -23,6 +23,7 @@ struct WelcomeCard: View {
             }
         }
         .font(.callout)
+        .tint(Color.strongTint)
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         // The screen's own background with an outline: tinted buttons keep their contrast (a grey card lowered it).
