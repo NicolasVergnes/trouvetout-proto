@@ -43,14 +43,23 @@ class PurchaseTest {
 
     /**
      * The telemetry of Play Billing is left out of the app: the client must start, log and report what it can without
-     * it. This phone has no Play Store: « no answer », never a crash, and nothing granted.
+     * it, never crash, never grant. The CI emulator has no Play Store: « no answer ». A phone with one and a signed-in
+     * account (a Fairphone 4, 10 Nov. 2026) answers « nothing bought »: the app is not in a Play Console yet, so no
+     * product either.
      */
     @Test
-    fun the_store_client_works_without_its_telemetry_and_says_it_has_no_answer() = runBlocking {
+    fun the_store_client_works_without_its_telemetry_and_grants_nothing() = runBlocking {
         val gateway = PlayPurchaseGateway(ApplicationProvider.getApplicationContext(), "") {}
-        assertNull(gateway.entitled())
+        val entitled = gateway.entitled()
+        if (hasPlayStore()) {
+            assertTrue("never granted, answer: $entitled", entitled != true)
+        } else {
+            assertNull(entitled)
+        }
         assertEquals(emptyList<StoreProduct>(), gateway.products())
     }
+
+    private fun hasPlayStore() = runCatching { context.packageManager.getPackageInfo(PLAY_STORE, 0) }.isSuccess
 
     @Test
     fun the_telemetry_and_the_location_library_are_not_in_the_app() {
@@ -170,5 +179,9 @@ class PurchaseTest {
             activity: Activity,
             kind: ProductKind,
         ): PurchaseOutcome = PurchaseOutcome.UNAVAILABLE
+    }
+
+    private companion object {
+        const val PLAY_STORE = "com.android.vending"
     }
 }

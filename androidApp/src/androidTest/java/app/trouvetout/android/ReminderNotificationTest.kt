@@ -1,15 +1,18 @@
 package app.trouvetout.android
 
+import android.Manifest
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Intent
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import app.trouvetout.android.notif.ReminderNotifications
 import app.trouvetout.android.notif.ReminderReceiver
 import app.trouvetout.android.notif.ReminderScheduler
@@ -29,6 +32,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -45,6 +49,19 @@ class ReminderNotificationTest {
     private val notifications = app.getSystemService(NotificationManager::class.java)
 
     private suspend fun shared(): SharedFactory = app.readyShared.first()
+
+    /**
+     * Android 13+ posts nothing without POST_NOTIFICATIONS, which the app asks for after the first reminder: granted
+     * here, as the user would. The CI runs on Android 10, where it does not exist; a Fairphone 4 on Android 15 found
+     * the gap (10 Nov. 2026).
+     */
+    @Before
+    fun allowNotifications() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .grantRuntimePermission(app.packageName, Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     private fun App.emptySchedule() = ReminderSchedule(emptyList())
 

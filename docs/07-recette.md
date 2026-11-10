@@ -69,3 +69,25 @@ Préalable : nom définitif et identifiants (ADR-010 ; `com.glopglopdev.finder` 
 
 Installer depuis les magasins sur un appareil vierge : prise en main, U1, U3, U8 en conditions réelles, mode avion.
 Surveiller les rapports de plantage des magasins (seule source de diagnostic) et l'adresse glopglopdev@gmail.com.
+
+## 5. Relevés sur appareil
+
+### Fairphone 4 — Android 15 (API 35), 8 Go, 10 nov. 2026
+
+Build de debug de `main` (190dc69), installé par `adb` ; ce n'est pas un des quatre appareils de §9, mais il tient la
+place de l'Android récent ≥ 6 Go (processeur de 2021, plus lent qu'un Pixel 9 : une mesure qui passe ici passe là).
+
+- Démarrage à froid : 1,4 s (`am start -W`). Carte « Pour commencer » affichée.
+- Variante choisie automatiquement : texte + vision (440M) ; recherche par photo proposée.
+- **U1 à la voix** : micro proposé (reconnaissance sur l'appareil disponible), phrase « passeport dans le tiroir du haut
+  de la commode » reconnue et enregistrée (essai de l'utilisateur) ; temps non chronométré.
+- **U3** : « le chargeur du Kindle » → « cable USB-C blanc · bureau · Rangé aujourd'hui ». Mémoire avec le 440M
+  chargé : **PSS 774 Mo** (budget 900).
+- **Zéro réseau** : pas de permission `INTERNET`, aucun octet pour l'uid dans `dumpsys netstats` ; `NoNetworkTest` vert.
+- **Tests instrumentés** (47) : `TextModelTest` 3/3, dont **le 440M sur un vrai Android** (jamais exercé en CI,
+  l'émulateur a moins de 6 Go). Quatre échecs, tous des hypothèses des tests, corrigées : `ReminderNotificationTest`
+  n'accordait pas `POST_NOTIFICATIONS` (Android 13+, la CI tourne sur Android 10) ; `PurchaseTest` supposait l'absence
+  de Play Store. Avec un vrai Play Store, Play Billing **sans sa télémétrie** répond « rien d'acheté » (build de debug,
+  le build R8 reste à vérifier avec le compte Google).
+- Reste sur ce téléphone : chronométrage N1 à la voix, widget et tuile, notification réelle en veille (Doze),
+  hibernation, empreinte, mesure du lot 7 sur les photos du foyer (`--local`).
